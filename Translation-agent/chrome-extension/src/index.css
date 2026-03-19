@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 400px;
+  min-height: 500px;
+  max-height: 600px;
+  margin: 0;
+  padding: 0;
+  background-color: #020617;
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-y: auto;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #3b82f6, #9333ea);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8125rem;
+}
+.btn-primary:hover {
+  background: linear-gradient(to right, #2563eb, #7e22ce);
+  transform: scale(1.02);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8125rem;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.input-field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+  font-size: 0.8125rem;
+}
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.input-field:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.select-field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+.select-field:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  80%, 100% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+.pulse-recording {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}

@@ -1,0 +1,26 @@
+name: transui
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/venv # Don't overwrite container's venv with host's
+    env_file:
+      - ./backend/.env
+    restart: always
+
+  frontend:
+    build: ./react-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./react-frontend:/app
+      - /app/node_modules # Don't overwrite container's node_modules
+    environment:
+      - VITE_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: always

@@ -1,0 +1,316 @@
+/* ========== Floating Icon (always visible, draggable) ========== */
+#vt-floating-icon {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#vt-floating-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(59, 130, 246, 0.5), 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+#vt-floating-icon:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+#vt-floating-icon.vt-icon-active {
+  background: linear-gradient(135deg, #10b981, #3b82f6);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.2);
+  animation: vt-icon-pulse 2s ease-in-out infinite;
+}
+@keyframes vt-icon-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 4px 28px rgba(16, 185, 129, 0.6), 0 0 0 6px rgba(16, 185, 129, 0.15); }
+}
+
+/* ========== Toast ========== */
+#vt-ext-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #e2e8f0;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  transition: opacity 0.3s ease;
+  max-width: 300px;
+  pointer-events: none;
+}
+
+/* ========== Selection Popup ========== */
+#vt-selection-popup {
+  position: absolute;
+  z-index: 2147483647;
+  display: flex;
+  gap: 2px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  font-family: system-ui, -apple-system, sans-serif;
+  animation: vt-popup-in 0.15s ease-out;
+}
+
+@keyframes vt-popup-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#vt-selection-popup button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+#vt-selection-popup button:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* ========== Inline Loading ========== */
+.vt-inline-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #93c5fd;
+  font-family: system-ui, -apple-system, sans-serif;
+  vertical-align: middle;
+}
+
+.vt-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: vt-spin 0.7s linear infinite;
+}
+
+@keyframes vt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== Translation Bubble ========== */
+.vt-translation-bubble {
+  display: block;
+  margin: 6px 0;
+  padding: 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-family: system-ui, -apple-system, sans-serif;
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  max-width: 100%;
+  animation: vt-popup-in 0.2s ease-out;
+}
+
+.vt-bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(59, 130, 246, 0.08);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.vt-bubble-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vt-bubble-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.vt-bubble-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+}
+.vt-bubble-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.vt-bubble-text {
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+/* ========== In-place translated elements ========== */
+.vt-translated-element {
+  border-bottom: 2px dotted rgba(59, 130, 246, 0.4) !important;
+}
+
+/* ========== Panel ========== */
+#vt-popup-panel {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  width: 350px !important;
+  max-height: 540px !important;
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  color: white !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box !important;
+}
+
+#vt-popup-panel * {
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+/* Panel header */
+#vt-panel-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 14px !important;
+  background: linear-gradient(90deg, rgba(59,130,246,0.1), rgba(147,51,234,0.1)) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Tabs bar */
+#vt-tabs-bar {
+  display: flex !important;
+  border-bottom: 2px solid rgba(255,255,255,0.12) !important;
+  background: rgba(30,41,59,0.95) !important;
+  flex-shrink: 0 !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#vt-tabs-bar .vt-tab {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 10px 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  background: transparent !important;
+  color: rgba(255,255,255,0.55) !important;
+  transition: all 0.15s !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  text-align: center !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+#vt-tabs-bar .vt-tab:hover {
+  color: rgba(255,255,255,0.85) !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+
+#vt-tabs-bar .vt-tab.active {
+  border-bottom-color: #3b82f6 !important;
+  background: rgba(59,130,246,0.12) !important;
+  color: #60a5fa !important;
+}
+
+#vt-tabs-bar .vt-tab .tab-icon {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+/* Tab content */
+#vt-tab-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 12px 14px !important;
+  color: white !important;
+  font-size: 12px !important;
+}
+
+/* Panel buttons */
+#vt-popup-panel button {
+  font-family: system-ui, -apple-system, sans-serif !important;
+  cursor: pointer !important;
+}
+
+#vt-popup-panel select {
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+#vt-popup-panel textarea,
+#vt-popup-panel input {
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+/* Loading overlay inside panel */
+#vt-loading-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0,0,0,0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
