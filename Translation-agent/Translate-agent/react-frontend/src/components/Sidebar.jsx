@@ -17,13 +17,6 @@ import { useState } from 'react';
 
 export default function Sidebar() {
   const { state, setField, RECORDING_MODES } = useApp();
-  const [isNativeExpanded, setIsNativeExpanded] = useState(true);
-
-  const nativeSubItems = [
-    { id: RECORDING_MODES.PUSH_TO_TALK, icon: Mic, label: 'Push to Talk' },
-    { id: RECORDING_MODES.CONTINUOUS, icon: Ear, label: 'Continuous Listening' },
-    { id: RECORDING_MODES.FILE_UPLOAD, icon: Upload, label: 'Upload audio file' },
-  ];
 
   const bottomItems = [
     { icon: Settings, label: 'Settings' },
@@ -44,47 +37,22 @@ export default function Sidebar() {
       <nav className="flex-1 px-4 space-y-2 mt-4">
         <p className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Menu</p>
         
-        {/* Expandable Native to English Menu */}
+        {/* Native to English Menu */}
         <div className="space-y-1">
           <button
             onClick={() => {
-              setIsNativeExpanded(!isNativeExpanded);
               setField('currentView', 'home');
+              setField('recordingMode', null); // Reset mode for selection screen
             }}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
               state.currentView === 'home' 
-                ? 'bg-blue-50 text-blue-600' 
+                ? 'bg-blue-50 text-blue-600 font-semibold' 
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
-            <div className="flex items-center gap-3">
-              <Languages className="w-5 h-5" />
-              <span className="font-medium text-sm">Native to English</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isNativeExpanded ? 'rotate-180' : ''}`} />
+            <Languages className="w-5 h-5" />
+            <span className="font-medium text-sm">Native to English</span>
           </button>
-
-          {/* Sub-menu items */}
-          <div className={`space-y-1 overflow-hidden transition-all duration-300 ${isNativeExpanded ? 'max-h-48 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-            {nativeSubItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setField('recordingMode', item.id);
-                  setField('currentView', 'home');
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2 pl-11 rounded-lg transition-all text-sm ${
-                  state.recordingMode === item.id && state.currentView === 'home'
-                    ? 'text-blue-600 bg-blue-50/50 font-semibold'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                <span>{item.label}</span>
-                {state.recordingMode === item.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* English to Native Menu Item */}
@@ -92,7 +60,6 @@ export default function Sidebar() {
           <button
             onClick={() => {
               setField('currentView', 'englishToNative');
-              setIsNativeExpanded(false);
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
               state.currentView === 'englishToNative'

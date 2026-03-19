@@ -1,21 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Ear, Square, Upload } from 'lucide-react';
+import { Mic, Info, ChevronUp, Copy, Download, ChevronLeft, Square, Languages, ChevronDown, Upload as UploadIcon, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 
 export default function RecordingControls() {
-  const { state, setField, setFields, setLoading, showError, clearAll, RECORDING_MODES } = useApp();
+  const { state, setField, setFields, setLoading, showError, clearAll, TARGET_LANGUAGES, RECORDING_MODES } = useApp();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const silenceTimeoutRef = useRef(null);
-  const stopFuncRef = useRef(null);
-  const SILENCE_THRESHOLD = -60; // dB
-  const SILENCE_DURATION = 2000; // ms
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+  const [activeMode, setActiveMode] = useState('Transcribe'); // 'Transcribe' or 'Translate'
 
   const stopMediaStream = useCallback(() => {
     if (streamRef.current) {
@@ -27,7 +23,7 @@ export default function RecordingControls() {
   // Timer logic
   useEffect(() => {
     let interval;
-    if (state.isRecording || state.isPushToTalkPressed) {
+    if (state.isRecording) {
       setRecordingTime(0);
       interval = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
@@ -36,13 +32,7 @@ export default function RecordingControls() {
       clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [state.isRecording, state.isPushToTalkPressed]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, [state.isRecording]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -58,74 +48,12 @@ export default function RecordingControls() {
 
       recorder.start();
       setField('isRecording', true);
-
-      // Setup Silence Detection (Safely)
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) {
-          console.warn('AudioContext not supported');
-          return;
-        }
-
-        if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext();
-        }
-        const audioContext = audioContextRef.current;
-        
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-
-        const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        analyserRef.current = analyser;
-
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Float32Array(bufferLength);
-
-        const checkSilence = () => {
-          if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
-
-          analyser.getFloatTimeDomainData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            sum += dataArray[i] * dataArray[i];
-          }
-          const rms = Math.sqrt(sum / bufferLength);
-          if (rms === 0) {
-             // Absolute silence
-          }
-          const db = rms > 0 ? 20 * Math.log10(rms) : -100;
-
-          if (db < SILENCE_THRESHOLD) {
-            if (!silenceTimeoutRef.current && state.recordingMode === 'continuous') {
-              silenceTimeoutRef.current = setTimeout(() => {
-                console.log('Silence detected, stopping automatically...');
-                if (stopFuncRef.current) stopFuncRef.current();
-              }, SILENCE_DURATION);
-            }
-          } else {
-            if (silenceTimeoutRef.current) {
-              clearTimeout(silenceTimeoutRef.current);
-              silenceTimeoutRef.current = null;
-            }
-          }
-
-          requestAnimationFrame(checkSilence);
-        };
-
-        checkSilence();
-      } catch (err) {
-        console.error('Silence detection setup failed:', err);
-      }
-    } catch {
+    } catch (err) {
       showError('Microphone permission denied.');
     }
   }, [setField, showError]);
 
-  const stopRecordingAndTranslate = useCallback(async () => {
+  const stopRecordingAndProcess = useCallback(async () => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
       if (!recorder || recorder.state === 'inactive') {
@@ -137,21 +65,23 @@ export default function RecordingControls() {
         setField('isRecording', false);
         stopMediaStream();
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        
         if (blob.size === 0) {
           resolve();
           return;
-          }
+        }
 
         try {
-          setLoading('Translating audio...');
+          setLoading(activeMode === 'Transcribe' ? 'Transcribing...' : 'Translating...');
           const transcript = await api.translateAudioFromBlob(blob);
           setFields({ englishText: transcript });
-          setLoading(null);
-
-          // Auto-rewrite tone
-          setLoading('Rewriting tone...');
-          const rewritten = await api.rewriteTone(transcript, state.selectedTone);
-          setFields({ rewrittenText: rewritten });
+          
+          if (activeMode === 'Translate') {
+            setLoading('Translating to regional language...');
+            const translated = await api.translateText(transcript, state.selectedLanguage);
+            setFields({ nativeTranslation: translated });
+          }
+          
           setLoading(null);
         } catch (err) {
           showError(err.response?.data?.detail || err.message);
@@ -162,47 +92,23 @@ export default function RecordingControls() {
 
       recorder.stop();
     });
-  }, [setField, setFields, setLoading, showError, stopMediaStream, state.selectedTone]);
+  }, [setField, setFields, setLoading, showError, stopMediaStream, activeMode, state.selectedLanguage]);
 
-  // Update stopFuncRef whenever stopRecordingAndTranslate changes
-  useEffect(() => {
-    stopFuncRef.current = stopRecordingAndTranslate;
-  }, [stopRecordingAndTranslate]);
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  // Push-to-Talk handlers
-  const handlePushDown = useCallback(async () => {
-    setField('isPushToTalkPressed', true);
-    clearAll();
-    await startRecording();
-  }, [setField, clearAll, startRecording]);
-
-  const handlePushUp = useCallback(async () => {
-    setField('isPushToTalkPressed', false);
-    await stopRecordingAndTranslate();
-  }, [setField, stopRecordingAndTranslate]);
-
-  // Continuous mode toggle
-  const toggleContinuous = useCallback(async () => {
-    if (state.isRecording) {
-      await stopRecordingAndTranslate();
-    } else {
-      clearAll();
-      await startRecording();
-    }
-  }, [state.isRecording, startRecording, stopRecordingAndTranslate, clearAll]);
-
-  // File upload logic
-  const processFile = async (file) => {
     try {
       clearAll();
-      setLoading('Uploading & Processing...');
-      const transcript = await api.translateAudio(file);
+      setLoading('Transcribing Audio File...');
+      const transcript = await api.translateAudioFromBlob(file);
       setFields({ englishText: transcript });
-      setLoading(null);
-
-      setLoading('Rewriting tone...');
-      const rewritten = await api.rewriteTone(transcript, state.selectedTone);
-      setFields({ rewrittenText: rewritten });
+      
+      if (activeMode === 'Translate') {
+        setLoading('Translating to regional language...');
+        const translated = await api.translateText(transcript, state.selectedLanguage);
+        setFields({ nativeTranslation: translated });
+      }
       setLoading(null);
     } catch (err) {
       showError(err.response?.data?.detail || err.message);
@@ -210,160 +116,173 @@ export default function RecordingControls() {
     }
   };
 
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('audio/')) {
-      processFile(file);
-    } else if (file) {
-      showError('Please upload a valid audio file.');
+  const handleMainAction = useCallback(async () => {
+    if (state.recordingMode === RECORDING_MODES.FILE_UPLOAD) {
+      fileInputRef.current?.click();
+      return;
     }
-  }, [clearAll, setLoading, setFields, showError, state.selectedTone]);
 
-  const handleFileUpload = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-    e.target.value = '';
-  }, [clearAll, setLoading, setFields, showError, state.selectedTone]);
+    if (state.isRecording) {
+      await stopRecordingAndProcess();
+    } else {
+       if (activeMode === 'Transcribe') clearAll();
+       await startRecording();
+    }
+  }, [state.isRecording, state.recordingMode, RECORDING_MODES.FILE_UPLOAD, startRecording, stopRecordingAndProcess, clearAll, activeMode]);
 
-  const modeConfig = {
-    pushToTalk: {
-      title: 'Push-to-Talk Mode',
-      description: 'Hold the button to record, release to stop',
-      icon: Mic,
-    },
-    continuous: {
-      title: 'Continuous Listening Mode',
-      description: 'Automatically records until you press stop',
-      icon: Ear,
-    },
-    fileUpload: {
-      title: 'File Upload Mode',
-      description: 'Select an audio file from your device',
-      icon: Upload,
-    },
-  };
+  const handleCopy = useCallback(() => {
+    const text = state.nativeTranslation || state.englishText;
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+  }, [state.englishText, state.nativeTranslation]);
 
-  const config = modeConfig[state.recordingMode];
-  const ModeIcon = config.icon;
-  const isCurrentlyRecording = state.isRecording || state.isPushToTalkPressed;
+  const handleDownload = useCallback(() => {
+    const text = state.nativeTranslation || state.englishText;
+    if (!text) return;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transcript.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [state.englishText, state.nativeTranslation]);
+
+  const isFileUploadMode = state.recordingMode === RECORDING_MODES.FILE_UPLOAD;
 
   return (
-    <div className="glass-card space-y-6 relative overflow-hidden">
-      {/* Recording Indicator Overlay */}
-      {isCurrentlyRecording && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full border border-red-100 z-10 animate-fade-in-top">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-blink" />
-          <span className="text-[10px] font-bold text-red-600 tracking-wider">LIVE</span>
-          <span className="text-[10px] font-mono text-red-600 tabular-nums">{formatTime(recordingTime)}</span>
-        </div>
-      )}
+    <div className="flex flex-col items-center gap-6 py-4">
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        className="hidden" 
+        accept="audio/*"
+      />
 
-      {/* Mode Info */}
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl border transition-colors duration-500 ${isCurrentlyRecording ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'}`}>
-          <ModeIcon className={`w-5 h-5 transition-colors duration-500 ${isCurrentlyRecording ? 'text-red-500' : 'text-blue-600'}`} />
-        </div>
-        <div>
-          <h3 className="font-bold text-slate-900 text-sm">{config.title}</h3>
-          <p className="text-xs text-slate-500">{config.description}</p>
-        </div>
-      </div>
-
-
-
-      {/* Controls */}
-      <div className="flex flex-col items-center gap-4 py-2">
-        {state.recordingMode === 'pushToTalk' && (
-          <>
-            <button
-              onMouseDown={handlePushDown}
-              onMouseUp={handlePushUp}
-              onMouseLeave={() => { if (state.isPushToTalkPressed) handlePushUp(); }}
-              onTouchStart={(e) => { e.preventDefault(); handlePushDown(); }}
-              onTouchEnd={(e) => { e.preventDefault(); handlePushUp(); }}
-              className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 ${
-                state.isPushToTalkPressed
-                  ? 'bg-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.4)] pulse-recording scale-105'
-                  : 'bg-slate-900 shadow-xl shadow-slate-200 hover:scale-105 hover:bg-slate-800'
-              }`}
-            >
-              {state.isPushToTalkPressed ? (
-                <Mic className="w-10 h-10 text-white" />
-              ) : (
-                <Mic className="w-10 h-10 text-white" />
-              )}
-            </button>
-            <p className="text-xs uppercase tracking-widest font-bold text-slate-500">
-              {state.isPushToTalkPressed ? 'Listening...' : 'Hold to Speak'}
-            </p>
-          </>
-        )}
-
-        {state.recordingMode === 'continuous' && (
-          <>
-            <button
-              onClick={toggleContinuous}
-              className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 ${
-                state.isRecording
-                  ? 'bg-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.4)] pulse-recording scale-105'
-                  : 'bg-slate-900 shadow-xl shadow-slate-200 hover:scale-105 hover:bg-slate-800'
-              }`}
-            >
-              {state.isRecording ? (
-                <Square className="w-8 h-8 text-white fill-current" />
-              ) : (
-                <Mic className="w-10 h-10 text-white" />
-              )}
-            </button>
-            <p className="text-xs uppercase tracking-widest font-bold text-slate-500">
-              {state.isRecording ? 'Listening...' : 'Tap to Speak'}
-            </p>
-          </>
-        )}
-
-        {state.recordingMode === 'fileUpload' && (
-          <div 
-            className="w-full space-y-3"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <label className="cursor-pointer block w-full">
-              <div className={`flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-3xl transition-all duration-200 group ${
-                isDragging ? 'border-blue-500 bg-blue-50/50 scale-[1.02]' : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
-              }`}>
-                <div className={`p-4 rounded-full transition-colors ${isDragging ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'}`}>
-                  <Upload className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                  <span className="text-sm font-bold text-slate-700 block mb-1">
-                    {isDragging ? 'Drop Audio Here' : 'Click or drag audio file to upload'}
-                  </span>
-                  <span className="text-xs text-slate-500">MP3, WAV, M4A up to 25MB</span>
-                </div>
-              </div>
-              <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
-            </label>
-          </div>
-        )}
-      </div>
-
-      {state.englishText && (
-        <button onClick={clearAll} className="w-full text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest pt-2 border-t border-slate-50">
-          Reset All Fields
+      <div className="flex items-center gap-4 animate-fade-in-top">
+        {/* Reset Button */}
+        <button 
+          onClick={clearAll}
+          className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center hover:bg-slate-50 transition-all group"
+          title="Reset"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
         </button>
+
+        {/* Main Toolbar Pill */}
+        <div className="bg-[#F8F9FA]/90 backdrop-blur-xl rounded-full px-4 py-2 flex items-center gap-4 shadow-lg shadow-slate-200/50 border border-white/50">
+          <div className="pl-2">
+            <div className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center">
+              <span className="text-[10px] font-serif font-bold text-slate-400 italic">i</span>
+            </div>
+          </div>
+
+          <div className="h-6 w-[1px] bg-slate-200" />
+
+          {/* Mode Selector */}
+          <div className="relative">
+            <button 
+              onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
+              className="flex items-center gap-2 text-slate-800 font-bold text-sm hover:text-blue-600 transition-colors px-2 py-1 rounded-lg"
+            >
+              {activeMode}
+              <ChevronUp className={`w-4 h-4 text-slate-300 transition-transform ${isModeMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isModeMenuOpen && (
+              <div className="absolute bottom-full mb-4 left-0 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 min-w-[140px] animate-fade-in-top z-[60]">
+                {['Transcribe', 'Translate'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setActiveMode(mode);
+                      setIsModeMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeMode === mode ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {activeMode === 'Translate' && (
+            <div className="flex items-center gap-3 animate-fade-in-right">
+              <div className="h-6 w-[1px] bg-slate-200" />
+              <div className="relative group">
+                <select
+                  value={state.selectedLanguage}
+                  onChange={(e) => setField('selectedLanguage', e.target.value)}
+                  className="appearance-none bg-transparent pl-2 pr-8 py-1 text-xs font-bold text-blue-600 cursor-pointer focus:outline-none"
+                >
+                  {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
+                    <option key={code} value={code}>{name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
+          <button 
+            onClick={handleMainAction}
+            className={`rounded-full pl-4 pr-6 py-2.5 flex items-center gap-3 transition-all duration-300 ${
+              state.isRecording 
+              ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse-slow' 
+              : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200'
+            }`}
+          >
+            {state.isRecording ? (
+               <>
+                 <Square className="w-4 h-4 fill-current" />
+                 <span className="text-sm font-bold tracking-tight">Stop</span>
+               </>
+            ) : (
+              <>
+                {isFileUploadMode 
+                 ? <UploadIcon className="w-4 h-4" /> 
+                 : (activeMode === 'Translate' ? <Languages className="w-4 h-4" /> : <Mic className="w-4 h-4" />)}
+                <span className="text-sm font-bold tracking-tight">
+                  {isFileUploadMode ? 'Upload' : 'Record'}
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Actions Pill */}
+        <div className="bg-[#F8F9FA]/90 backdrop-blur-xl rounded-full px-6 py-2.5 flex items-center gap-6 shadow-lg shadow-slate-200/50 border border-white/50">
+          <button 
+            onClick={handleCopy}
+            disabled={!state.englishText}
+            className={`transition-all ${state.englishText ? 'text-slate-600 hover:text-slate-900 hover:scale-110' : 'text-slate-200 cursor-not-allowed'}`}
+          >
+            <Copy className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={handleDownload}
+            disabled={!state.englishText}
+            className={`transition-all ${state.englishText ? 'text-slate-600 hover:text-slate-900 hover:scale-110' : 'text-slate-200 cursor-not-allowed'}`}
+          >
+            <Download className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Recording Status Overlay */}
+      {state.isRecording && (
+        <div className="flex items-center gap-3 text-red-500 bg-red-50 px-4 py-1.5 rounded-full border border-red-100 animate-pulse">
+          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-xs font-bold font-mono tracking-widest tabular-nums font-bold">
+            {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+          </span>
+        </div>
       )}
     </div>
   );

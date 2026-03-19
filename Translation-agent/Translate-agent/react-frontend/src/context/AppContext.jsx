@@ -25,7 +25,7 @@ const TONES = ['Email Formal', 'Email Casual', 'Slack', 'LinkedIn', 'WhatsApp Bu
 
 const initialState = {
   currentView: 'home',
-  recordingMode: RECORDING_MODES.PUSH_TO_TALK,
+  recordingMode: null,
   isRecording: false,
   isPushToTalkPressed: false,
   isSpeechDetected: false,
