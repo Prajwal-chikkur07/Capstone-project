@@ -8,12 +8,7 @@ logger = logging.getLogger(__name__)
 def get_audio_duration(audio_file_path: str) -> float:
     """
     Gets the duration of an audio file in seconds using ffprobe.
-    
-    Args:
-        audio_file_path: Path to the audio file
-    
-    Returns:
-        Duration in seconds
+    Falls back to 0.0 if ffprobe is not installed (skips chunking).
     """
     try:
         cmd = [
@@ -26,12 +21,15 @@ def get_audio_duration(audio_file_path: str) -> float:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         duration = float(result.stdout.strip())
         return duration
+    except FileNotFoundError:
+        logger.warning("ffprobe not found — skipping duration check, sending audio directly.")
+        return 0.0  # Treat as short audio, skip chunking
     except subprocess.CalledProcessError as e:
         logger.error(f"ffprobe error: {e.stderr}")
-        raise Exception(f"Failed to get audio duration. Make sure ffmpeg is installed.")
+        return 0.0
     except Exception as e:
         logger.error(f"Error getting audio duration: {e}")
-        raise Exception(f"Failed to get audio duration: {str(e)}")
+        return 0.0
 
 
 def split_audio_into_chunks(audio_file_path: str, chunk_duration_seconds: int = 25) -> list:

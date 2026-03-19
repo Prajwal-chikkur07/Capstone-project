@@ -40,16 +40,16 @@ export const translateText = async (text, targetLanguage) => {
   return data.translated_text;
 };
 
-export const textToSpeech = async (text, language, useSarvam = false) => {
+export const textToSpeech = async (text, language, speaker = 'meera') => {
   const { data } = await API.post(
     '/text-to-speech',
-    { text, language, use_sarvam: useSarvam },
+    { text, language, use_sarvam: true, speaker },
     { responseType: 'blob' }
   );
   return data;
 };
 
-export const sendEmail = async ({ text, toEmail, subject, tone, language }) => {
+export const sendEmail = async ({ text, toEmail, subject, tone, language, smtpUsername, smtpPassword }) => {
   const { data } = await API.post('/send/email', {
     text,
     to_email: toEmail,
@@ -57,6 +57,8 @@ export const sendEmail = async ({ text, toEmail, subject, tone, language }) => {
     tone,
     language,
     use_sendgrid: false,
+    smtp_username: smtpUsername || undefined,
+    smtp_password: smtpPassword || undefined,
   });
   return data;
 };

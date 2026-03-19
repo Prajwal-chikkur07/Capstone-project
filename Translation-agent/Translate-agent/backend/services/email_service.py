@@ -21,70 +21,39 @@ SENDER_NAME = os.getenv("SENDER_NAME", "Voice Translation App")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
 
 
-def send_email_smtp(to_email: str, subject: str, body: str, html_body: str = None) -> dict:
-    """
-    Sends an email using SMTP (Gmail, Outlook, etc.)
-    
-    Args:
-        to_email: Recipient email address
-        subject: Email subject
-        body: Plain text body
-        html_body: Optional HTML body
-    
-    Returns:
-        dict with success status and message
-    
-    Configuration:
-        Set these environment variables in .env:
-        - SMTP_HOST (default: smtp.gmail.com)
-        - SMTP_PORT (default: 587)
-        - SMTP_USERNAME (your email)
-        - SMTP_PASSWORD (your app password)
-        - SENDER_EMAIL (optional, defaults to SMTP_USERNAME)
-        - SENDER_NAME (optional, defaults to "Voice Translation App")
-    
-    Gmail Setup:
-        1. Enable 2-factor authentication
-        2. Generate an "App Password" at https://myaccount.google.com/apppasswords
-        3. Use the app password as SMTP_PASSWORD
-    """
-    if not SMTP_USERNAME or not SMTP_PASSWORD:
+def send_email_smtp(to_email: str, subject: str, body: str, html_body: str = None,
+                    smtp_username: str = None, smtp_password: str = None) -> dict:
+    # Use per-request creds if provided, fall back to .env
+    username = smtp_username or SMTP_USERNAME
+    password = smtp_password or SMTP_PASSWORD
+    sender   = smtp_username or SENDER_EMAIL
+
+    if not username or not password:
         raise Exception(
-            "Email not configured. Set SMTP_USERNAME and SMTP_PASSWORD in .env file. "
-            "For Gmail, use an App Password: https://myaccount.google.com/apppasswords"
+            "Email not configured. Set your Gmail address and App Password in Profile. "
+            "Generate an App Password at: https://myaccount.google.com/apppasswords"
         )
-    
+
     try:
-        logger.info(f"Sending email to {to_email} via SMTP")
-        
-        # Create message
+        logger.info(f"Sending email to {to_email} via SMTP as {username}")
+
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["From"] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
+        message["From"] = f"{SENDER_NAME} <{sender}>"
         message["To"] = to_email
-        
-        # Add plain text part
-        text_part = MIMEText(body, "plain")
-        message.attach(text_part)
-        
-        # Add HTML part if provided
+
+        message.attach(MIMEText(body, "plain"))
         if html_body:
-            html_part = MIMEText(html_body, "html")
-            message.attach(html_part)
-        
-        # Connect to SMTP server and send
+            message.attach(MIMEText(html_body, "html"))
+
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.login(username, password)
             server.send_message(message)
-        
+
         logger.info(f"Email sent successfully to {to_email}")
-        return {
-            "success": True,
-            "message": f"Email sent successfully to {to_email}",
-            "provider": "SMTP"
-        }
-        
+        return {"success": True, "message": f"Email sent successfully to {to_email}", "provider": "SMTP"}
+
     except Exception as e:
         logger.error(f"SMTP email error: {e}")
         raise Exception(f"Failed to send email: {str(e)}")
@@ -156,24 +125,12 @@ def send_email_sendgrid(to_email: str, subject: str, body: str, html_body: str =
         raise Exception(f"Failed to send email via SendGrid: {str(e)}")
 
 
-def send_email(to_email: str, subject: str, body: str, html_body: str = None, use_sendgrid: bool = False) -> dict:
-    """
-    Sends an email using either SMTP or SendGrid
-    
-    Args:
-        to_email: Recipient email address
-        subject: Email subject
-        body: Plain text body
-        html_body: Optional HTML body
-        use_sendgrid: If True, use SendGrid; otherwise use SMTP
-    
-    Returns:
-        dict with success status and message
-    """
+def send_email(to_email: str, subject: str, body: str, html_body: str = None,
+               use_sendgrid: bool = False, smtp_username: str = None, smtp_password: str = None) -> dict:
     if use_sendgrid and SENDGRID_API_KEY:
         return send_email_sendgrid(to_email, subject, body, html_body)
     else:
-        return send_email_smtp(to_email, subject, body, html_body)
+        return send_email_smtp(to_email, subject, body, html_body, smtp_username, smtp_password)
 
 
 def format_email_body(text: str, tone: str = None, language: str = None) -> tuple:

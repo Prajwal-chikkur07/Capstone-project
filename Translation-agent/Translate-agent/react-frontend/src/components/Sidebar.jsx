@@ -1,103 +1,73 @@
-import { 
-  Home, 
-  Mic, 
-  Languages, 
-  History, 
-  Settings, 
-  User,
-  ChevronRight,
-  LogOut,
-  ChevronDown,
-  Ear,
-  Upload,
-  Globe
-} from 'lucide-react';
+import { Languages, Globe, User, LogOut, Mic2, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useState } from 'react';
 
 export default function Sidebar() {
-  const { state, setField, RECORDING_MODES } = useApp();
+  const { state, setField, clearAll } = useApp();
 
-  const bottomItems = [
-    { icon: Settings, label: 'Settings' },
-    { icon: User, label: 'Profile' },
+  const navItems = [
+    { view: 'home',            icon: Mic2,  label: 'Native to English' },
+    { view: 'englishToNative', icon: Globe, label: 'English to Native' },
   ];
 
   return (
-    <aside className="sidebar flex flex-col">
-      {/* Brand */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-          <Languages className="w-5 h-5 text-white" />
+    <aside className="sidebar">
+      {/* Logo */}
+      <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center shrink-0 shadow-sm">
+          <Languages className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-xl tracking-tight text-slate-900">TransUI</span>
+        <span className="font-bold text-[15px] text-gray-900 tracking-tight">TransUI</span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-2 mt-4">
-        <p className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Menu</p>
-        
-        {/* Native to English Menu */}
-        <div className="space-y-1">
+      {/* Nav */}
+      <nav className="flex-1 px-3 space-y-0.5">
+        <p className="px-2 mb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Menu</p>
+        {navItems.map(({ view, icon: Icon, label }) => (
           <button
+            key={view}
             onClick={() => {
-              setField('currentView', 'home');
-              setField('recordingMode', null); // Reset mode for selection screen
+              if (state.currentView !== view) {
+                clearAll();
+              }
+              setField('currentView', view);
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
-              state.currentView === 'home' 
-                ? 'bg-blue-50 text-blue-600 font-semibold' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] transition-all duration-150 ${
+              state.currentView === view
+                ? 'bg-gray-900 text-white font-medium shadow-sm'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
             }`}
           >
-            <Languages className="w-5 h-5" />
-            <span className="font-medium text-sm">Native to English</span>
-          </button>
-        </div>
-
-        {/* English to Native Menu Item */}
-        <div className="space-y-1 mt-2">
-          <button
-            onClick={() => {
-              setField('currentView', 'englishToNative');
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
-              state.currentView === 'englishToNative'
-                ? 'bg-blue-50 text-blue-600 font-semibold'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <Globe className="w-5 h-5" />
-            <span className="font-medium text-sm">English to Native</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Bottom section */}
-      <div className="p-4 border-t border-slate-100 space-y-2">
-        {bottomItems.map((item, i) => (
-          <button
-            key={i}
-            className="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="text-sm font-medium">{item.label}</span>
+            <Icon className="w-[15px] h-[15px] shrink-0" />
+            {label}
           </button>
         ))}
-        
-        <div className="pt-4 mt-2">
-          <div className="flex items-center gap-3 px-3 py-3 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-              PC
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate">Prajwal C</p>
-              <p className="text-[10px] text-slate-500 truncate">Pro Account</p>
-            </div>
-            <button className="text-slate-400 hover:text-red-500 transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
+      </nav>
+
+      {/* Bottom */}
+      <div className="px-3 pb-5">
+        <div className="mx-1 mb-3 h-px bg-gray-100" />
+        <button
+          onClick={() => setField('currentView', 'profile')}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 text-[14px] rounded-xl transition-all ${
+            state.currentView === 'profile' || state.currentView === 'settings'
+              ? 'bg-gray-900 text-white font-medium'
+              : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          <User className="w-[15px] h-[15px] shrink-0" />
+          Profile 
+        </button>
+        <div className="mt-3 flex items-center gap-2.5 px-3 py-3 rounded-xl bg-gray-50 border border-gray-100">
+          <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-[11px] shrink-0">PC</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-gray-800 truncate">Prajwal C</p>
+            <p className="text-[11px] text-gray-400 truncate flex items-center gap-1">
+              <Zap className="w-2.5 h-2.5 text-amber-400" />Pro Account
+            </p>
           </div>
+          <button className="text-gray-300 hover:text-red-400 transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>

@@ -42,8 +42,9 @@ class RewriteRequest(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
-    language: str = "en"  # Default to English
-    use_sarvam: bool = False  # Flag to use Sarvam AI (if available)
+    language: str = "en"
+    use_sarvam: bool = False
+    speaker: str = "meera"  # sarvam speaker: meera, pavithra, maitreyi, arvind, amol, amartya, etc.
 
 class EmailRequest(BaseModel):
     text: str
@@ -52,6 +53,8 @@ class EmailRequest(BaseModel):
     tone: str | None = None
     language: str | None = None
     use_sendgrid: bool = False
+    smtp_username: str | None = None   # sender email from frontend
+    smtp_password: str | None = None   # app password from frontend
 
 class SlackRequest(BaseModel):
     text: str
@@ -126,6 +129,9 @@ async def handle_audio_translation(file: UploadFile = File(...)):
         
         # Translate audio to text
         english_transcript = translate_speech_to_text(temp_path, content_type=content_type)
+
+        if not english_transcript or not english_transcript.strip():
+            raise HTTPException(status_code=422, detail="Could not transcribe audio. Please speak clearly and try again.")
         
         return {
             "transcript": english_transcript,
@@ -160,11 +166,9 @@ async def handle_tone_rewrite(request: RewriteRequest):
 
 @app.post("/api/translate-text")
 async def handle_text_translation(request: TranslationRequest):
-    """
-    Translates English text back to native language.
-    """
     try:
-         # Hardcoding hi-IN for native language example, but could be passed dynamically
+        if not request.text or not request.text.strip():
+            raise HTTPException(status_code=400, detail="Text cannot be empty")
         native_translation = translate_text(
             text=request.text, 
             source_language="en-IN", 
@@ -205,32 +209,25 @@ async def handle_text_to_speech(request: TTSRequest):
     temp_audio_path = None
     
     try:
-        logger.info(f"TTS request: language={request.language}, use_sarvam={request.use_sarvam}")
+        logger.info(f"TTS request: language={request.language}, use_sarvam={request.use_sarvam}, speaker={request.speaker}")
         
-        # Use Sarvam AI if requested and available
         if request.use_sarvam:
-            try:
-                from services.tts_service import text_to_speech_sarvam
-                temp_audio_path = text_to_speech_sarvam(
-                    text=request.text,
-                    language=request.language
-                )
-            except Exception as sarvam_error:
-                logger.warning(f"Sarvam TTS failed, falling back to gTTS: {sarvam_error}")
-                # Fallback to gTTS
-                gtts_lang = get_gtts_language_code(request.language)
-                temp_audio_path = text_to_speech_gtts(request.text, gtts_lang)
+            from services.tts_service import text_to_speech_sarvam
+            temp_audio_path = text_to_speech_sarvam(
+                text=request.text,
+                language=request.language,
+                speaker_gender=request.speaker
+            )
+            logger.info(f"Sarvam TTS succeeded with speaker={request.speaker}")
         else:
-            # Use gTTS
             gtts_lang = get_gtts_language_code(request.language)
             temp_audio_path = text_to_speech_gtts(request.text, gtts_lang)
         
         # Return the audio file
         return FileResponse(
             path=temp_audio_path,
-            media_type="audio/mpeg",
-            filename="speech.mp3",
-            background=None  # We'll clean up manually
+            media_type="audio/wav" if request.use_sarvam else "audio/mpeg",
+            filename="speech.wav" if request.use_sarvam else "speech.mp3",
         )
         
     except HTTPException:
@@ -288,7 +285,9 @@ async def handle_send_email(request: EmailRequest):
             subject=request.subject,
             body=plain_text,
             html_body=html_body,
-            use_sendgrid=request.use_sendgrid
+            use_sendgrid=request.use_sendgrid,
+            smtp_username=request.smtp_username,
+            smtp_password=request.smtp_password,
         )
         
         return result

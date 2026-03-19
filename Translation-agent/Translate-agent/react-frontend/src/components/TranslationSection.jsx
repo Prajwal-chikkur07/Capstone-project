@@ -1,21 +1,16 @@
 import { Languages, ChevronDown } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 
 export default function TranslationSection() {
   const { state, setField, setFields, setLoading, showError, TARGET_LANGUAGES } = useApp();
-  const [inputText, setInputText] = useState('');
-
-  // Sync inputText when englishText changes from recording
-  const displayText = state.englishText || inputText;
 
   const handleTranslate = useCallback(async () => {
-    const text = state.englishText || inputText;
-    if (!text) return;
-
+    const text = state.englishText;
+    if (!text?.trim()) return;
     try {
-      setLoading('Translating to Native Language...');
+      setLoading('Translating...');
       const translated = await api.translateText(text, state.selectedLanguage);
       setFields({ nativeTranslation: translated });
       setLoading(null);
@@ -23,49 +18,46 @@ export default function TranslationSection() {
       setLoading(null);
       showError(err.response?.data?.detail || 'Translation error');
     }
-  }, [state.englishText, state.selectedLanguage, inputText, setFields, setLoading, showError]);
+  }, [state.englishText, state.selectedLanguage, setFields, setLoading, showError]);
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-        <span className="text-blue-500">3.</span> English to Native Language
-      </h2>
-
+      {/* Language selector */}
       <div>
-        <p className="text-sm font-medium text-slate-500 mb-2">Select Target Language:</p>
+        <label className="block text-[13px] font-medium text-gray-500 mb-1.5">Target language</label>
         <div className="relative">
           <select
             value={state.selectedLanguage}
             onChange={(e) => setField('selectedLanguage', e.target.value)}
-            className="select-field pr-10"
+            className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] text-gray-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all pr-8"
           >
             {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
-              <option key={code} value={code} className="bg-slate-900">
-                {name}
-              </option>
+              <option key={code} value={code}>{name}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
       </div>
 
-      <textarea
-        value={displayText}
-        onChange={(e) => {
-          setInputText(e.target.value);
-          setField('englishText', e.target.value);
-        }}
-        placeholder="Type or paste English text here..."
-        rows={3}
-        className="input-field resize-none"
-      />
+      {/* Text input */}
+      <div>
+        <label className="block text-[13px] font-medium text-gray-500 mb-1.5">English text</label>
+        <textarea
+          value={state.englishText}
+          onChange={(e) => setField('englishText', e.target.value)}
+          placeholder="Type or paste English text here..."
+          rows={4}
+          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] text-gray-800 placeholder-gray-300 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all resize-none"
+        />
+      </div>
 
       <button
         onClick={handleTranslate}
-        className="btn-primary flex items-center gap-2"
+        disabled={!state.englishText?.trim()}
+        className="flex items-center gap-2 bg-gray-900 text-white rounded-xl px-5 py-2.5 text-[14px] font-semibold hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         <Languages className="w-4 h-4" />
-        Translate to Native
+        Translate
       </button>
     </div>
   );

@@ -40,7 +40,7 @@ def text_to_speech_gtts(text: str, language: str = "en") -> str:
         raise Exception(f"Failed to generate speech: {str(e)}")
 
 
-def text_to_speech_sarvam(text: str, language: str = "en-IN", speaker_gender: str = "Male") -> str:
+def text_to_speech_sarvam(text: str, language: str = "en-IN", speaker_gender: str = "meera") -> str:
     """
     Converts text to speech using Sarvam AI TTS API.
     This is a placeholder for Sarvam AI integration.
@@ -80,19 +80,32 @@ def text_to_speech_sarvam(text: str, language: str = "en-IN", speaker_gender: st
         "pitch": 0,
         "pace": 1.0,
         "loudness": 1.5,
-        "speech_sample_rate": 8000,
+        "speech_sample_rate": 22050,
         "enable_preprocessing": True,
-        "model": "bulbul:v1"
+        "model": "bulbul:v2"
     }
     
-    logger.info(f"Calling Sarvam TTS API for language: {language}")
+    logger.info(f"Calling Sarvam TTS API for language: {language}, speaker: {speaker_gender}")
     response = requests.post(url, json=payload, headers=headers)
     
+    if response.status_code != 200:
+        # retry with v1
+        logger.warning(f"bulbul:v2 failed ({response.status_code}), retrying with v1")
+        payload["model"] = "bulbul:v1"
+        response = requests.post(url, json=payload, headers=headers)
+
     if response.status_code == 200:
-        # Save audio response to temp file
+        import base64, json as _json
+        resp_json = response.json()
+        # Sarvam returns { "audios": ["<base64_wav>", ...] }
+        audio_b64 = resp_json.get("audios", [None])[0]
+        if not audio_b64:
+            raise Exception("Sarvam TTS returned no audio data")
+        audio_bytes = base64.b64decode(audio_b64)
+
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
         temp_path = temp_file.name
-        temp_file.write(response.content)
+        temp_file.write(audio_bytes)
         temp_file.close()
         
         logger.info(f"Sarvam TTS audio generated: {temp_path}")

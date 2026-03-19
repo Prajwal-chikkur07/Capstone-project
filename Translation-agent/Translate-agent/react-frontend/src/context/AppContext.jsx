@@ -23,6 +23,13 @@ const TARGET_LANGUAGES = {
 
 const TONES = ['Email Formal', 'Email Casual', 'Slack', 'LinkedIn', 'WhatsApp Business', 'User Override'];
 
+// Load persisted channel credentials from localStorage
+function loadCredentials() {
+  try {
+    return JSON.parse(localStorage.getItem('channelCredentials') || '{}');
+  } catch { return {}; }
+}
+
 const initialState = {
   currentView: 'home',
   recordingMode: null,
@@ -36,12 +43,16 @@ const initialState = {
   selectedTone: 'Email Formal',
   customTone: '',
   selectedLanguage: 'hi-IN',
+  selectedVoice: null,
+  isSpeaking: false,
   isPlayingEnglish: false,
   isPlayingRewritten: false,
   isPlayingNative: false,
-  loading: null, // null or string message
+  loading: null,
   error: null,
   success: null,
+  // { email: '', emailSubject: '', slackWebhook: '', whatsappPhone: '', linkedinToken: '' }
+  channelCredentials: loadCredentials(),
 };
 
 function reducer(state, action) {
@@ -60,6 +71,9 @@ function reducer(state, action) {
         isPlayingRewritten: false,
         isPlayingNative: false,
       };
+    case 'SAVE_CREDENTIALS':
+      localStorage.setItem('channelCredentials', JSON.stringify(action.credentials));
+      return { ...state, channelCredentials: action.credentials };
     case 'CLEAR_NOTIFICATION':
       return { ...state, error: null, success: null };
     default:
@@ -96,6 +110,10 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_FIELD', field: 'loading', value: msg });
   }, []);
 
+  const saveCredentials = useCallback((credentials) => {
+    dispatch({ type: 'SAVE_CREDENTIALS', credentials });
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -106,6 +124,7 @@ export function AppProvider({ children }) {
         showError,
         showSuccess,
         setLoading,
+        saveCredentials,
         RECORDING_MODES,
         TARGET_LANGUAGES,
         TONES,
