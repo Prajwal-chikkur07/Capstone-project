@@ -77,8 +77,8 @@ export default function RecordingControls() {
         if (blob.size === 0) { resolve(); return; }
         try {
           setLoading('Transcribing...');
-          const transcript = await api.translateAudioFromBlob(blob);
-          setFields({ englishText: transcript });
+          const result = await api.translateAudioFromBlob(blob);
+          setFields({ englishText: result.transcript, confidenceScore: result.confidence ?? null });
           setLoading(null);
         } catch (err) {
           showError(err.response?.data?.detail || err.message);
@@ -97,8 +97,8 @@ export default function RecordingControls() {
     try {
       clearAll();
       setLoading('Transcribing audio file...');
-      const transcript = await api.translateAudioFromBlob(file);
-      setFields({ englishText: transcript });
+      const result = await api.translateAudioFromBlob(file);
+      setFields({ englishText: result.transcript, confidenceScore: result.confidence ?? null });
       setLoading(null);
     } catch (err) {
       showError(err.response?.data?.detail || err.message);

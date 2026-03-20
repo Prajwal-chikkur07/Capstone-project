@@ -2,9 +2,139 @@
 
 * { box-sizing: border-box; }
 
+:root {
+  --bg: #f8f8f8;
+  --surface: #ffffff;
+  --border: #ececec;
+  --text: #1a1a1a;
+  --text-muted: #9ca3af;
+  --sidebar-bg: #ffffff;
+}
+
+.dark {
+  --bg: #111113;
+  --surface: #1c1c1f;
+  --border: #2a2a2e;
+  --text: #f0f0f0;
+  --text-muted: #6b7280;
+  --sidebar-bg: #161618;
+}
+
+/* ── Dark mode overrides ── */
+/* These override Tailwind's hardcoded bg/text/border utilities when .dark is on <html> */
+
+.dark body,
+.dark .main-content {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Page backgrounds */
+.dark .min-h-screen,
+.dark [class*="bg-\\[#f8f8f8\\]"] {
+  background-color: var(--bg) !important;
+}
+
+/* White surfaces → dark surface */
+.dark .bg-white {
+  background-color: var(--surface) !important;
+}
+
+/* Gray-50 surfaces */
+.dark .bg-gray-50 {
+  background-color: #1e1e22 !important;
+}
+
+/* Gray-100 surfaces */
+.dark .bg-gray-100 {
+  background-color: #26262b !important;
+}
+
+/* Borders */
+.dark .border-gray-100 {
+  border-color: var(--border) !important;
+}
+.dark .border-gray-200 {
+  border-color: #333338 !important;
+}
+.dark .border-gray-300 {
+  border-color: #3f3f46 !important;
+}
+
+/* Text colors */
+.dark .text-gray-900 {
+  color: #f0f0f0 !important;
+}
+.dark .text-gray-800 {
+  color: #e0e0e0 !important;
+}
+.dark .text-gray-700 {
+  color: #c8c8cc !important;
+}
+.dark .text-gray-600 {
+  color: #a0a0a8 !important;
+}
+.dark .text-gray-500 {
+  color: #808088 !important;
+}
+.dark .text-gray-400 {
+  color: #606068 !important;
+}
+.dark .text-gray-300 {
+  color: #505058 !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #1e1e22 !important;
+}
+.dark .hover\:bg-gray-100:hover {
+  background-color: #26262b !important;
+}
+.dark .hover\:bg-gray-200:hover {
+  background-color: #2e2e34 !important;
+}
+
+/* Inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1e1e22 !important;
+  color: #e0e0e0 !important;
+  border-color: #333338 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #505058 !important;
+}
+
+/* Top bars / headers */
+.dark .border-b {
+  border-bottom-color: var(--border) !important;
+}
+
+/* Dividers */
+.dark .bg-gray-100.h-px,
+.dark .h-px.bg-gray-100 {
+  background-color: var(--border) !important;
+}
+
+/* Active nav stays dark-on-dark (already dark bg-gray-900) */
+.dark .bg-gray-900 {
+  background-color: #0a0a0c !important;
+}
+
+/* Transcript / rewritten text areas */
+.dark .bg-amber-50 {
+  background-color: #1f1a0e !important;
+}
+.dark .border-amber-100 {
+  border-color: #3a2e10 !important;
+}
+
 body {
-  background: #f8f8f8;
-  color: #1a1a1a;
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
@@ -13,8 +143,8 @@ body {
 }
 
 .sidebar {
-  background: #fff;
-  border-right: 1px solid #ececec;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
   height: 100vh;
   width: 220px;
   position: fixed;
@@ -27,11 +157,11 @@ body {
 .main-content {
   margin-left: 220px;
   min-height: 100vh;
-  background: #f8f8f8;
+  background: var(--bg);
 }
 
 @media (max-width: 768px) {
-  .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #ececec; }
+  .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
   .main-content { margin-left: 0; }
 }
 
@@ -52,4 +182,12 @@ body {
 @keyframes bar-bounce {
   0%, 100% { transform: scaleY(0.4); }
   50%       { transform: scaleY(1); }
+}
+
+.cmd-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 15vh;
 }

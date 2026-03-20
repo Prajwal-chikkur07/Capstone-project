@@ -8,11 +8,12 @@ import shutil
 import aiofiles
 
 from services.sarvam_client import translate_speech_to_text, translate_text
-from services.gemini_client import rewrite_text_tone
+from services.gemini_client import rewrite_text_tone, analyze_sentiment, suggest_tone, summarize_transcript, generate_meeting_notes, answer_question, back_translate_check, get_readability_score, get_tone_confidence, vision_translate_image
 from services.tts_service import text_to_speech_gtts, get_gtts_language_code
 from services.email_service import send_email, format_email_body
 from services.slack_service import send_to_slack, format_slack_message
 from services.linkedin_service import share_to_linkedin, format_linkedin_post, mock_linkedin_share
+from services.translation_cache import get_stats, clear_cache
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,6 +40,7 @@ class RewriteRequest(BaseModel):
     text: str
     tone: str
     user_override: str | None = None
+    custom_vocabulary: list | None = None
 
 class TTSRequest(BaseModel):
     text: str
@@ -127,14 +129,17 @@ async def handle_audio_translation(file: UploadFile = File(...)):
         
         logger.info(f"File saved successfully: {temp_path}, size: {file_size / 1024:.2f}KB")
         
-        # Translate audio to text
-        english_transcript = translate_speech_to_text(temp_path, content_type=content_type)
+        # Translate audio to text — returns { transcript, confidence }
+        result = translate_speech_to_text(temp_path, content_type=content_type)
+        english_transcript = result.get("transcript", "")
+        confidence = result.get("confidence", None)
 
         if not english_transcript or not english_transcript.strip():
             raise HTTPException(status_code=422, detail="Could not transcribe audio. Please speak clearly and try again.")
         
         return {
             "transcript": english_transcript,
+            "confidence": confidence,
             "file_size": file_size,
             "filename": original_filename
         }
@@ -158,7 +163,8 @@ async def handle_tone_rewrite(request: RewriteRequest):
         rewritten_text = rewrite_text_tone(
             text=request.text,
             tone_option=request.tone,
-            user_override=request.user_override
+            user_override=request.user_override,
+            custom_vocabulary=request.custom_vocabulary,
         )
         return {"rewritten_text": rewritten_text}
     except Exception as e:
@@ -406,6 +412,244 @@ async def handle_send_linkedin(request: LinkedInRequest):
     except Exception as e:
         logger.error(f"LinkedIn share error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/health")
+async def health_check():
+    """Lightweight health check — always returns immediately."""
+    return {"status": "ok"}
+
+
+@app.get("/api/cache/stats")
+async def handle_cache_stats():
+    """Returns translation cache statistics — total entries, hits, breakdown by language."""
+    return get_stats()
+
+
+@app.delete("/api/cache/clear")
+async def handle_cache_clear(lang: str | None = None):
+    """
+    Clears the translation cache.
+    Pass ?lang=hi-IN to clear only one language, or no param to clear all.
+    """
+    deleted = clear_cache(lang)
+    return {"status": "cleared", "deleted": deleted, "lang": lang or "all"}
+
+
+class SentimentRequest(BaseModel):
+    text: str
+
+class ToneSuggestRequest(BaseModel):
+    text: str
+
+class SummarizeRequest(BaseModel):
+    text: str
+
+class MeetingNotesRequest(BaseModel):
+    text: str
+
+class QARequest(BaseModel):
+    transcript: str
+    question: str
+
+class ShareLinkRequest(BaseModel):
+    text: str
+    title: str = ""
+
+class ExportRequest(BaseModel):
+    entries: list
+    format: str = "csv"  # csv or txt
+
+@app.post("/api/analyze-sentiment")
+async def handle_sentiment(request: SentimentRequest):
+    """Returns sentiment analysis: positive/neutral/negative with score and summary."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        return analyze_sentiment(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/suggest-tone")
+async def handle_suggest_tone(request: ToneSuggestRequest):
+    """Returns the best tone for the given text."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        tone = suggest_tone(request.text)
+        return {"suggested_tone": tone}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/export")
+async def handle_export(request: ExportRequest):
+    """Exports history entries as CSV or plain text."""
+    import io, csv
+    from fastapi.responses import StreamingResponse
+    if request.format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Timestamp", "Language", "Confidence", "Transcript"])
+        for e in request.entries:
+            conf = f"{round(e.get('confidence', 0) * 100)}%" if e.get('confidence') else "N/A"
+            writer.writerow([e.get("timestamp", ""), e.get("lang", ""), conf, e.get("text", "")])
+        output.seek(0)
+        return StreamingResponse(io.BytesIO(output.getvalue().encode()),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=transcripts.csv"})
+    else:
+        lines = []
+        for e in request.entries:
+            lines.append(f"[{e.get('timestamp','')}] ({e.get('lang','')})")
+            lines.append(e.get("text", ""))
+            lines.append("")
+        content = "\n".join(lines)
+        return StreamingResponse(io.BytesIO(content.encode()),
+            media_type="text/plain",
+            headers={"Content-Disposition": "attachment; filename=transcripts.txt"})
+
+
+# ── In-memory share link store (UUID → {text, title, created_at}) ──
+import uuid, time
+_share_store: dict = {}
+
+@app.post("/api/share/create")
+async def create_share_link(request: ShareLinkRequest):
+    """Creates a shareable read-only link for a transcript/message."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    link_id = str(uuid.uuid4())[:8]
+    _share_store[link_id] = {"text": request.text, "title": request.title, "created_at": time.time()}
+    return {"link_id": link_id, "url": f"/share/{link_id}"}
+
+@app.get("/api/share/{link_id}")
+async def get_share_link(link_id: str):
+    """Returns the shared content for a given link ID."""
+    item = _share_store.get(link_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Share link not found or expired")
+    return item
+
+@app.post("/api/summarize")
+async def handle_summarize(request: SummarizeRequest):
+    """Returns a 2-3 sentence TL;DR of the transcript."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        return {"summary": summarize_transcript(request.text)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/meeting-notes")
+async def handle_meeting_notes(request: MeetingNotesRequest):
+    """Returns structured meeting notes from a transcript."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        return generate_meeting_notes(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/qa")
+async def handle_qa(request: QARequest):
+    """Answers a question about the transcript."""
+    if not request.transcript.strip() or not request.question.strip():
+        raise HTTPException(status_code=400, detail="Transcript and question are required")
+    try:
+        return {"answer": answer_question(request.transcript, request.question)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class BackTranslateRequest(BaseModel):
+    text: str
+    source_lang: str = "hi-IN"
+
+class ReadabilityRequest(BaseModel):
+    text: str
+
+class ToneConfidenceRequest(BaseModel):
+    text: str
+    tone: str
+
+class MultiTranslateRequest(BaseModel):
+    text: str
+    languages: list  # list of lang codes
+
+@app.post("/api/back-translate")
+async def handle_back_translate(request: BackTranslateRequest):
+    """Translates native text back to English and rates accuracy."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        return back_translate_check(request.text, request.source_lang)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/readability")
+async def handle_readability(request: ReadabilityRequest):
+    """Returns Flesch-Kincaid readability score for the given text."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    return get_readability_score(request.text)
+
+@app.post("/api/tone-confidence")
+async def handle_tone_confidence(request: ToneConfidenceRequest):
+    """Rates how well the rewritten text matches the intended tone."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    try:
+        return get_tone_confidence(request.text, request.tone)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/multi-translate")
+async def handle_multi_translate(request: MultiTranslateRequest):
+    """Translates text into multiple languages simultaneously."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+    if not request.languages:
+        raise HTTPException(status_code=400, detail="At least one language required")
+    results = {}
+    for lang in request.languages[:5]:  # cap at 5
+        try:
+            results[lang] = translate_text(request.text, source_language="en-IN", target_language=lang)
+        except Exception as e:
+            results[lang] = f"[Error: {str(e)[:60]}]"
+    return {"translations": results}
+
+
+@app.post("/api/vision-translate")
+async def handle_vision_translate(
+    file: UploadFile = File(...),
+    target_language: str = Form("hi-IN"),
+):
+    """
+    Accepts an image (PNG/JPG/WEBP), detects all text regions using Gemini Vision,
+    translates each region to target_language, and returns bounding box + translated text.
+    """
+    logger = logging.getLogger(__name__)
+
+    ALLOWED_MIME = {"image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"}
+    content_type = file.content_type or "image/jpeg"
+    if content_type not in ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail=f"Unsupported image type: {content_type}. Use PNG, JPG, or WEBP.")
+
+    MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
+    image_bytes = await file.read()
+    if len(image_bytes) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=413, detail="Image too large. Maximum 10MB.")
+
+    logger.info(f"Vision translate: {file.filename}, {len(image_bytes)} bytes → {target_language}")
+
+    try:
+        regions = vision_translate_image(image_bytes, content_type, target_language)
+        return {"regions": regions, "count": len(regions)}
+    except Exception as e:
+        logger.error(f"Vision translate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
