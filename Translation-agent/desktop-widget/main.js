@@ -34,6 +34,7 @@ function startControlServer() {
       isBubbleEnabled = false;
       if (floatingIcon) floatingIcon.hide();
       if (isPanelOpen) hidePanel();
+      if (panelWindow) panelWindow.hide();
       res.writeHead(200);
       res.end(JSON.stringify({ enabled: false }));
 
@@ -136,6 +137,7 @@ function hidePanel() {
 }
 
 function togglePanel() {
+  if (!isBubbleEnabled) return;  // respect the enabled state
   if (isPanelOpen) hidePanel();
   else showPanel();
 }
@@ -157,7 +159,7 @@ app.on('window-all-closed', (e) => e.preventDefault()); // keep running
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
-ipcMain.on('toggle-panel', () => togglePanel());
+ipcMain.on('toggle-panel', () => { if (isBubbleEnabled) togglePanel(); });
 ipcMain.on('hide-panel', () => hidePanel());
 
 // Bubble drag — update position
