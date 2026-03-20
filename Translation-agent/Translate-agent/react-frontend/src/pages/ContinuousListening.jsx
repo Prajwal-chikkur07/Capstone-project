@@ -71,7 +71,7 @@ function ChannelModal({ channel, text, onClose }) {
   const handleSend = async () => {
     setStatus('sending');
     try {
-      if (channel.id === 'email') { window.open('mailto:' + toEmail.trim() + '?subject=' + encodeURIComponent('Message from Saaras') + '&body=' + encodeURIComponent(text), '_blank'); setStatus('ok'); return; }
+      if (channel.id === 'email') { window.open('mailto:' + toEmail.trim() + '?subject=' + encodeURIComponent('Message from SeedlingSpeaks') + '&body=' + encodeURIComponent(text), '_blank'); setStatus('ok'); return; }
       if (channel.id === 'slack') await api.sendToSlack({ text, webhookUrl: creds.slackWebhook });
       if (channel.id === 'linkedin') await api.shareToLinkedIn({ text });
       if (channel.id === 'whatsapp') { window.open('https://wa.me/' + creds.whatsappPhone.replace(/\D/g, '') + '?text=' + encodeURIComponent(text), '_blank'); setStatus('ok'); return; }

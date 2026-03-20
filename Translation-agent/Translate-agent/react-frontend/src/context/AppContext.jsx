@@ -41,8 +41,13 @@ function loadDictionary() {
   catch { return []; }
 }
 
+function loadAuth() {
+  try { return JSON.parse(localStorage.getItem('saaras_auth') || 'null'); } catch { return null; }
+}
+
 const initialState = {
-  currentView: 'landing',
+  currentView: 'splash',
+  authUser: loadAuth(), // { name, email } or null
   recordingMode: null,
   isRecording: false,
   isPushToTalkPressed: false,
@@ -80,6 +85,14 @@ const initialState = {
 
 function reducer(state, action) {
   switch (action.type) {
+    case 'LOGIN':
+      localStorage.setItem('saaras_auth', JSON.stringify(action.user));
+      // Also persist name to userProfile for sidebar display
+      localStorage.setItem('userProfile', JSON.stringify({ name: action.user.name, email: action.user.email }));
+      return { ...state, authUser: action.user };
+    case 'LOGOUT':
+      localStorage.removeItem('saaras_auth');
+      return { ...state, authUser: null, currentView: 'landing' };
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'SET_FIELDS':
@@ -236,6 +249,8 @@ export function AppProvider({ children }) {
   const clearNotificationLog = useCallback(() => dispatch({ type: 'CLEAR_NOTIFICATION_LOG' }), []);
   const toggleFocusMode = useCallback(() => dispatch({ type: 'TOGGLE_FOCUS_MODE' }), []);
   const setOnline = useCallback((value) => dispatch({ type: 'SET_ONLINE', value }), []);
+  const login = useCallback((user) => dispatch({ type: 'LOGIN', user }), []);
+  const logout = useCallback(() => dispatch({ type: 'LOGOUT' }), []);
 
   return (
     <AppContext.Provider
@@ -263,6 +278,8 @@ export function AppProvider({ children }) {
         clearNotificationLog,
         toggleFocusMode,
         setOnline,
+        login,
+        logout,
         RECORDING_MODES,
         TARGET_LANGUAGES,
         TONES,

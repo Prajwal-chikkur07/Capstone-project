@@ -6,9 +6,11 @@ import Notifications from './components/Notifications';
 import CommandPalette from './components/CommandPalette';
 import Onboarding from './components/Onboarding';
 import NotificationCenter from './components/NotificationCenter';
+import SplashScreen from './components/SplashScreen';
 import Home from './pages/Home';
 import LandingPage from './pages/LandingPage';
 import ContinuousListening from './pages/ContinuousListening';
+import AuthPage from './pages/AuthPage';
 import EnglishToNativeView from './pages/EnglishToNativeView';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
@@ -21,9 +23,12 @@ import VisionTranslate from './pages/VisionTranslate';
 import { useApp } from './context/AppContext';
 import * as api from './services/api';
 
+import AppHome from './pages/AppHome';
+
 function MainContent() {
   const { state } = useApp();
   if (state.currentView === 'landing')         return <LandingPage />;
+  if (state.currentView === 'appHome')         return <AppHome />;
   if (state.currentView === 'continuous')      return <ContinuousListening />;
   if (state.currentView === 'settings')        return <Settings />;
   if (state.currentView === 'profile')         return <Profile />;
@@ -34,7 +39,8 @@ function MainContent() {
   if (state.currentView === 'share')           return <ShareView />;
   if (state.currentView === 'vision')          return <VisionTranslate />;
   if (state.currentView === 'englishToNative') return <EnglishToNativeView />;
-  return <Home />;
+  if (state.currentView === 'home')            return <Home />;
+  return <AppHome />;
 }
 
 function AppShell() {
@@ -57,6 +63,14 @@ function AppShell() {
     return () => clearInterval(pollRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Public pages — no auth required
+  if (state.currentView === 'landing') return <LandingPage />;
+  if (state.currentView === 'splash')  return <SplashScreen />;
+  if (state.currentView === 'auth')    return <AuthPage />;
+
+  // All other views require login
+  if (!state.authUser) return <LandingPage />;
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>

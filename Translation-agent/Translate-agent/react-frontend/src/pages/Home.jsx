@@ -531,13 +531,14 @@ export default function Home() {
           </button>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[12px] text-gray-400 font-medium">Saaras v2.5</span>
+            <span className="text-[12px] text-gray-400 font-medium">SeedlingSpeaks v2.5</span>
           </div>
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col px-10 pt-10 pb-40 max-w-3xl w-full mx-auto">
+
         {editableTranscript ? (
           <div className="animate-fade-in-blur">
 
@@ -900,11 +901,12 @@ export default function Home() {
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
-              <Mic className="w-6 h-6 text-gray-300" />
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+              <Mic className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-gray-300 font-medium">Start speaking to see transcript</p>
+            <p className="text-[15px] text-gray-400 font-medium">Press <span className="text-gray-700 font-semibold">Start Speaking</span> to begin</p>
+            <p className="text-[12px] text-gray-300">Your transcript will appear here</p>
           </div>
         )}
       </div>

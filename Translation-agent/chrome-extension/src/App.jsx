@@ -292,27 +292,28 @@ export default function App() {
     if (!content) return null;
     const isPlaying = playingType === type;
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-white/40">{label}</span>
-          <div className="flex items-center gap-1">
-            <button onClick={() => copyText(content)} className="p-1.5 rounded-md hover:bg-white/10 text-white/40 hover:text-white" title="Copy">
-              <Copy className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{label}</span>
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => copyText(content)} title="Copy"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+              <Copy className="w-3 h-3" />
             </button>
-            <button onClick={() => insertIntoPage(content)} className="p-1.5 rounded-md hover:bg-white/10 text-white/40 hover:text-white" title="Insert into page">
-              <ClipboardPaste className="w-3.5 h-3.5" />
+            <button onClick={() => insertIntoPage(content)} title="Insert into page"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+              <ClipboardPaste className="w-3 h-3" />
             </button>
             {language && type && (
-              <button onClick={isPlaying ? stopTTS : () => playTTS(content, language, type)}
-                className={`p-1.5 rounded-md transition-colors ${isPlaying ? 'bg-red-500/20 text-red-400' : 'hover:bg-blue-500/10 text-blue-400'}`}
-                title={isPlaying ? 'Stop' : 'Listen'}>
-                {isPlaying ? <StopCircle className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              <button onClick={isPlaying ? stopTTS : () => playTTS(content, language, type)} title={isPlaying ? 'Stop' : 'Listen'}
+                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${isPlaying ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}>
+                {isPlaying ? <StopCircle className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
               </button>
             )}
           </div>
         </div>
-        <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-          <p className="text-xs text-white/85 leading-relaxed whitespace-pre-wrap">{content}</p>
+        <div className="card p-2.5">
+          <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap">{content}</p>
         </div>
       </div>
     );
@@ -326,149 +327,107 @@ export default function App() {
   ];
 
   return (
-    <div className="w-[400px] min-h-[500px] max-h-[600px] overflow-y-auto bg-slate-950 flex flex-col relative">
+    <div className="w-[380px] min-h-[520px] max-h-[620px] overflow-y-auto bg-[#f8f8f8] flex flex-col relative">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 border-b border-white/10 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-              <Languages className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm font-bold text-white">Voice Translation</span>
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-[#ececec] bg-white">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <Languages className="w-3.5 h-3.5 text-white" />
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={grabSelection} className="p-1.5 rounded-md hover:bg-white/10 text-white/50 hover:text-white" title="Grab selected text">
-              <ClipboardPaste className="w-4 h-4" />
-            </button>
-            <button onClick={clearAll} className="p-1.5 rounded-md hover:bg-white/10 text-white/50 hover:text-white" title="Clear all">
-              <Trash2 className="w-4 h-4" />
-            </button>
+          <div>
+            <p className="text-[13px] font-bold text-gray-900 leading-tight">SeedlingSpeaks</p>
+            <p className="text-[10px] text-gray-400">AI Translation</p>
           </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={grabSelection} title="Grab selected text"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+            <ClipboardPaste className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={clearAll} title="Clear all"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/5 bg-slate-900/50">
+      <div className="flex px-3 pt-2 pb-2 gap-1 bg-white border-b border-[#ececec]">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
-              activeTab === id ? 'text-blue-400 border-blue-400 bg-blue-500/5' : 'text-white/40 border-transparent hover:text-white/60'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+              activeTab === id ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
             }`}>
-            <Icon className="w-3.5 h-3.5" />
-            {label}
+            <Icon className="w-3 h-3" />{label}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <div className="flex-1 p-3 space-y-3 overflow-y-auto">
 
         {/* DOM / Page Tab */}
         {activeTab === 'dom' && (
           <>
             {/* ON/OFF Toggle */}
-            <div className="glass-card p-4">
+            <div className="card p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">Page Translation Mode</p>
-                  <p className="text-[10px] text-white/40 mt-0.5">
-                    {domActive ? 'Active — floating toolbar on page' : 'Inactive — turn on to translate page content'}
+                  <p className="text-[12px] font-semibold text-gray-800">Page Translation</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {domActive ? 'Active — floating toolbar visible' : 'Off — enable to translate page'}
                   </p>
                 </div>
-                <button
-                  onClick={toggleDomMode}
-                  className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
-                    domActive
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/30'
-                      : 'bg-white/10'
-                  }`}
-                >
-                  <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-300 ${
-                    domActive ? 'left-[30px]' : 'left-0.5'
-                  }`} />
+                <button onClick={toggleDomMode}
+                  className={`relative w-11 h-6 rounded-full transition-all duration-200 ${domActive ? 'bg-gray-900' : 'bg-gray-200'}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${domActive ? 'left-[22px]' : 'left-0.5'}`} />
                 </button>
               </div>
             </div>
 
             {/* Language selector for DOM translation */}
             <div>
-              <p className="text-xs font-medium text-white/40 mb-1.5">Target Language:</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Target Language</p>
               <div className="relative">
-                <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="select-field pr-8">
+                <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="select-field">
                   {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
-                    <option key={code} value={code} className="bg-slate-900">{name}</option>
+                    <option key={code} value={code}>{name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
             </div>
 
             {/* DOM Action Buttons */}
-            <div className="space-y-2">
-              <button
-                onClick={translateAllPage}
-                disabled={!domActive}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                  domActive
-                    ? 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-blue-300'
-                    : 'bg-white/3 border-white/5 text-white/20 cursor-not-allowed'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${domActive ? 'bg-blue-500/20' : 'bg-white/5'}`}>
-                  <FileText className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold">Translate Entire Page</p>
-                  <p className="text-[10px] opacity-60">Translates all visible text on the page</p>
-                </div>
-              </button>
-
-              <button
-                onClick={translateSelection}
-                disabled={!domActive}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                  domActive
-                    ? 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20 text-purple-300'
-                    : 'bg-white/3 border-white/5 text-white/20 cursor-not-allowed'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${domActive ? 'bg-purple-500/20' : 'bg-white/5'}`}>
-                  <MousePointerClick className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold">Translate Selected Text</p>
-                  <p className="text-[10px] opacity-60">Translates your current text selection</p>
-                </div>
-              </button>
-
-              <button
-                onClick={stopTranslation}
-                disabled={!domActive}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                  domActive
-                    ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 text-red-300'
-                    : 'bg-white/3 border-white/5 text-white/20 cursor-not-allowed'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${domActive ? 'bg-red-500/20' : 'bg-white/5'}`}>
-                  <RotateCcw className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold">Stop Translation</p>
-                  <p className="text-[10px] opacity-60">Restore all text to original</p>
-                </div>
-              </button>
+            <div className="space-y-1.5">
+              {[
+                { fn: translateAllPage,   icon: FileText,          label: 'Translate Entire Page', sub: 'Translates all visible text'    },
+                { fn: translateSelection, icon: MousePointerClick, label: 'Translate Selection',   sub: 'Translates your text selection' },
+                { fn: stopTranslation,    icon: RotateCcw,         label: 'Restore Original',      sub: 'Remove all translations'        },
+              ].map(({ fn, icon: Icon, label, sub }) => (
+                <button key={label} onClick={fn} disabled={!domActive}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all text-left ${
+                    domActive ? 'bg-white border-[#ececec] hover:border-gray-300 hover:shadow-sm' : 'bg-gray-50 border-[#ececec] opacity-40 cursor-not-allowed'
+                  }`}>
+                  <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Icon className="w-3.5 h-3.5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-800">{label}</p>
+                    <p className="text-[10px] text-gray-400">{sub}</p>
+                  </div>
+                </button>
+              ))}
             </div>
 
             {/* Info */}
             {domActive && (
-              <div className="glass-card p-3 space-y-2">
-                <p className="text-[10px] font-semibold text-white/50">When ON:</p>
-                <ul className="text-[10px] text-white/40 space-y-1 list-disc pl-3.5">
-                  <li>Select text on any page to see Translate / Restyle / Copy buttons</li>
-                  <li>Use <strong>Pick</strong> mode for sites where text can't be selected (WhatsApp, etc.) — click any element to translate it</li>
-                  <li>Use <strong>All</strong> to translate every text block on the page</li>
-                  <li>Use <strong>Reset</strong> to remove all translations</li>
+              <div className="card p-3 space-y-1.5">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Tips</p>
+                <ul className="text-[10px] text-gray-400 space-y-1 list-disc pl-3.5">
+                  <li>Select text on any page to see translate/restyle buttons</li>
+                  <li>Use <strong className="text-gray-600">All</strong> to translate every text block</li>
+                  <li>Use <strong className="text-gray-600">Restore</strong> to remove all translations</li>
                 </ul>
               </div>
             )}
@@ -481,71 +440,70 @@ export default function App() {
             <div className="flex gap-1.5">
               {MODES.map(({ value, label, icon: Icon }) => (
                 <button key={value} onClick={() => { setMode(value); clearAll(); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs transition-all ${
-                    mode === value ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/50 border border-transparent hover:bg-white/10'
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+                    mode === value ? 'bg-gray-900 text-white' : 'bg-white text-gray-400 border border-[#ececec] hover:text-gray-700 hover:border-gray-300'
                   }`}>
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{label}</span>
+                  <Icon className="w-3 h-3" />{label}
                 </button>
               ))}
             </div>
 
-            <div className="flex flex-col items-center gap-3 py-2">
+            <div className="flex flex-col items-center gap-3 py-3">
               {mode === 'pushToTalk' && (
                 <>
                   <button onMouseDown={handlePTTDown} onMouseUp={handlePTTUp}
                     onMouseLeave={() => { if (isPTTPressed) handlePTTUp(); }}
                     onTouchStart={(e) => { e.preventDefault(); handlePTTDown(); }}
                     onTouchEnd={(e) => { e.preventDefault(); handlePTTUp(); }}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                      isPTTPressed ? 'bg-red-500 pulse-recording scale-110' : 'bg-gradient-to-br from-blue-500 to-purple-600 hover:scale-105'
+                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                      isPTTPressed ? 'bg-red-500 pulse-recording scale-110' : 'bg-gray-900 hover:bg-gray-700 hover:scale-105'
                     }`}>
-                    {isPTTPressed ? <Mic className="w-7 h-7 text-white" /> : <MicOff className="w-7 h-7 text-white" />}
+                    {isPTTPressed ? <Mic className="w-6 h-6 text-white" /> : <MicOff className="w-6 h-6 text-white" />}
                   </button>
-                  <p className={`text-xs ${isPTTPressed ? 'text-red-400 font-semibold' : 'text-white/40'}`}>
-                    {isPTTPressed ? 'Recording... Release to stop' : 'Hold to record'}
+                  <p className={`text-[11px] font-medium ${isPTTPressed ? 'text-red-500' : 'text-gray-400'}`}>
+                    {isPTTPressed ? 'Recording… release to stop' : 'Hold to record'}
                   </p>
                 </>
               )}
               {mode === 'continuous' && (
                 <>
                   <button onClick={toggleContinuous}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                      isRecording ? 'bg-red-500 pulse-recording' : 'bg-gradient-to-br from-green-500 to-emerald-600 hover:scale-105'
+                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                      isRecording ? 'bg-red-500 pulse-recording' : 'bg-gray-900 hover:bg-gray-700 hover:scale-105'
                     }`}>
-                    {isRecording ? <Square className="w-6 h-6 text-white" /> : <Ear className="w-7 h-7 text-white" />}
+                    {isRecording ? <Square className="w-5 h-5 text-white" /> : <Ear className="w-6 h-6 text-white" />}
                   </button>
-                  <p className={`text-xs ${isRecording ? 'text-green-400 font-semibold' : 'text-white/40'}`}>
-                    {isRecording ? 'Listening... Tap to stop' : 'Tap to listen'}
+                  <p className={`text-[11px] font-medium ${isRecording ? 'text-red-500' : 'text-gray-400'}`}>
+                    {isRecording ? 'Listening… tap to stop' : 'Tap to start'}
                   </p>
                 </>
               )}
               {mode === 'fileUpload' && (
                 <>
                   <label className="cursor-pointer">
-                    <div className="flex items-center gap-2 btn-primary px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600">
-                      <Upload className="w-4 h-4" /> <span>Select Audio File</span>
+                    <div className="btn-primary flex items-center gap-2 px-5 py-2.5">
+                      <Upload className="w-3.5 h-3.5" /> Select Audio File
                     </div>
                     <input type="file" accept=".mp3,.wav,.m4a,.webm,.ogg,.flac" onChange={handleFileUpload} className="hidden" />
                   </label>
-                  <p className="text-[10px] text-white/30">MP3, WAV, M4A, WebM, OGG, FLAC</p>
+                  <p className="text-[10px] text-gray-400">MP3, WAV, M4A, WebM, OGG, FLAC</p>
                 </>
               )}
             </div>
 
-            <OutputBox label="Translated English:" content={englishText} language="en" type="english" />
-            <OutputBox label="Styled Text:" content={rewrittenText} language="en" type="rewritten" />
+            <OutputBox label="Translated English" content={englishText} language="en" type="english" />
+            <OutputBox label="Styled Text" content={rewrittenText} language="en" type="rewritten" />
 
             {rewrittenText && (
-              <div className="flex gap-2 justify-center">
-                <button onClick={() => setModal('email')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20">
-                  <Mail className="w-3.5 h-3.5" /> Email
+              <div className="flex gap-1.5 justify-center">
+                <button onClick={() => setModal('email')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#ececec] text-gray-500 hover:text-gray-800 hover:border-gray-300 text-[11px] font-medium transition-all">
+                  <Mail className="w-3 h-3" /> Email
                 </button>
-                <button onClick={() => setModal('slack')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs hover:bg-purple-500/20">
-                  <MessageSquare className="w-3.5 h-3.5" /> Slack
+                <button onClick={() => setModal('slack')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#ececec] text-gray-500 hover:text-gray-800 hover:border-gray-300 text-[11px] font-medium transition-all">
+                  <MessageSquare className="w-3 h-3" /> Slack
                 </button>
-                <button onClick={() => setModal('linkedin')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs hover:bg-blue-500/20">
-                  <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+                <button onClick={() => setModal('linkedin')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#ececec] text-gray-500 hover:text-gray-800 hover:border-gray-300 text-[11px] font-medium transition-all">
+                  <Linkedin className="w-3 h-3" /> LinkedIn
                 </button>
               </div>
             )}
@@ -556,31 +514,28 @@ export default function App() {
         {activeTab === 'tone' && (
           <>
             <div className="relative">
-              <select value={selectedTone} onChange={(e) => handleToneChange(e.target.value)} className="select-field pr-8">
-                {TONES.map((t) => <option key={t} value={t} className="bg-slate-900">{t}</option>)}
+              <select value={selectedTone} onChange={(e) => handleToneChange(e.target.value)} className="select-field">
+                {TONES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
             </div>
-
             {selectedTone === 'User Override' && (
               <div className="space-y-2">
                 <input type="text" value={customTone} onChange={(e) => setCustomTone(e.target.value)}
                   placeholder="e.g. Formal with bullet points" className="input-field" />
-                <button onClick={applyCustomTone} className="btn-primary flex items-center gap-1.5 text-xs">
-                  <Sparkles className="w-3.5 h-3.5" /> Apply Custom Tone
+                <button onClick={applyCustomTone} className="btn-primary flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3" /> Apply Custom Tone
                 </button>
               </div>
             )}
-
             <textarea value={inputText} onChange={(e) => { setInputText(e.target.value); setEnglishText(e.target.value); }}
               placeholder="Paste or type English text here..." rows={4} className="input-field resize-none" />
-
             {englishText && !rewrittenText && (
-              <button onClick={() => handleToneChange(selectedTone)} className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs">
-                <Sparkles className="w-3.5 h-3.5" /> Apply Tone
+              <button onClick={() => handleToneChange(selectedTone)} className="btn-primary w-full flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3" /> Apply Tone
               </button>
             )}
-            <OutputBox label="Styled Text:" content={rewrittenText} language="en" type="rewritten" />
+            <OutputBox label="Styled Text" content={rewrittenText} language="en" type="rewritten" />
           </>
         )}
 
@@ -588,31 +543,29 @@ export default function App() {
         {activeTab === 'translate' && (
           <>
             <div className="relative">
-              <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="select-field pr-8">
+              <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="select-field">
                 {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
-                  <option key={code} value={code} className="bg-slate-900">{name}</option>
+                  <option key={code} value={code}>{name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
             </div>
-
             <textarea value={inputText} onChange={(e) => { setInputText(e.target.value); setEnglishText(e.target.value); }}
               placeholder="Type or paste English text..." rows={4} className="input-field resize-none" />
-
-            <button onClick={handleTranslate} className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs">
-              <Languages className="w-3.5 h-3.5" /> Translate to Native
+            <button onClick={handleTranslate} className="btn-primary w-full flex items-center justify-center gap-1.5">
+              <Languages className="w-3 h-3" /> Translate to Native
             </button>
-            <OutputBox label="Native Translation:" content={nativeText} language={selectedLang} type="native" />
+            <OutputBox label="Native Translation" content={nativeText} language={selectedLang} type="native" />
           </>
         )}
       </div>
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="glass-card px-5 py-3 flex items-center gap-3">
-            <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-            <span className="text-xs text-white/80">{loading}</span>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="card px-4 py-3 flex items-center gap-2.5 shadow-md">
+            <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
+            <span className="text-[11px] text-gray-600 font-medium">{loading}</span>
           </div>
         </div>
       )}
@@ -620,12 +573,12 @@ export default function App() {
       {/* Notifications */}
       {(error || success) && (
         <div className="absolute bottom-3 left-3 right-3 z-50">
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${
-            error ? 'bg-red-500/15 border-red-500/30 text-red-300' : 'bg-green-500/15 border-green-500/30 text-green-300'
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-[11px] font-medium shadow-sm ${
+            error ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'
           }`}>
-            {error ? <AlertCircle className="w-3.5 h-3.5 shrink-0" /> : <CheckCircle className="w-3.5 h-3.5 shrink-0" />}
+            {error ? <AlertCircle className="w-3 h-3 shrink-0" /> : <CheckCircle className="w-3 h-3 shrink-0" />}
             <span className="flex-1">{error || success}</span>
-            <button onClick={() => { setError(null); setSuccess(null); }} className="p-0.5 rounded hover:bg-white/10 shrink-0">
+            <button onClick={() => { setError(null); setSuccess(null); }} className="p-0.5 rounded hover:bg-black/05 shrink-0 text-current opacity-50 hover:opacity-100">
               <X className="w-3 h-3" />
             </button>
           </div>
@@ -634,49 +587,48 @@ export default function App() {
 
       {/* Modals */}
       {modal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-card p-4 w-full space-y-3">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+          <div className="card p-4 w-full space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-[12px] font-bold text-gray-900">
                 {modal === 'email' ? 'Send via Email' : modal === 'slack' ? 'Send to Slack' : 'Share to LinkedIn'}
               </h3>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-white/10 text-white/40">
-                <X className="w-4 h-4" />
+              <button onClick={() => setModal(null)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
-
             {modal === 'email' && (
               <>
                 <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="recipient@email.com" className="input-field" />
                 <input type="text" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} placeholder="Subject" className="input-field" />
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setModal(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
-                  <button onClick={handleEmail} className="btn-primary text-xs px-3 py-1.5">Send</button>
+                  <button onClick={() => setModal(null)} className="btn-ghost text-[11px] px-3 py-1.5">Cancel</button>
+                  <button onClick={handleEmail} className="btn-primary text-[11px] px-3 py-1.5">Send</button>
                 </div>
               </>
             )}
             {modal === 'slack' && (
               <>
-                <p className="text-[10px] text-white/30">Enter Slack Webhook URL or configure in backend .env</p>
+                <p className="text-[10px] text-gray-400">Enter Slack Webhook URL or configure in backend .env</p>
                 <input type="text" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.slack.com/... (optional)" className="input-field" />
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setModal(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
-                  <button onClick={handleSlack} className="btn-primary text-xs px-3 py-1.5">Send</button>
+                  <button onClick={() => setModal(null)} className="btn-ghost text-[11px] px-3 py-1.5">Cancel</button>
+                  <button onClick={handleSlack} className="btn-primary text-[11px] px-3 py-1.5">Send</button>
                 </div>
               </>
             )}
             {modal === 'linkedin' && (
               <>
-                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-[10px] text-amber-400">Mock mode — LinkedIn OAuth not configured.</p>
+                <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
+                  <p className="text-[10px] text-amber-600">Mock mode — LinkedIn OAuth not configured.</p>
                 </div>
-                <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-[10px] text-white/30 mb-1">Preview:</p>
-                  <p className="text-xs text-white/60">{rewrittenText?.substring(0, 80)}{rewrittenText?.length > 80 ? '...' : ''}</p>
+                <div className="card p-2">
+                  <p className="text-[10px] text-gray-400 mb-1">Preview:</p>
+                  <p className="text-[11px] text-gray-600">{rewrittenText?.substring(0, 80)}{rewrittenText?.length > 80 ? '…' : ''}</p>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setModal(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
-                  <button onClick={handleLinkedIn} className="btn-primary text-xs px-3 py-1.5">Share</button>
+                  <button onClick={() => setModal(null)} className="btn-ghost text-[11px] px-3 py-1.5">Cancel</button>
+                  <button onClick={handleLinkedIn} className="btn-primary text-[11px] px-3 py-1.5">Share</button>
                 </div>
               </>
             )}

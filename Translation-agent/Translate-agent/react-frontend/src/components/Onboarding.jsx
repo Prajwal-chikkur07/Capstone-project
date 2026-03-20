@@ -5,7 +5,7 @@ import { Mic, Globe, Languages, ChevronRight, Sparkles, Check } from 'lucide-rea
 const STEPS = [
   {
     icon: Sparkles,
-    title: 'Welcome to Saaras',
+    title: 'Welcome to SeedlingSpeaks',
     desc: 'Your AI-powered speech translation assistant. Transcribe Indian languages, rewrite tone, and send anywhere.',
     cta: 'Get started',
   },

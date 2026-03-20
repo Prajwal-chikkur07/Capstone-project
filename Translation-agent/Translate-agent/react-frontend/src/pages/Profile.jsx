@@ -29,7 +29,7 @@ const CHANNEL_SECTIONS = [
     desc: 'Send transcripts via email app (mailto)',
     fields: [
       { key: 'email',        label: 'Your email address', placeholder: 'you@example.com', type: 'email' },
-      { key: 'emailSubject', label: 'Default subject',    placeholder: 'Message from Saaras', type: 'text' },
+      { key: 'emailSubject', label: 'Default subject',    placeholder: 'Message from SeedlingSpeaks', type: 'text' },
     ],
   },
   {
@@ -425,7 +425,7 @@ export default function Profile() {
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-[14px] font-semibold text-gray-900">Saaras v2.5</p>
+              <p className="text-[14px] font-semibold text-gray-900">SeedlingSpeaks v2.5</p>
               <p className="text-[12px] text-gray-400 mt-0.5">Powered by Seedlinglabs</p>
             </div>
           </div>
