@@ -34,9 +34,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-4 pt-6 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
-            <Languages className="w-4 h-4 text-white" />
-          </div>
+          <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-7 h-7 rounded-lg object-contain" />
           <span className="font-bold text-[15px] text-gray-900 tracking-tight">SeedlingSpeaks</span>
         </div>
       </div>

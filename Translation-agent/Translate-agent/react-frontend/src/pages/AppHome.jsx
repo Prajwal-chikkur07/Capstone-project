@@ -23,9 +23,7 @@ export default function AppHome() {
     <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-10 py-5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
-          <Languages className="w-4 h-4 text-white" />
-        </div>
+        <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-8 h-8 rounded-xl object-contain" />
         <div>
           <h1 className="text-[16px] font-bold text-gray-900 leading-tight">SeedlingSpeaks</h1>
           <p className="text-[12px] text-gray-400">Multilingual AI Translation</p>
