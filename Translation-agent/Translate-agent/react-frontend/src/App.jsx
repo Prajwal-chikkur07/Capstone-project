@@ -24,6 +24,7 @@ import { useApp } from './context/AppContext';
 import * as api from './services/api';
 
 import AppHome from './pages/AppHome';
+import WidgetSetup from './pages/WidgetSetup';
 
 function MainContent() {
   const { state } = useApp();
@@ -71,6 +72,9 @@ function AppShell() {
 
   // All other views require login
   if (!state.authUser) return <LandingPage />;
+
+  // First-time widget setup
+  if (!state.widgetSetupDone) return <WidgetSetup />;
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>

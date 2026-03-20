@@ -114,6 +114,7 @@ function ChannelModal({ channel, text, onClose }) {
 
 export default function ContinuousListening() {
   const { state, setField, setFields, TARGET_LANGUAGES, showError, showSuccess, addHistory, saveTemplates, incrementUsage } = useApp();
+  const L = getLabels(state.uiLanguage);
   const { isPlaying, speak } = useSpeech();
 
   const [isListening, setIsListening] = useState(false);
@@ -366,7 +367,7 @@ export default function ContinuousListening() {
             <Ear className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-[15px] font-bold text-gray-900">Continuous Listening</p>
+            <p className="text-[15px] font-bold text-gray-900">{L.continuousListening}</p>
             <p className="text-[11px] text-gray-400">Auto-stops after {SILENCE_DURATION / 1000}s of silence</p>
           </div>
         </div>
@@ -387,9 +388,9 @@ export default function ContinuousListening() {
           </div>
           <button onClick={isListening ? stopListening : startListening}
             className={'flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all shadow-sm active:scale-95 ' + (isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-900 hover:bg-gray-700 text-white')}>
-            {isListening ? <><Square className="w-4 h-4 fill-white" />Stop Listening</> : <><Ear className="w-4 h-4" />Start Listening</>}
+            {isListening ? <><Square className="w-4 h-4 fill-white" />{L.stopListening}</> : <><Ear className="w-4 h-4" />{L.startListening}</>}
           </button>
-          {isProcessing && <div className="flex items-center gap-2 text-[13px] text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin" />Transcribing audio…</div>}
+          {isProcessing && <div className="flex items-center gap-2 text-[13px] text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.transcribingAudio}</div>}
           {isListening && <p className="text-[12px] text-gray-400 animate-pulse">Listening… auto-stops after {SILENCE_DURATION / 1000}s of silence</p>}
         </div>
 
@@ -448,7 +449,17 @@ export default function ContinuousListening() {
 
             <div className="flex items-center gap-3 mb-4">
               <div className="relative">
-                <select value={state.selectedLanguage} onChange={e => setFields({ selectedLanguage: e.target.value })}
+                <select value={state.selectedLanguage} onChange={e => {
+                  const lang = e.target.value;
+                  setFields({ selectedLanguage: lang });
+                  if (transcript?.trim()) {
+                    setIsTranslating(true);
+                    api.translateText(transcript, lang)
+                      .then(t => setNativeTranslation(t))
+                      .catch(err => showError(err.response?.data?.detail || 'Translation error'))
+                      .finally(() => setIsTranslating(false));
+                  }
+                }}
                   className="appearance-none bg-white border border-gray-200 rounded-xl pl-3 pr-7 py-2 text-[13px] font-medium text-gray-600 cursor-pointer focus:outline-none hover:border-gray-300 transition-all shadow-sm">
                   {Object.entries(TARGET_LANGUAGES).map(function(entry) { return <option key={entry[1]} value={entry[1]}>{entry[0]}</option>; })}
                 </select>
@@ -574,7 +585,7 @@ export default function ContinuousListening() {
             <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
               <Ear className="w-6 h-6 text-gray-300" />
             </div>
-            <p className="text-[15px] text-gray-300 font-medium">Press Start Listening to begin</p>
+            <p className="text-[15px] text-gray-300 font-medium">{L.pressStartListening}</p>
             <p className="text-[12px] text-gray-300">Auto-stops after {SILENCE_DURATION / 1000}s of silence</p>
           </div>
         )}

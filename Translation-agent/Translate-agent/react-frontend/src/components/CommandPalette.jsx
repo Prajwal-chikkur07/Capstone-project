@@ -72,16 +72,16 @@ export default function CommandPalette() {
 
   return (
     <div className="cmd-backdrop" onClick={close}>
-      <div className="w-full max-w-lg mx-4 bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+      <div className="w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
         onClick={e => e.stopPropagation()}>
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
           <Search className="w-4 h-4 text-gray-400 shrink-0" />
           <input ref={inputRef} value={query} onChange={e => { setQuery(e.target.value); setSelected(0); }}
             onKeyDown={handleKey}
             placeholder="Search commands…"
-            className="flex-1 text-[14px] bg-transparent outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400" />
-          <kbd className="text-[11px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono">ESC</kbd>
+            className="flex-1 text-[14px] bg-transparent outline-none text-gray-900 placeholder-gray-400" />
+          <kbd className="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded font-mono">ESC</kbd>
         </div>
 
         {/* Results */}
@@ -101,7 +101,7 @@ export default function CommandPalette() {
                       <button key={cmd.id} onClick={cmd.action}
                         onMouseEnter={() => setSelected(idx)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all ${
-                          isSelected ? 'bg-gray-900 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          isSelected ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'
                         }`}>
                         <cmd.icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
                         <span className="text-[14px] font-medium flex-1">{cmd.label}</span>
@@ -116,11 +116,11 @@ export default function CommandPalette() {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center gap-3 text-[11px] text-gray-400">
+        <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[11px] text-gray-400">
           <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" />Powered by Seedlinglabs</span>
           <span className="ml-auto flex items-center gap-2">
-            <kbd className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono">↑↓</kbd> navigate
-            <kbd className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono">↵</kbd> select
+            <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">↑↓</kbd> navigate
+            <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">↵</kbd> select
           </span>
         </div>
       </div>

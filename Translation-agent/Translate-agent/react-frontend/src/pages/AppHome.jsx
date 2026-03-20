@@ -1,39 +1,17 @@
 import { Mic2, Ear, Globe, ScanText, Sparkles, Languages, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-
-const FEATURES = [
-  {
-    icon: Mic2,
-    color: 'bg-violet-50 text-violet-600 border-violet-100',
-    title: 'Native to English',
-    desc: 'Speak in any Indian language and get an instant English transcript with AI tone rewriting.',
-    view: 'home',
-  },
-  {
-    icon: Ear,
-    color: 'bg-blue-50 text-blue-600 border-blue-100',
-    title: 'Continuous Listening',
-    desc: 'Hands-free recording with automatic silence detection — no button pressing needed.',
-    view: 'continuous',
-  },
-  {
-    icon: Globe,
-    color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    title: 'English to Native',
-    desc: 'Type or paste English text and translate it into 10+ Indian regional languages.',
-    view: 'englishToNative',
-  },
-  {
-    icon: ScanText,
-    color: 'bg-amber-50 text-amber-600 border-amber-100',
-    title: 'Vision Translate',
-    desc: 'Upload an image with text and translate it into your preferred language instantly.',
-    view: 'vision',
-  },
-];
+import { getLabels } from '../services/uiLabels';
 
 export default function AppHome() {
-  const { setField, setFields, clearAll, RECORDING_MODES } = useApp();
+  const { state, setField, setFields, clearAll, RECORDING_MODES } = useApp();
+  const L = getLabels(state.uiLanguage);
+
+  const FEATURES = [
+    { icon: Mic2,     color: 'bg-violet-50 text-violet-600 border-violet-100', title: L.nativeToEnglish, desc: L.nativeToEnglishDesc,       view: 'home' },
+    { icon: Ear,      color: 'bg-blue-50 text-blue-600 border-blue-100',       title: L.continuousListening, desc: L.continuousListeningDesc, view: 'continuous' },
+    { icon: Globe,    color: 'bg-emerald-50 text-emerald-600 border-emerald-100', title: L.englishToNative, desc: L.englishToNativeDesc,     view: 'englishToNative' },
+    { icon: ScanText, color: 'bg-amber-50 text-amber-600 border-amber-100',    title: L.visionTranslate, desc: L.visionTranslateDesc,        view: 'vision' },
+  ];
 
   const go = (view) => {
     clearAll();
@@ -70,7 +48,7 @@ export default function AppHome() {
 
       {/* Feature cards */}
       <div className="px-10 max-w-3xl w-full mx-auto">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">Choose a mode to get started</p>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">{L.chooseMode}</p>
         <div className="grid grid-cols-2 gap-4">
           {FEATURES.map(({ icon: Icon, color, title, desc, view }) => (
             <button
@@ -93,7 +71,7 @@ export default function AppHome() {
 
       {/* Supported languages */}
       <div className="px-10 pt-10 pb-16 max-w-3xl w-full mx-auto">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Supported languages</p>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.supportedLanguages}</p>
         <div className="flex flex-wrap gap-2">
           {['Hindi', 'Bengali', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Gujarati', 'Kannada', 'Punjabi', 'Odia'].map(lang => (
             <span key={lang} className="px-3 py-1 rounded-full bg-white border border-gray-200 text-[12px] text-gray-500 font-medium">

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeedlingSpeaks Widget</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #ffffff;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: #111827;
+      color: white;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      -webkit-app-region: drag;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: #10b981;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    
+    .subtitle {
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+    }
+    
+    .header-right {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+    
+    .btn {
+      width: 30px;
+      height: 30px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.5);
+      transition: all 0.15s;
+    }
+    
+    .btn:hover {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+    
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      background: #f9fafb;
+    }
+    
+    .section {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+    
+    select, textarea, input {
+      width: 100%;
+      padding: 9px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    
+    textarea {
+      resize: none;
+      min-height: 80px;
+    }
+    
+    .action-btn {
+      width: 100%;
+      padding: 10px;
+      background: #111827;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    
+    .action-btn:hover {
+      background: #1f2937;
+    }
+    
+    .output {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 12px;
+      color: #374151;
+      margin-top: 8px;
+      min-height: 60px;
+    }
+    
+    .shortcut-hint {
+      font-size: 10px;
+      color: #9ca3af;
+      text-align: center;
+      padding: 8px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">S</div>
+      <div>
+        <div class="title">SeedlingSpeaks</div>
+        <div class="subtitle">Desktop Widget</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn" id="closeBtn" title="Hide (Cmd/Ctrl+Shift+T)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="section">
+      <div class="section-title">Target Language</div>
+      <select id="languageSelect">
+        <option value="hi-IN">Hindi</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="gu-IN">Gujarati</option>
+        <option value="kn-IN" selected>Kannada</option>
+        <option value="pa-IN">Punjabi</option>
+        <option value="or-IN">Odia</option>
+      </select>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Translate Text</div>
+      <textarea id="inputText" placeholder="Type or paste English text..."></textarea>
+      <button class="action-btn" id="translateBtn">Translate</button>
+      <div class="output" id="outputText">Translation will appear here...</div>
+    </div>
+  </div>
+  
+  <div class="shortcut-hint">
+    Press <strong>Cmd+Shift+T</strong> (Mac) or <strong>Ctrl+Shift+T</strong> (Win) to toggle
+  </div>
+  
+  <script src="renderer.js"></script></body>
+</html>

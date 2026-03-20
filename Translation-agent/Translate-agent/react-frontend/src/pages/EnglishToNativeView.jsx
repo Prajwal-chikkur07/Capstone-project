@@ -5,6 +5,7 @@ import {
   Mail, Slack, Linkedin, MessageSquare, X, Send, ExternalLink, Check
 } from 'lucide-react';
 import * as api from '../services/api';
+import { getLabels } from '../services/uiLabels';
 import { useSpeech } from '../hooks/useSpeech';
 
 const TONES = ['Email', 'LinkedIn', 'Formal', 'Casual'];
@@ -148,6 +149,7 @@ function SendModal({ channel, text, onClose }) {
 
 export default function EnglishToNativeView() {
   const { state, setField, setFields, showError, TARGET_LANGUAGES } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [selectedTone, setSelectedTone] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [activeChannel, setActiveChannel] = useState(null);
@@ -199,8 +201,8 @@ export default function EnglishToNativeView() {
   return (
     <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
       <div className="bg-white border-b border-gray-100 px-8 py-4">
-        <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">Text Translate</h2>
-        <p className="text-[13px] text-gray-400 mt-0.5">Translations that feel native</p>
+        <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">{L.textTranslate}</h2>
+        <p className="text-[13px] text-gray-400 mt-0.5">{L.translationsNative}</p>
       </div>
 
       <div className="flex flex-1 px-6 py-6 gap-4 max-w-6xl w-full mx-auto">
@@ -214,7 +216,7 @@ export default function EnglishToNativeView() {
           <textarea
             value={state.englishText}
             onChange={(e) => setField('englishText', e.target.value)}
-            placeholder="Type or paste your English text here..."
+            placeholder={L.typeEnglishHere}
             className="flex-1 w-full px-5 py-4 text-[15px] text-gray-800 placeholder-gray-300 resize-none focus:outline-none leading-[1.8]"
             style={{ minHeight: 420 }}
           />
@@ -222,7 +224,7 @@ export default function EnglishToNativeView() {
             <button onClick={handleTranslateClick} disabled={!state.englishText?.trim() || isTranslating}
               className="flex items-center gap-2 bg-gray-900 text-white rounded-xl px-5 py-2.5 text-[14px] font-semibold hover:bg-gray-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
               {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
-              {isTranslating ? 'Translating...' : 'Translate'}
+              {isTranslating ? L.translating : L.translate}
             </button>
           </div>
         </div>
@@ -268,7 +270,7 @@ export default function EnglishToNativeView() {
             ) : state.nativeTranslation ? (
               <p className="text-[15px] text-gray-800 leading-[1.8] whitespace-pre-wrap animate-fade-in-blur">{state.nativeTranslation}</p>
             ) : (
-              <p className="text-[15px] text-gray-300">Translation will appear here</p>
+              <p className="text-[15px] text-gray-300">{L.translationAppears}</p>
             )}
           </div>
 

@@ -74,7 +74,11 @@ const initialState = {
   savedTemplates: JSON.parse(localStorage.getItem('savedTemplates') || '[]'),
   usageStats: JSON.parse(localStorage.getItem('usageStats') || '{"sarvamCalls":0,"geminiCalls":0,"cacheHits":0}'),
   darkMode: localStorage.getItem('darkMode') === 'true',
+  uiLanguage: localStorage.getItem('uiLanguage') || 'en',
   onboardingDone: localStorage.getItem('onboardingDone') === 'true',
+  widgetSetupDone: localStorage.getItem('widgetSetupDone') === 'true',
+  widgetEnabled: localStorage.getItem('widgetEnabled') === 'true',
+  widgetLanguages: JSON.parse(localStorage.getItem('widgetLanguages') || '[]'),
   starredIds: JSON.parse(localStorage.getItem('starredIds') || '[]'),
   pinnedTemplateIds: JSON.parse(localStorage.getItem('pinnedTemplateIds') || '[]'),
   historyTags: JSON.parse(localStorage.getItem('historyTags') || '{}'), // { entryId: ['tag1','tag2'] }
@@ -141,9 +145,21 @@ function reducer(state, action) {
       localStorage.setItem('darkMode', String(next));
       return { ...state, darkMode: next };
     }
+    case 'SET_UI_LANGUAGE':
+      localStorage.setItem('uiLanguage', action.value);
+      return { ...state, uiLanguage: action.value };
     case 'SET_ONBOARDING_DONE':
       localStorage.setItem('onboardingDone', 'true');
       return { ...state, onboardingDone: true };
+    case 'SET_WIDGET_SETUP_DONE':
+      localStorage.setItem('widgetSetupDone', 'true');
+      return { ...state, widgetSetupDone: true };
+    case 'SET_WIDGET_ENABLED':
+      localStorage.setItem('widgetEnabled', String(action.value));
+      return { ...state, widgetEnabled: action.value };
+    case 'SET_WIDGET_LANGUAGES':
+      localStorage.setItem('widgetLanguages', JSON.stringify(action.value));
+      return { ...state, widgetLanguages: action.value };
     case 'TOGGLE_STAR': {
       const starred = state.starredIds.includes(action.id)
         ? state.starredIds.filter(i => i !== action.id)
@@ -241,7 +257,11 @@ export function AppProvider({ children }) {
   }, []);
 
   const toggleDark = useCallback(() => dispatch({ type: 'TOGGLE_DARK' }), []);
+  const setUiLanguage = useCallback((value) => dispatch({ type: 'SET_UI_LANGUAGE', value }), []);
   const setOnboardingDone = useCallback(() => dispatch({ type: 'SET_ONBOARDING_DONE' }), []);
+  const setWidgetSetupDone = useCallback(() => dispatch({ type: 'SET_WIDGET_SETUP_DONE' }), []);
+  const setWidgetEnabled = useCallback((value) => dispatch({ type: 'SET_WIDGET_ENABLED', value }), []);
+  const setWidgetLanguages = useCallback((value) => dispatch({ type: 'SET_WIDGET_LANGUAGES', value }), []);
   const toggleStar = useCallback((id) => dispatch({ type: 'TOGGLE_STAR', id }), []);
   const togglePinTemplate = useCallback((id) => dispatch({ type: 'TOGGLE_PIN_TEMPLATE', id }), []);
   const setHistoryTags = useCallback((entryId, tags) => dispatch({ type: 'SET_HISTORY_TAGS', entryId, tags }), []);
@@ -270,7 +290,11 @@ export function AppProvider({ children }) {
         saveTemplates,
         incrementUsage,
         toggleDark,
+        setUiLanguage,
         setOnboardingDone,
+        setWidgetSetupDone,
+        setWidgetEnabled,
+        setWidgetLanguages,
         toggleStar,
         togglePinTemplate,
         setHistoryTags,

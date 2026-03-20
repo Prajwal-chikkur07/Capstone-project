@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { BookmarkPlus, Copy, Check, Trash2, Search, Sparkles, X, Mail, Slack, Linkedin, MessageSquare, Hash, Pin } from 'lucide-react';
 
+import { getLabels } from '../services/uiLabels';
+
 const TONE_ICONS = {
   'Email Formal':      { icon: Mail,          color: 'text-blue-500',   bg: 'bg-blue-50',   border: 'border-blue-100'   },
   'Email Casual':      { icon: Mail,          color: 'text-blue-400',   bg: 'bg-blue-50',   border: 'border-blue-100'   },
@@ -23,6 +25,7 @@ function CopyBtn({ text }) {
 
 export default function Templates() {
   const { state, saveTemplates, setField, showSuccess, togglePinTemplate } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [search, setSearch] = useState('');
   const [filterTone, setFilterTone] = useState('All');
   const [confirmClear, setConfirmClear] = useState(false);
@@ -56,8 +59,8 @@ export default function Templates() {
     <div className="min-h-screen bg-[#f8f8f8]">
       <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
         <div>
-          <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">Templates</h2>
-          <p className="text-[13px] text-gray-400 mt-0.5">Saved rewrites you can reuse anytime</p>
+          <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">{L.templatesTitle}</h2>
+          <p className="text-[13px] text-gray-400 mt-0.5">{L.savedRewrites}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-gray-400">{templates.length} saved</span>
@@ -129,7 +132,7 @@ export default function Templates() {
             <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
               <BookmarkPlus className="w-5 h-5 text-gray-300" />
             </div>
-            <p className="text-[14px] text-gray-300 font-medium">{templates.length === 0 ? 'No templates saved yet' : 'No results'}</p>
+            <p className="text-[14px] text-gray-300 font-medium">{templates.length === 0 ? L.noTemplates : L.noResults}</p>
             {templates.length === 0 && <p className="text-[12px] text-gray-300">Rewrite a tone and click Save to store it here</p>}
           </div>
         ) : (

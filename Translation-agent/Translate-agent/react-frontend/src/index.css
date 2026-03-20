@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Disable Tailwind's media-query dark mode — app uses .dark class via CSS vars instead */
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark) {
+    color-scheme: light;
+  }
+}
+
 * { box-sizing: border-box; }
 
 :root {

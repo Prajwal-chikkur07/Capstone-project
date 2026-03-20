@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, Trash2, RotateCcw, X, Search, Download, Star, Tag, Plus } from 'lucide-react';
 import * as api from '../services/api';
+import { getLabels } from '../services/uiLabels';
 
 const LANG_NAMES = {
   'hi-IN': 'Hindi', 'bn-IN': 'Bengali', 'ta-IN': 'Tamil', 'te-IN': 'Telugu',
@@ -25,6 +26,7 @@ function ConfidencePill({ score }) {
 
 export default function History() {
   const { state, setField, setFields, deleteHistory, clearHistory, toggleStar, setHistoryTags } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [search, setSearch] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [showStarred, setShowStarred] = useState(false);
@@ -77,7 +79,7 @@ export default function History() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">Transcript History</h1>
+          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.transcriptHistory}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
         </div>
         <div className="flex items-center gap-2">
@@ -87,7 +89,7 @@ export default function History() {
               showStarred ? 'bg-amber-50 border-amber-200 text-amber-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
             }`}>
             <Star className={`w-3.5 h-3.5 ${showStarred ? 'fill-amber-400 text-amber-400' : ''}`} />
-            Starred
+            {L.starred}
           </button>
           {(state.transcriptHistory?.length > 0) && (
             <>
@@ -161,7 +163,7 @@ export default function History() {
             <Clock className="w-5 h-5 text-gray-300" />
           </div>
           <p className="text-[14px] text-gray-300 font-medium">
-            {search ? 'No results found' : 'No history yet — start recording'}
+            {search ? L.noResults : L.noHistory}
           </p>
         </div>
       ) : (

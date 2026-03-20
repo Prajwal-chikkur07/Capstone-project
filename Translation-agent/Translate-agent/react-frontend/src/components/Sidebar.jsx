@@ -1,5 +1,6 @@
-import { Languages, Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear } from 'lucide-react';
+import { Languages, Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { getLabels } from '../services/uiLabels';
 
 const SectionLabel = ({ label }) => (
   <p className="px-3 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{label}</p>
@@ -20,6 +21,7 @@ const NavBtn = ({ view, icon: Icon, label, badge, active, onClick }) => (
 
 export default function Sidebar() {
   const { state, setField, setFields, clearAll, toggleDark, RECORDING_MODES, logout } = useApp();
+  const L = getLabels(state.uiLanguage);
 
   const nav = (view) => () => {
     if (state.currentView !== view) clearAll();
@@ -44,25 +46,25 @@ export default function Sidebar() {
 
         {/* Home */}
         <div className="mt-3">
-          <NavBtn view="appHome" icon={Mic2} label="Home" active={state.currentView === 'appHome' || (!state.currentView || state.currentView === 'appHome')} onClick={nav('appHome')} />
+          <NavBtn view="appHome" icon={Mic2} label={L.home} active={state.currentView === 'appHome' || (!state.currentView || state.currentView === 'appHome')} onClick={nav('appHome')} />
         </div>
 
         {/* Translation */}
-        <SectionLabel label="Translation" />
-        <NavBtn view="home"            icon={Mic2}  label="Native to English"     active={state.currentView === 'home'}            onClick={nav('home')} />
-        <NavBtn view="continuous"      icon={Ear}   label="Continuous Listening"  active={state.currentView === 'continuous'}      onClick={nav('continuous')} />
-        <NavBtn view="englishToNative" icon={Globe} label="English to Native"     active={state.currentView === 'englishToNative'} onClick={nav('englishToNative')} />
-        <NavBtn view="vision"          icon={ScanText} label="Vision Translate"   active={state.currentView === 'vision'}          onClick={nav('vision')} />
+        <SectionLabel label={L.translation} />
+        <NavBtn view="home"            icon={Mic2}     label={L.nativeToEnglish}      active={state.currentView === 'home'}            onClick={nav('home')} />
+        <NavBtn view="continuous"      icon={Ear}      label={L.continuousListening}  active={state.currentView === 'continuous'}      onClick={nav('continuous')} />
+        <NavBtn view="englishToNative" icon={Globe}    label={L.englishToNative}      active={state.currentView === 'englishToNative'} onClick={nav('englishToNative')} />
+        <NavBtn view="vision"          icon={ScanText} label={L.visionTranslate}      active={state.currentView === 'vision'}          onClick={nav('vision')} />
 
         {/* Library */}
-        <SectionLabel label="Library" />
-        <NavBtn view="history"   icon={Clock}        label="History"    active={state.currentView === 'history'}   onClick={nav('history')} />
-        <NavBtn view="templates" icon={BookmarkPlus} label="Templates"  active={state.currentView === 'templates'} onClick={nav('templates')} />
-        <NavBtn view="dictionary" icon={BookOpen}    label="Dictionary" active={state.currentView === 'dictionary'} onClick={nav('dictionary')} />
+        <SectionLabel label={L.library} />
+        <NavBtn view="history"    icon={Clock}        label={L.history}    active={state.currentView === 'history'}    onClick={nav('history')} />
+        <NavBtn view="templates"  icon={BookmarkPlus} label={L.templates}  active={state.currentView === 'templates'}  onClick={nav('templates')} />
+        <NavBtn view="dictionary" icon={BookOpen}     label={L.dictionary} active={state.currentView === 'dictionary'} onClick={nav('dictionary')} />
 
         {/* Insights */}
-        <SectionLabel label="Insights" />
-        <NavBtn view="analytics" icon={BarChart2} label="Analytics" active={state.currentView === 'analytics'} onClick={nav('analytics')} />
+        <SectionLabel label={L.insights} />
+        <NavBtn view="analytics" icon={BarChart2} label={L.analytics} active={state.currentView === 'analytics'} onClick={nav('analytics')} />
 
       </nav>
 
@@ -78,7 +80,7 @@ export default function Sidebar() {
               ? <Sun className="w-4 h-4 text-amber-400" strokeWidth={1.6} />
               : <Moon className="w-4 h-4 text-gray-400" strokeWidth={1.6} />}
             <span className="text-[14px] text-gray-500 group-hover:text-gray-800 transition-colors">
-              {state.darkMode ? 'Light mode' : 'Dark mode'}
+              {state.darkMode ? L.lightMode : L.darkMode}
             </span>
           </div>
           <div className={`w-8 rounded-full flex items-center px-0.5 transition-colors ${state.darkMode ? 'bg-gray-900' : 'bg-gray-200'}`} style={{ height: '18px' }}>
@@ -94,7 +96,18 @@ export default function Sidebar() {
           }`}
         >
           <User className="w-4 h-4 shrink-0" strokeWidth={1.6} />
-          <span className="text-[14px]">Profile</span>
+          <span className="text-[14px]">{L.profile}</span>
+        </button>
+
+        {/* Settings */}
+        <button
+          onClick={() => setField('currentView', 'settings')}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+            state.currentView === 'settings' ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+          }`}
+        >
+          <Settings className="w-4 h-4 shrink-0" strokeWidth={1.6} />
+          <span className="text-[14px]">{L.settings}</span>
         </button>
 
         {/* Logout */}
@@ -103,7 +116,7 @@ export default function Sidebar() {
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all"
         >
           <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.6} />
-          <span className="text-[14px]">Logout</span>
+          <span className="text-[14px]">{L.logout}</span>
         </button>
       </div>
     </aside>

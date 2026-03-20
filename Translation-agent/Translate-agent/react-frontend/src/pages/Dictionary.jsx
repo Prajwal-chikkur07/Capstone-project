@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Trash2, BookOpen, Search, X, Check } from 'lucide-react';
 
+import { getLabels } from '../services/uiLabels';
+
 export default function Dictionary() {
   const { state, saveDictionary, showSuccess } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [search, setSearch] = useState('');
   const [native, setNative] = useState('');
   const [english, setEnglish] = useState('');
@@ -35,8 +38,8 @@ export default function Dictionary() {
     <div className="min-h-screen bg-[#f8f8f8]">
       <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
         <div>
-          <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">Custom Dictionary</h2>
-          <p className="text-[13px] text-gray-400 mt-0.5">Terms preserved exactly during tone rewriting</p>
+          <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">{L.customDictionary}</h2>
+          <p className="text-[13px] text-gray-400 mt-0.5">{L.termsPreserved}</p>
         </div>
         {dict.length > 0 && (
           confirmClear ? (
@@ -62,7 +65,7 @@ export default function Dictionary() {
 
         {/* Add new term */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <p className="text-[13px] font-semibold text-gray-700 mb-3">Add term</p>
+          <p className="text-[13px] font-semibold text-gray-700 mb-3">{L.addTerm}</p>
           <div className="flex gap-2">
             <input value={native} onChange={e => setNative(e.target.value)} placeholder="Native / original term"
               className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-400 transition-all" />
@@ -92,7 +95,7 @@ export default function Dictionary() {
             <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-gray-300" />
             </div>
-            <p className="text-[14px] text-gray-300 font-medium">{dict.length === 0 ? 'Dictionary is empty' : 'No results'}</p>
+            <p className="text-[14px] text-gray-300 font-medium">{dict.length === 0 ? L.dictionaryEmpty : L.noResults}</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

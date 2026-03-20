@@ -3,8 +3,10 @@ import { useApp } from '../context/AppContext';
 import {
   Mail, Slack, Linkedin, MessageSquare, Check, Eye, EyeOff,
   Volume2, ChevronDown, Mic2, RefreshCw, ChevronRight, ArrowLeft,
-  Pencil, Globe, Bell, Shield, LogOut, Sparkles, X, Save,
+  Pencil, Globe, Bell, Shield, LogOut, X, Save,
 } from 'lucide-react';
+
+import { getLabels } from '../services/uiLabels';
 
 /* ─── helpers ─── */
 const LANG_LABELS = {
@@ -293,6 +295,7 @@ function EditProfileModal({ profile, onSave, onClose }) {
 /* ─── Main Profile page ─── */
 export default function Profile() {
   const { state, setField } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [subView, setSubView] = useState(null);
   const [profile, setProfile] = useState(() => loadProfile());
   const [editOpen, setEditOpen] = useState(false);
@@ -316,7 +319,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8]">
-      <PageHeader title="Profile" subtitle="Your account and preferences" />
+      <PageHeader title={L.profileTitle} subtitle={L.accountPreferences} />
 
       <div className="px-8 py-8 max-w-2xl space-y-4">
 
@@ -360,7 +363,7 @@ export default function Profile() {
                 <Globe className="w-4 h-4 text-gray-600" />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-gray-900">Default language</p>
+                <p className="text-[14px] font-semibold text-gray-900">{L.defaultLanguage}</p>
                 <p className="text-[12px] text-gray-400 mt-0.5">Used for translation output</p>
               </div>
             </div>
@@ -379,7 +382,7 @@ export default function Profile() {
         {/* ── Connected channels status ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[14px] font-semibold text-gray-900">Connected channels</p>
+            <p className="text-[14px] font-semibold text-gray-900">{L.connectedChannels}</p>
             <button onClick={() => setSubView('channels')}
               className="text-[12px] font-semibold text-gray-400 hover:text-gray-700 transition-colors">Manage →</button>
           </div>
@@ -416,24 +419,6 @@ export default function Profile() {
               <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
             </button>
           ))}
-        </div>
-
-        {/* ── App info ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold text-gray-900">SeedlingSpeaks v2.5</p>
-              <p className="text-[12px] text-gray-400 mt-0.5">Powered by Seedlinglabs</p>
-            </div>
-          </div>
-          <div className="space-y-1 text-[12px] text-gray-400 pl-12">
-            <p>Transcription · Sarvam AI</p>
-            <p>Tone rewriting · Gemini 2.0 Flash</p>
-            <p>Translation cache · Semantic RAG (MiniLM)</p>
-          </div>
         </div>
 
         {/* ── Danger zone ── */}

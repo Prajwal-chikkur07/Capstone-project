@@ -6,6 +6,7 @@ import {
   FileText, ArrowRight
 } from 'lucide-react';
 import * as api from '../services/api';
+import { getLabels } from '../services/uiLabels';
 
 const LANG_LABELS = {
   'hi-IN': 'Hindi', 'bn-IN': 'Bengali', 'ta-IN': 'Tamil', 'te-IN': 'Telugu',
@@ -29,6 +30,7 @@ function CopyButton({ text }) {
 
 export default function VisionTranslate() {
   const { state } = useApp();
+  const L = getLabels(state.uiLanguage);
   const [targetLang, setTargetLang] = useState(state.selectedLanguage || 'hi-IN');
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
@@ -116,7 +118,7 @@ export default function VisionTranslate() {
         <div>
           <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-gray-400" />
-            Vision Translate
+            {L.visionTranslateTitle}
           </h2>
           <p className="text-[13px] text-gray-400 mt-0.5">
             Upload an image or PDF screenshot — Gemini reads all text and translates it
@@ -159,7 +161,7 @@ export default function VisionTranslate() {
               <Upload className="w-7 h-7 text-gray-400" />
             </div>
             <div className="text-center">
-              <p className="text-[16px] font-semibold text-gray-700">Drop an image here</p>
+              <p className="text-[16px] font-semibold text-gray-700">{L.dropImageHere}</p>
               <p className="text-[13px] text-gray-400 mt-1">PNG, JPG, WEBP · up to 10MB</p>
               <p className="text-[12px] text-gray-300 mt-2">
                 Works with photos of documents, signs, menus, PDF screenshots, receipts
@@ -179,8 +181,8 @@ export default function VisionTranslate() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all active:scale-95"
               >
                 {isProcessing
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Translating…</>
-                  : <><Languages className="w-3.5 h-3.5" />Translate to {LANG_LABELS[targetLang]}</>}
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.translating}</>
+                  : <><Languages className="w-3.5 h-3.5" />{L.translate} to {LANG_LABELS[targetLang]}</>}
               </button>
 
               {regions.length > 0 && (
@@ -189,13 +191,13 @@ export default function VisionTranslate() {
                     onClick={copyAll}
                     className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-[13px] font-medium hover:bg-gray-50 transition-all"
                   >
-                    <Copy className="w-3.5 h-3.5" />Copy all
+                    <Copy className="w-3.5 h-3.5" />{L.copyAll}
                   </button>
                   <button
                     onClick={downloadText}
                     className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-[13px] font-medium hover:bg-gray-50 transition-all"
                   >
-                    <Download className="w-3.5 h-3.5" />Download
+                    <Download className="w-3.5 h-3.5" />{L.download}
                   </button>
                   <span className="text-[12px] text-gray-400 ml-1">{regions.length} text blocks found</span>
                 </>
@@ -205,7 +207,7 @@ export default function VisionTranslate() {
                 onClick={handleReset}
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 text-[13px] font-medium transition-all ml-auto"
               >
-                <RefreshCw className="w-3.5 h-3.5" />New image
+                <RefreshCw className="w-3.5 h-3.5" />{L.newImage}
               </button>
             </div>
 
@@ -230,7 +232,7 @@ export default function VisionTranslate() {
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
                   <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Original</span>
+                  <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">{L.original}</span>
                   {imageFile && (
                     <span className="ml-auto text-[11px] text-gray-300 truncate max-w-[140px]">{imageFile.name}</span>
                   )}
