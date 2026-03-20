@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useSpeech } from '../hooks/useSpeech';
 import * as api from '../services/api';
+import { getLabels } from '../services/uiLabels';
 import {
   Ear, Square, Loader2, Copy, Check, Download, Volume2,
   Languages, ChevronDown, Sparkles, Hash, Wand2, BookmarkPlus,
