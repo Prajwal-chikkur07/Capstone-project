@@ -43,3 +43,4 @@ temp_audio/
 *.swp
 *.swo
 *~
+.vercel
