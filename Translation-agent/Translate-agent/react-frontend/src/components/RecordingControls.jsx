@@ -128,7 +128,7 @@ export default function RecordingControls() {
 
       {state.isRecording ? (
         /* ── Recording bar ── */
-        <div className="flex items-center gap-4 bg-white rounded-2xl px-5 py-3.5 shadow-lg border border-gray-100" style={{ minWidth: 400 }}>
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-5 py-3.5 shadow-lg border border-gray-100 w-full max-w-lg">
           {/* Pulse dot */}
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 pulse-recording shrink-0" />
           <span className="text-[13px] font-mono font-semibold text-gray-500 tabular-nums shrink-0">{fmt(recordingTime)}</span>
@@ -155,7 +155,7 @@ export default function RecordingControls() {
         </div>
       ) : (
         /* ── Default toolbar ── */
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {/* Back */}
           <button
             onClick={() => { clearAll(); setField('recordingMode', null); }}

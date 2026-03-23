@@ -78,15 +78,14 @@ export default function History() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.transcriptHistory}</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.transcriptHistory}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Starred filter */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => setShowStarred(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all ${
               showStarred ? 'bg-amber-50 border-amber-200 text-amber-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'

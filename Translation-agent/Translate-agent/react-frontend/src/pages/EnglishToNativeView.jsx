@@ -202,12 +202,12 @@ export default function EnglishToNativeView() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
-      <div className="bg-white border-b border-gray-100 px-8 py-4">
+      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4">
         <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight">{L.textTranslate}</h2>
         <p className="text-[13px] text-gray-400 mt-0.5">{L.translationsNative}</p>
       </div>
 
-      <div className="flex flex-1 px-6 py-6 gap-4 max-w-6xl w-full mx-auto">
+      <div className="flex flex-col md:flex-row flex-1 px-4 md:px-6 py-6 gap-4 max-w-6xl w-full mx-auto">
 
         {/* LEFT — English input */}
         <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

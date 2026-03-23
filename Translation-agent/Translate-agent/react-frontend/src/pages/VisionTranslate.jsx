@@ -107,7 +107,7 @@ export default function VisionTranslate() {
   return (
     <div className="min-h-screen bg-[#f8f8f8]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div>
           <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-gray-400" />
@@ -131,7 +131,7 @@ export default function VisionTranslate() {
         </div>
       </div>
 
-      <div className="px-8 py-6 max-w-5xl mx-auto">
+      <div className="px-4 md:px-8 py-6 max-w-5xl mx-auto">
         {/* Upload zone */}
         {!imageUrl && (
           <div
@@ -215,7 +215,7 @@ export default function VisionTranslate() {
             )}
 
             {/* Image + translations side by side */}
-            <div className={`flex gap-4 ${regions.length > 0 ? 'items-start' : ''}`}>
+            <div className={`flex flex-col md:flex-row gap-4 ${regions.length > 0 ? 'items-start' : ''}`}>
               {/* Image with numbered dot overlays */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-1 min-w-0">
                 <div ref={containerRef} className="relative flex justify-center bg-[#f0f0f0] p-4">
@@ -266,7 +266,7 @@ export default function VisionTranslate() {
 
               {/* Translation list panel */}
               {regions.length > 0 && (
-                <div className="w-80 shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="w-full md:w-80 shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                     <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">
                       {showOriginal ? 'Original text' : `${LANG_LABELS[targetLang]} translation`}

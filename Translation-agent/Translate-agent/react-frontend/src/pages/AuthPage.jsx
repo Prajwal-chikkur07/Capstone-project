@@ -98,7 +98,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 md:px-6 py-12">
         <div className="w-full max-w-[400px]">
           {/* Back to landing */}
           <button onClick={() => navigate('/landing')}
@@ -112,7 +112,7 @@ export default function AuthPage() {
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
           </div>
 
-          <h2 className="text-[26px] font-extrabold text-[#1a0f00] mb-1">
+          <h2 className="text-[20px] md:text-[26px] font-extrabold text-[#1a0f00] mb-1">
             {tab === 'login' ? 'Welcome back' : 'Create account'}
           </h2>
           <p className="text-[14px] text-gray-400 mb-8">

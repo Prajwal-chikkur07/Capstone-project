@@ -94,11 +94,11 @@ export default function Settings() {
     ? Math.round((cacheStats.total_hits / (cacheStats.total_hits + cacheStats.total_entries)) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.settingsTitle}</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.settingsTitle}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{L.managePreferences}</p>
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function Settings() {
             <p className="text-[13px] text-gray-300 py-2">Loading stats…</p>
           ) : (
             <>
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 {[
                   { label: 'Cached entries', value: cacheStats.total_entries },
                   { label: 'Total hits',     value: cacheStats.total_hits    },
@@ -261,7 +261,7 @@ export default function Settings() {
               <p className="text-[12px] text-gray-400 mt-0.5">Calls made this session (stored locally)</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { label: 'Sarvam calls', value: state.usageStats?.sarvamCalls || 0, color: 'text-blue-600'  },
               { label: 'Gemini calls', value: state.usageStats?.geminiCalls || 0, color: 'text-amber-600' },

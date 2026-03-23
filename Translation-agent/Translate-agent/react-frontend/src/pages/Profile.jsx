@@ -94,13 +94,13 @@ function VoiceView({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">Voice & TTS</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">Voice & TTS</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Text-to-speech preferences</p>
         </div>
       </div>
@@ -177,13 +177,13 @@ function ChannelsView({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">Connected channels</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">Connected channels</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Set once, send anytime</p>
         </div>
       </div>
@@ -290,11 +290,11 @@ export default function Profile() {
   const connectedCount = CHANNEL_META.filter(ch => creds[ch.credKey]?.trim()).length;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.profileTitle}</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.profileTitle}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{L.accountPreferences}</p>
         </div>
         <button onClick={() => setEditOpen(true)}

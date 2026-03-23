@@ -364,7 +364,7 @@ export default function ContinuousListening() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
-      <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
             <Ear className="w-4 h-4 text-white" />
@@ -382,7 +382,7 @@ export default function ContinuousListening() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col px-10 pt-8 pb-10 max-w-3xl w-full mx-auto">
+      <div className="flex-1 flex flex-col px-4 md:px-10 pt-8 pb-10 max-w-3xl w-full mx-auto">
         <div className="flex flex-col items-center gap-4 mb-8">
           <div className="flex items-end gap-0.5 h-10">
             {bars.map((h, i) => (

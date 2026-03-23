@@ -64,15 +64,15 @@ export default function Analytics() {
   const maxDay = Math.max(...dailyCounts.map(d => d.count), 1);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.analyticsTitle}</h1>
+        <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.analyticsTitle}</h1>
         <p className="text-[13px] text-gray-400 mt-0.5">{L.usageInsights}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" >
         {[
           { icon: Mic2,       label: L.totalTranscripts, value: history.length,                          sub: 'all time',      color: 'text-gray-900' },
           { icon: TrendingUp, label: L.thisWeek,          value: thisWeek.length,                         sub: 'transcripts',   color: 'text-gray-900' },
@@ -91,7 +91,7 @@ export default function Analytics() {
       {/* API calls */}
       <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{L.apiCalls}</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: 'Sarvam',     value: usage.sarvamCalls || 0, color: 'text-blue-600'  },
             { label: 'Gemini',     value: usage.geminiCalls || 0, color: 'text-amber-500' },

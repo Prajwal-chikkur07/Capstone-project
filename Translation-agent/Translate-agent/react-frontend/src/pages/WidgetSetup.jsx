@@ -73,11 +73,11 @@ export default function WidgetSetup() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-900 mb-4">
                 <span style={{ fontSize: 26 }}>🌐</span>
               </div>
-              <h1 className="text-[28px] font-extrabold text-gray-900 tracking-tight">Choose your languages</h1>
+              <h1 className="text-[20px] md:text-[28px] font-extrabold text-gray-900 tracking-tight">Choose your languages</h1>
               <p className="text-[15px] text-gray-400 mt-2">Select up to 10 languages for your desktop widget</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
               {LANGUAGES.map(lang => {
                 const isSelected = selected.includes(lang.code);
                 return (
@@ -130,7 +130,7 @@ export default function WidgetSetup() {
         {step === 2 && (
           <div style={{ animation: 'fadeIn 0.3s ease' }} className="text-center">
             <div className="mb-8">
-              <h1 className="text-[28px] font-extrabold text-gray-900 tracking-tight mb-2">Enable Desktop Widget</h1>
+              <h1 className="text-[20px] md:text-[28px] font-extrabold text-gray-900 tracking-tight mb-2">Enable Desktop Widget</h1>
               <p className="text-[15px] text-gray-400">Choose what the floating bubble should do when you open it</p>
             </div>
 

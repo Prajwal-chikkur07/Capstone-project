@@ -32,11 +32,11 @@ export default function Dictionary() {
   const handleClear = () => { saveDictionary([]); setConfirmClear(false); showSuccess('Dictionary cleared'); };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-[22px] font-extrabold text-gray-900 tracking-tight">{L.customDictionary}</h1>
+          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.customDictionary}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{L.termsPreserved} · {dict.length} terms</p>
         </div>
         {dict.length > 0 && (
@@ -58,7 +58,7 @@ export default function Dictionary() {
       {/* Add term */}
       <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
         <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.addTerm}</p>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input value={native} onChange={e => setNative(e.target.value)} placeholder="Original term"
             className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
           <input value={english} onChange={e => setEnglish(e.target.value)} placeholder="Keep as (English)"
