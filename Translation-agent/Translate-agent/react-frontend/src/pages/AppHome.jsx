@@ -23,7 +23,7 @@ export default function AppHome() {
   return (
     <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-10 py-5 flex items-center gap-3">
+      <div className="bg-white border-b border-gray-100 px-4 md:px-10 py-4 md:py-5 flex items-center gap-3">
         <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-8 h-8 rounded-xl object-contain" />
         <div>
           <h1 className="text-[16px] font-bold text-gray-900 leading-tight">SeedlingSpeaks</h1>
@@ -32,12 +32,12 @@ export default function AppHome() {
       </div>
 
       {/* Hero */}
-      <div className="px-10 pt-14 pb-10 max-w-3xl w-full mx-auto">
+      <div className="px-4 md:px-10 pt-10 md:pt-14 pb-8 md:pb-10 max-w-3xl w-full mx-auto">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span className="text-[12px] font-semibold text-amber-500 uppercase tracking-widest">Powered by Team ARTiculate</span>
         </div>
-        <h2 className="text-[32px] font-bold text-gray-900 leading-tight tracking-tight mb-3">
+        <h2 className="text-[24px] md:text-[32px] font-bold text-gray-900 leading-tight tracking-tight mb-3">
           Break language barriers<br />with AI-powered translation.
         </h2>
         <p className="text-[15px] text-gray-400 leading-relaxed max-w-lg">
@@ -46,9 +46,9 @@ export default function AppHome() {
       </div>
 
       {/* Feature cards */}
-      <div className="px-10 max-w-3xl w-full mx-auto">
+      <div className="px-4 md:px-10 max-w-3xl w-full mx-auto">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">{L.chooseMode}</p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {FEATURES.map(({ icon: Icon, color, title, desc, path }) => (
             <button
               key={path}
@@ -69,7 +69,7 @@ export default function AppHome() {
       </div>
 
       {/* Supported languages */}
-      <div className="px-10 pt-10 pb-16 max-w-3xl w-full mx-auto">
+      <div className="px-4 md:px-10 pt-8 md:pt-10 pb-16 max-w-3xl w-full mx-auto">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.supportedLanguages}</p>
         <div className="flex flex-wrap gap-2">
           {['Hindi', 'Bengali', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Gujarati', 'Kannada', 'Punjabi', 'Odia'].map(lang => (

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Sidebar from './components/Sidebar';
@@ -25,6 +25,7 @@ import AppHome from './pages/AppHome';
 import WidgetSetup from './pages/WidgetSetup';
 import { useApp } from './context/AppContext';
 import * as api from './services/api';
+import { Menu } from 'lucide-react';
 
 // Guard: redirect to /auth if not logged in
 function RequireAuth({ children }) {
@@ -46,6 +47,10 @@ function AppShell() {
   const location = useLocation();
   const pollRef = useRef(null);
   const failCountRef = useRef(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   // Apply dark mode class to <html>
   useEffect(() => {
@@ -78,7 +83,17 @@ function AppShell() {
         </div>
       )}
 
-      {showSidebar && <Sidebar />}
+      {showSidebar && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onOpen={() => setSidebarOpen(true)} />}
+
+      {/* Mobile hamburger — top-left floating button */}
+      {showSidebar && !sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden fixed top-3 left-3 z-[45] w-9 h-9 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+      )}
 
       <main className={`flex-1 overflow-y-auto ${showSidebar ? 'main-content' : ''} ${!state.isOnline ? 'mt-9' : ''}`}>
         <Routes>

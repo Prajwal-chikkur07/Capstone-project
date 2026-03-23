@@ -502,7 +502,7 @@ export default function Home() {
   if (state.recordingMode === RECORDING_MODES.FILE_UPLOAD && !editableTranscript) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
-        <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center gap-2 text-[13px]">
+        <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 text-[13px]">
           <button onClick={() => setField('recordingMode', null)} className="text-gray-400 hover:text-gray-700 transition-colors font-medium">{L.home}</button>
           <span className="text-gray-200">/</span>
           <span className="text-gray-900 font-semibold">{L.uploadAudio || "Upload Audio"}</span>
@@ -528,7 +528,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[13px]">
           <button onClick={() => setField('recordingMode', null)} className="text-gray-400 hover:text-gray-700 transition-colors font-medium">Home</button>
           <span className="text-gray-200">/</span>
@@ -549,13 +549,13 @@ export default function Home() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col px-10 pt-10 pb-40 max-w-3xl w-full mx-auto">
+      <div className="flex-1 flex flex-col px-4 md:px-10 pt-6 md:pt-10 pb-40 max-w-3xl w-full mx-auto">
 
         {editableTranscript ? (
           <div className="animate-fade-in-blur">
 
             {/* Transcript header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">{L.transcript || "Transcript"}</span>
                 {confPct != null && (
@@ -566,7 +566,7 @@ export default function Home() {
                 )}
                 <SentimentBadge {...(sentiment || {})} />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <SpeakBtn onClick={handleSpeakEnglish} isPlaying={isPlaying} disabled={!editableTranscript} />
                 <CopyBtn text={editableTranscript} />
                 <button onClick={handleDownload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-700 text-[13px] font-medium transition-all">

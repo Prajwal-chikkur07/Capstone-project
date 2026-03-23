@@ -43,7 +43,7 @@ export default function LandingPage() {
           <span className="text-[12px] font-semibold text-[#8a5c2e] tracking-wide">Powered by Team ARTiculate</span>
         </div>
 
-        <h1 className="text-[3rem] md:text-[4rem] font-extrabold text-[#1a0f00] leading-[1.08] tracking-tight max-w-3xl mb-6">
+        <h1 className="text-[2.2rem] md:text-[4rem] font-extrabold text-[#1a0f00] leading-[1.08] tracking-tight max-w-3xl mb-6">
           Speak in any language.<br />
           <span className="text-[#c9a84c]">Understood everywhere.</span>
         </h1>
@@ -102,7 +102,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Banner */}
-      <section className="mx-6 md:mx-14 mb-20 rounded-3xl bg-[#1a0f00] px-10 py-14 flex flex-col md:flex-row items-center justify-between gap-8 max-w-6xl xl:mx-auto">
+      <section className="mx-4 md:mx-14 mb-20 rounded-3xl bg-[#1a0f00] px-6 md:px-10 py-10 md:py-14 flex flex-col md:flex-row items-center justify-between gap-8 max-w-6xl xl:mx-auto">
         <div>
           <h3 className="text-[1.8rem] font-extrabold text-white leading-tight mb-2">
             Ready to break the<br />language barrier?
