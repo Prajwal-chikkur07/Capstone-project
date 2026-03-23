@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import LoadingOverlay from './components/LoadingOverlay';
@@ -20,69 +21,52 @@ import Dictionary from './pages/Dictionary';
 import Analytics from './pages/Analytics';
 import ShareView from './pages/ShareView';
 import VisionTranslate from './pages/VisionTranslate';
+import AppHome from './pages/AppHome';
+import WidgetSetup from './pages/WidgetSetup';
 import { useApp } from './context/AppContext';
 import * as api from './services/api';
 
-import AppHome from './pages/AppHome';
-import WidgetSetup from './pages/WidgetSetup';
-
-function MainContent() {
+// Guard: redirect to /auth if not logged in
+function RequireAuth({ children }) {
   const { state } = useApp();
-  if (state.currentView === 'landing')         return <LandingPage />;
-  if (state.currentView === 'appHome')         return <AppHome />;
-  if (state.currentView === 'continuous')      return <ContinuousListening />;
-  if (state.currentView === 'settings')        return <Settings />;
-  if (state.currentView === 'profile')         return <Profile />;
-  if (state.currentView === 'history')         return <History />;
-  if (state.currentView === 'templates')       return <Templates />;
-  if (state.currentView === 'dictionary')      return <Dictionary />;
-  if (state.currentView === 'analytics')       return <Analytics />;
-  if (state.currentView === 'share')           return <ShareView />;
-  if (state.currentView === 'vision')          return <VisionTranslate />;
-  if (state.currentView === 'englishToNative') return <EnglishToNativeView />;
-  if (state.currentView === 'home')            return <Home />;
-  return <AppHome />;
+  if (!state.authUser) return <Navigate to="/auth" replace />;
+  return children;
+}
+
+// Guard: redirect to /widget-setup if setup not done
+function RequireSetup({ children }) {
+  const { state } = useApp();
+  if (!state.authUser) return <Navigate to="/auth" replace />;
+  if (!state.widgetSetupDone) return <Navigate to="/widget-setup" replace />;
+  return children;
 }
 
 function AppShell() {
   const { state, setOnline } = useApp();
+  const location = useLocation();
   const pollRef = useRef(null);
+  const failCountRef = useRef(0);
 
   // Apply dark mode class to <html>
   useEffect(() => {
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state.darkMode]);
 
-  // Offline detection — poll backend every 30s, only mark offline after 2 consecutive failures
-  const failCountRef = useRef(0);
+  // Offline detection
   useEffect(() => {
     const check = async () => {
       const online = await api.checkHealth();
-      if (online) {
-        failCountRef.current = 0;
-        setOnline(true);
-      } else {
-        failCountRef.current += 1;
-        if (failCountRef.current >= 2) setOnline(false);
-      }
+      if (online) { failCountRef.current = 0; setOnline(true); }
+      else { failCountRef.current += 1; if (failCountRef.current >= 2) setOnline(false); }
     };
-    // Delay first check by 3s to let backend warm up
     const initTimer = setTimeout(check, 3000);
     pollRef.current = setInterval(check, 30000);
     return () => { clearTimeout(initTimer); clearInterval(pollRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Public pages — no auth required
-  if (state.currentView === 'landing') return <LandingPage />;
-  if (state.currentView === 'splash')  return <SplashScreen />;
-  if (state.currentView === 'auth')    return <AuthPage />;
-
-  // All other views require login
-  if (!state.authUser) return <LandingPage />;
-
-  // First-time widget setup
-  if (!state.widgetSetupDone) return <WidgetSetup />;
+  const isPublicPage = ['/', '/landing', '/auth', '/splash'].includes(location.pathname);
+  const showSidebar = !state.focusMode && !isPublicPage && location.pathname !== '/widget-setup';
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
@@ -94,12 +78,40 @@ function AppShell() {
         </div>
       )}
 
-      {/* Focus mode hides sidebar; landing page also hides sidebar */}
-      {!state.focusMode && state.currentView !== 'landing' && <Sidebar />}
+      {showSidebar && <Sidebar />}
 
-      <main className={`flex-1 overflow-y-auto ${(!state.focusMode && state.currentView !== 'landing') ? 'main-content' : ''} ${!state.isOnline ? 'mt-9' : ''}`}>
-        <MainContent />
+      <main className={`flex-1 overflow-y-auto ${showSidebar ? 'main-content' : ''} ${!state.isOnline ? 'mt-9' : ''}`}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<SplashScreen />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/splash" element={<SplashScreen />} />
+
+          {/* Widget setup (auth required, setup not done) */}
+          <Route path="/widget-setup" element={
+            <RequireAuth><WidgetSetup /></RequireAuth>
+          } />
+
+          {/* App routes (auth + setup required) */}
+          <Route path="/app" element={<RequireSetup><AppHome /></RequireSetup>} />
+          <Route path="/app/home" element={<RequireSetup><Home /></RequireSetup>} />
+          <Route path="/app/continuous" element={<RequireSetup><ContinuousListening /></RequireSetup>} />
+          <Route path="/app/english-to-native" element={<RequireSetup><EnglishToNativeView /></RequireSetup>} />
+          <Route path="/app/vision" element={<RequireSetup><VisionTranslate /></RequireSetup>} />
+          <Route path="/app/history" element={<RequireSetup><History /></RequireSetup>} />
+          <Route path="/app/templates" element={<RequireSetup><Templates /></RequireSetup>} />
+          <Route path="/app/dictionary" element={<RequireSetup><Dictionary /></RequireSetup>} />
+          <Route path="/app/analytics" element={<RequireSetup><Analytics /></RequireSetup>} />
+          <Route path="/app/settings" element={<RequireSetup><Settings /></RequireSetup>} />
+          <Route path="/app/profile" element={<RequireSetup><Profile /></RequireSetup>} />
+          <Route path="/app/share" element={<RequireSetup><ShareView /></RequireSetup>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
+
       <LoadingOverlay />
       <Notifications />
       <CommandPalette />

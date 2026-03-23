@@ -1,9 +1,9 @@
 import { Mic, Ear, FileAudio, ScanText, ArrowRight, Globe, Zap, Shield, Languages, Sparkles, Send } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
-  const { setField } = useApp();
-  const goAuth = () => setField('currentView', 'auth');
+  const navigate = useNavigate();
+  const goAuth = () => navigate('/auth');
 
   const features = [
     { icon: Mic,       title: 'Live Transcription',    desc: 'Push-to-talk recording in 10 Indian languages with instant English output.',  tag: 'Push-to-talk' },

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useSpeech } from '../hooks/useSpeech';
 import * as api from '../services/api';
@@ -63,12 +64,13 @@ function SentimentBadge({ sentiment, score }) {
 
 function ChannelModal({ channel, text, onClose }) {
   const { state, setField } = useApp();
+  const navigate = useNavigate();
   const creds = state.channelCredentials || {};
   const [toEmail, setToEmail] = useState('');
   const [status, setStatus] = useState(null);
   const [errMsg, setErrMsg] = useState('');
   const hasCredentials = { email: true, slack: !!creds.slackWebhook?.trim(), linkedin: true, whatsapp: !!creds.whatsappPhone?.trim() }[channel.id];
-  const goToProfile = () => { onClose(); setField('currentView', 'profile'); };
+  const goToProfile = () => { onClose(); navigate('/app/profile'); };
   const handleSend = async () => {
     setStatus('sending');
     try {

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import RecordingControls from '../components/RecordingControls';
 import { useApp } from '../context/AppContext';
 import {
@@ -127,6 +128,7 @@ function FileUploadZone({ onTranscribed }) {
 
 function ChannelModal({ channel, text, onClose }) {
   const { state, setField } = useApp();
+  const navigate = useNavigate();
   const creds = state.channelCredentials || {};
   const [toEmail, setToEmail] = useState('');
   const [status, setStatus] = useState(null);
@@ -137,7 +139,7 @@ function ChannelModal({ channel, text, onClose }) {
     linkedin: true, whatsapp: !!creds.whatsappPhone?.trim(),
   }[channel.id];
 
-  const goToProfile = () => { onClose(); setField('currentView', 'profile'); };
+  const goToProfile = () => { onClose(); navigate('/app/profile'); };
   const canSend = channel.id === 'email' ? !!toEmail.trim() : true;
 
   const handleSend = async () => {

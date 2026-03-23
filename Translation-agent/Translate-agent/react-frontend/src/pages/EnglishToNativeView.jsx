@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import {
   ChevronDown, Volume2, Square, Loader2, Languages,
@@ -41,6 +42,7 @@ const CHANNELS = [
 /* ── Minimal send modal (reuses translated text directly) ── */
 function SendModal({ channel, text, onClose }) {
   const { state, setField } = useApp();
+  const navigate = useNavigate();
   const creds = state.channelCredentials || {};
   const [toEmail, setToEmail] = useState('');
   const [status, setStatus] = useState(null);
@@ -51,7 +53,7 @@ function SendModal({ channel, text, onClose }) {
     linkedin: true, whatsapp: !!creds.whatsappPhone?.trim(),
   }[channel.id];
 
-  const goToProfile = () => { onClose(); setField('currentView', 'profile'); };
+  const goToProfile = () => { onClose(); navigate('/app/profile'); };
   const canSend = channel.id === 'email' ? !!toEmail.trim() : true;
 
   const handleSend = async () => {

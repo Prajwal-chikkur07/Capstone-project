@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import {
   Mic2, Globe, Clock, BookmarkPlus, BookOpen, User, Settings,
   Languages, BarChart2, Moon, Sun, Search, ArrowRight, Zap
 } from 'lucide-react';
+
+const VIEW_TO_PATH = {
+  home: '/app/home', englishToNative: '/app/english-to-native',
+  history: '/app/history', templates: '/app/templates',
+  dictionary: '/app/dictionary', analytics: '/app/analytics',
+  profile: '/app/profile', settings: '/app/settings',
+};
 
 const COMMANDS = (state, actions) => [
   { id: 'home',            label: 'Native to English',  icon: Mic2,         group: 'Navigate', action: () => actions.nav('home') },
@@ -25,7 +33,8 @@ const COMMANDS = (state, actions) => [
 ];
 
 export default function CommandPalette() {
-  const { state, setField, toggleDark } = useApp();
+  const { state, toggleDark } = useApp();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
@@ -49,7 +58,7 @@ export default function CommandPalette() {
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
 
   const actions = {
-    nav: (view) => { setField('currentView', view); close(); },
+    nav: (view) => { navigate(VIEW_TO_PATH[view] || '/app'); close(); },
     toggleDark: () => { toggleDark(); close(); },
     translate: () => { close(); },
   };

@@ -1,4 +1,5 @@
-import { Languages, Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getLabels } from '../services/uiLabels';
 
@@ -6,7 +7,7 @@ const SectionLabel = ({ label }) => (
   <p className="px-3 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{label}</p>
 );
 
-const NavBtn = ({ view, icon: Icon, label, badge, active, onClick }) => (
+const NavBtn = ({ to, icon: Icon, label, badge, active, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] transition-all duration-150 ${
@@ -20,14 +21,17 @@ const NavBtn = ({ view, icon: Icon, label, badge, active, onClick }) => (
 );
 
 export default function Sidebar() {
-  const { state, setField, setFields, clearAll, toggleDark, RECORDING_MODES, logout } = useApp();
+  const { state, clearAll, toggleDark, RECORDING_MODES, logout } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
   const L = getLabels(state.uiLanguage);
 
-  const nav = (view) => () => {
-    if (state.currentView !== view) clearAll();
-    if (view === 'home') setFields({ currentView: 'home', recordingMode: RECORDING_MODES.PUSH_TO_TALK });
-    else setField('currentView', view);
+  const nav = (path) => () => {
+    clearAll();
+    navigate(path);
   };
+
+  const is = (path) => location.pathname === path;
 
   return (
     <aside className="sidebar flex flex-col">
@@ -41,29 +45,23 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-2 overflow-y-auto">
-
-        {/* Home */}
         <div className="mt-3">
-          <NavBtn view="appHome" icon={Mic2} label={L.home} active={state.currentView === 'appHome' || (!state.currentView || state.currentView === 'appHome')} onClick={nav('appHome')} />
+          <NavBtn to="/app" icon={Mic2} label={L.home} active={is('/app')} onClick={nav('/app')} />
         </div>
 
-        {/* Translation */}
         <SectionLabel label={L.translation} />
-        <NavBtn view="home"            icon={Mic2}     label={L.nativeToEnglish}      active={state.currentView === 'home'}            onClick={nav('home')} />
-        <NavBtn view="continuous"      icon={Ear}      label={L.continuousListening}  active={state.currentView === 'continuous'}      onClick={nav('continuous')} />
-        <NavBtn view="englishToNative" icon={Globe}    label={L.englishToNative}      active={state.currentView === 'englishToNative'} onClick={nav('englishToNative')} />
-        <NavBtn view="vision"          icon={ScanText} label={L.visionTranslate}      active={state.currentView === 'vision'}          onClick={nav('vision')} />
+        <NavBtn to="/app/home"             icon={Mic2}     label={L.nativeToEnglish}     active={is('/app/home')}             onClick={nav('/app/home')} />
+        <NavBtn to="/app/continuous"       icon={Ear}      label={L.continuousListening} active={is('/app/continuous')}       onClick={nav('/app/continuous')} />
+        <NavBtn to="/app/english-to-native" icon={Globe}   label={L.englishToNative}     active={is('/app/english-to-native')} onClick={nav('/app/english-to-native')} />
+        <NavBtn to="/app/vision"           icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}           onClick={nav('/app/vision')} />
 
-        {/* Library */}
         <SectionLabel label={L.library} />
-        <NavBtn view="history"    icon={Clock}        label={L.history}    active={state.currentView === 'history'}    onClick={nav('history')} />
-        <NavBtn view="templates"  icon={BookmarkPlus} label={L.templates}  active={state.currentView === 'templates'}  onClick={nav('templates')} />
-        <NavBtn view="dictionary" icon={BookOpen}     label={L.dictionary} active={state.currentView === 'dictionary'} onClick={nav('dictionary')} />
+        <NavBtn to="/app/history"    icon={Clock}        label={L.history}    active={is('/app/history')}    onClick={nav('/app/history')} />
+        <NavBtn to="/app/templates"  icon={BookmarkPlus} label={L.templates}  active={is('/app/templates')}  onClick={nav('/app/templates')} />
+        <NavBtn to="/app/dictionary" icon={BookOpen}     label={L.dictionary} active={is('/app/dictionary')} onClick={nav('/app/dictionary')} />
 
-        {/* Insights */}
         <SectionLabel label={L.insights} />
-        <NavBtn view="analytics" icon={BarChart2} label={L.analytics} active={state.currentView === 'analytics'} onClick={nav('analytics')} />
-
+        <NavBtn to="/app/analytics" icon={BarChart2} label={L.analytics} active={is('/app/analytics')} onClick={nav('/app/analytics')} />
       </nav>
 
       {/* Bottom */}
@@ -88,9 +86,9 @@ export default function Sidebar() {
 
         {/* Profile */}
         <button
-          onClick={() => setField('currentView', 'profile')}
+          onClick={() => navigate('/app/profile')}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-            state.currentView === 'profile' ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+            is('/app/profile') ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
           }`}
         >
           <User className="w-4 h-4 shrink-0" strokeWidth={1.6} />
@@ -99,9 +97,9 @@ export default function Sidebar() {
 
         {/* Settings */}
         <button
-          onClick={() => setField('currentView', 'settings')}
+          onClick={() => navigate('/app/settings')}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-            state.currentView === 'settings' ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+            is('/app/settings') ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
           }`}
         >
           <Settings className="w-4 h-4 shrink-0" strokeWidth={1.6} />
@@ -110,7 +108,7 @@ export default function Sidebar() {
 
         {/* Logout */}
         <button
-          onClick={logout}
+          onClick={() => { logout(); navigate('/landing'); }}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all"
         >
           <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.6} />

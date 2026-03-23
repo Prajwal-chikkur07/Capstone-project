@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function SplashScreen() {
-  const { setField } = useApp();
+  const navigate = useNavigate();
   const [phase, setPhase] = useState('enter'); // 'enter' | 'tagline' | 'exit'
 
   useEffect(() => {
-    // Step 1: logo fades in (0–800ms)
-    // Step 2: tagline slides up (800ms)
     const t1 = setTimeout(() => setPhase('tagline'), 800);
-    // Step 3: fade out and navigate to auth (2400ms)
     const t2 = setTimeout(() => setPhase('exit'), 2200);
-    const t3 = setTimeout(() => setField('currentView', 'landing'), 2700);
+    const t3 = setTimeout(() => navigate('/landing'), 2700);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

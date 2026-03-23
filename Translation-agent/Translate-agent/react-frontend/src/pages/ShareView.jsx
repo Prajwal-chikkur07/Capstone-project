@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Copy, Check, ArrowLeft, Loader2, Link } from 'lucide-react';
 import * as api from '../services/api';
 
 export default function ShareView() {
-  const { setField } = useApp();
+  const navigate = useNavigate();
   const [linkId, setLinkId] = useState('');
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,7 @@ export default function ShareView() {
   return (
     <div className="min-h-screen bg-[#f8f8f8]">
       <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center gap-3">
-        <button onClick={() => setField('currentView', 'home')}
+        <button onClick={() => navigate('/app/home')}
           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </button>

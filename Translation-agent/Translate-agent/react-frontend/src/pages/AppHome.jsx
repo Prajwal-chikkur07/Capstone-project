@@ -1,22 +1,23 @@
 import { Mic2, Ear, Globe, ScanText, Sparkles, Languages, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { getLabels } from '../services/uiLabels';
 
 export default function AppHome() {
-  const { state, setField, setFields, clearAll, RECORDING_MODES } = useApp();
+  const { state, clearAll, RECORDING_MODES } = useApp();
+  const navigate = useNavigate();
   const L = getLabels(state.uiLanguage);
 
   const FEATURES = [
-    { icon: Mic2,     color: 'bg-violet-50 text-violet-600 border-violet-100', title: L.nativeToEnglish, desc: L.nativeToEnglishDesc,       view: 'home' },
-    { icon: Ear,      color: 'bg-blue-50 text-blue-600 border-blue-100',       title: L.continuousListening, desc: L.continuousListeningDesc, view: 'continuous' },
-    { icon: Globe,    color: 'bg-emerald-50 text-emerald-600 border-emerald-100', title: L.englishToNative, desc: L.englishToNativeDesc,     view: 'englishToNative' },
-    { icon: ScanText, color: 'bg-amber-50 text-amber-600 border-amber-100',    title: L.visionTranslate, desc: L.visionTranslateDesc,        view: 'vision' },
+    { icon: Mic2,     color: 'bg-violet-50 text-violet-600 border-violet-100', title: L.nativeToEnglish, desc: L.nativeToEnglishDesc,       path: '/app/home' },
+    { icon: Ear,      color: 'bg-blue-50 text-blue-600 border-blue-100',       title: L.continuousListening, desc: L.continuousListeningDesc, path: '/app/continuous' },
+    { icon: Globe,    color: 'bg-emerald-50 text-emerald-600 border-emerald-100', title: L.englishToNative, desc: L.englishToNativeDesc,     path: '/app/english-to-native' },
+    { icon: ScanText, color: 'bg-amber-50 text-amber-600 border-amber-100',    title: L.visionTranslate, desc: L.visionTranslateDesc,        path: '/app/vision' },
   ];
 
-  const go = (view) => {
+  const go = (path) => {
     clearAll();
-    if (view === 'home') setFields({ currentView: 'home', recordingMode: RECORDING_MODES.PUSH_TO_TALK });
-    else setField('currentView', view);
+    navigate(path);
   };
 
   return (
@@ -48,10 +49,10 @@ export default function AppHome() {
       <div className="px-10 max-w-3xl w-full mx-auto">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">{L.chooseMode}</p>
         <div className="grid grid-cols-2 gap-4">
-          {FEATURES.map(({ icon: Icon, color, title, desc, view }) => (
+          {FEATURES.map(({ icon: Icon, color, title, desc, path }) => (
             <button
-              key={view}
-              onClick={() => go(view)}
+              key={path}
+              onClick={() => go(path)}
               className="group bg-white border border-gray-100 rounded-2xl p-5 text-left hover:border-gray-300 hover:shadow-md transition-all active:scale-[0.98]"
             >
               <div className="flex items-start justify-between mb-4">

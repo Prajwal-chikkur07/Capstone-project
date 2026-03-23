@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 const DEMO = { email: 'demo@saaras.ai', password: 'demo1234' };
 
-// Simple in-memory "user store" backed by localStorage
 function getUsers() {
   try { return JSON.parse(localStorage.getItem('saaras_users') || '[]'); } catch { return []; }
 }
@@ -13,7 +13,8 @@ function saveUsers(users) {
 }
 
 export default function AuthPage() {
-  const { login, setField } = useApp();
+  const { login } = useApp();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('login'); // 'login' | 'signup'
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
@@ -38,7 +39,7 @@ export default function AuthPage() {
       if (isDemo || found) {
         const name = found ? found.name : 'Demo User';
         login({ name, email: form.email });
-        setField('currentView', 'appHome');
+        navigate('/app');
       } else {
         setError('Invalid email or password.');
       }
@@ -100,7 +101,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-[400px]">
           {/* Back to landing */}
-          <button onClick={() => setField('currentView', 'landing')}
+          <button onClick={() => navigate('/landing')}
             className="flex items-center gap-1.5 text-[12px] text-gray-400 hover:text-[#8a5c2e] font-medium mb-8 transition-colors">
             ← Back to home
           </button>

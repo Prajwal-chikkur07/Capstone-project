@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { BookmarkPlus, Copy, Check, Trash2, Search, Sparkles, X, Hash, Pin } from 'lucide-react';
 import { getLabels } from '../services/uiLabels';
@@ -24,6 +25,7 @@ function CopyBtn({ text }) {
 
 export default function Templates() {
   const { state, saveTemplates, setField, showSuccess, togglePinTemplate } = useApp();
+  const navigate = useNavigate();
   const L = getLabels(state.uiLanguage);
   const [search, setSearch] = useState('');
   const [filterTone, setFilterTone] = useState('All');
@@ -40,7 +42,7 @@ export default function Templates() {
 
   const handleDelete = (id) => saveTemplates(templates.filter(t => t.id !== id));
   const handleClearAll = () => { saveTemplates([]); setConfirmClear(false); showSuccess('All templates cleared'); };
-  const handleUseTemplate = (text) => { setField('englishText', text); setField('currentView', 'home'); showSuccess('Template loaded'); };
+  const handleUseTemplate = (text) => { setField('englishText', text); navigate('/app/home'); showSuccess('Template loaded'); };
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">

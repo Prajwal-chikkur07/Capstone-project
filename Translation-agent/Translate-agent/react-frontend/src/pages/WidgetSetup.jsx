@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 const WIDGET_URL = 'http://127.0.0.1:27182';
@@ -18,7 +19,8 @@ const LANGUAGES = [
 ];
 
 export default function WidgetSetup() {
-  const { setField, setWidgetSetupDone, setWidgetEnabled, setWidgetLanguages, setWidgetMode } = useApp();
+  const { setWidgetSetupDone, setWidgetEnabled, setWidgetLanguages, setWidgetMode } = useApp();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
   const [step, setStep] = useState(1); // 1 = language pick, 2 = widget enable
   const [enabling, setEnabling] = useState(false);
@@ -51,13 +53,13 @@ export default function WidgetSetup() {
     setWidgetMode(widgetMode);
     setWidgetSetupDone();
     setWidgetEnabled(true);
-    setField('currentView', 'home');
+    navigate('/app/home');
   };
 
   const handleSkip = () => {
     setWidgetSetupDone();
     setWidgetEnabled(false);
-    setField('currentView', 'home');
+    navigate('/app/home');
   };
 
   return (
