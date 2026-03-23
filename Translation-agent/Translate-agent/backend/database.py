@@ -36,14 +36,17 @@ if _raw_url.startswith("postgresql://") and "+psycopg2" not in _raw_url:
 DATABASE_URL = _raw_url
 
 # ── Engine ────────────────────────────────────────────────────────────────────
-# connect_args: require SSL for cloud providers (Render, Supabase, Neon, etc.)
-# pool_pre_ping: auto-reconnect on stale connections
+# Use SSL only for cloud providers (Render, Supabase, Neon, etc.)
+# Local postgres (localhost / 127.0.0.1) doesn't support SSL — skip it
+_is_local = any(h in DATABASE_URL for h in ["localhost", "127.0.0.1"])
+_connect_args = {} if _is_local else {"sslmode": "require"}
+
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
-    connect_args={"sslmode": "require"},
+    connect_args=_connect_args,
 )
 
 # ── Session factory ───────────────────────────────────────────────────────────
