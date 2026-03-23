@@ -108,16 +108,6 @@ export const suggestTone = async (text) => {
   return data.suggested_tone;
 };
 
-export const rewriteToneWithVocab = async (text, tone, userOverride = null, customVocabulary = null) => {
-  const { data } = await API.post('/rewrite-tone', {
-    text,
-    tone,
-    user_override: userOverride,
-    custom_vocabulary: customVocabulary,
-  });
-  return data.rewritten_text;
-};
-
 export const exportHistory = async (entries, format = 'csv') => {
   const response = await API.post('/export', { entries, format }, { responseType: 'blob' });
   const url = URL.createObjectURL(response.data);

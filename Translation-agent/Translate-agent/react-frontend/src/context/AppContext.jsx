@@ -49,7 +49,6 @@ function loadAuth() {
 }
 
 const initialState = {
-  currentView: 'splash',
   authUser: loadAuth(), // { name, email } or null
   recordingMode: null,
   isRecording: false,
@@ -100,7 +99,7 @@ function reducer(state, action) {
       return { ...state, authUser: action.user };
     case 'LOGOUT':
       localStorage.removeItem('saaras_auth');
-      return { ...state, authUser: null, currentView: 'landing' };
+      return { ...state, authUser: null };
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'SET_FIELDS':

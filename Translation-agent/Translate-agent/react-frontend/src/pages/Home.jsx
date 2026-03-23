@@ -277,6 +277,14 @@ export default function Home() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const prevEnglishText = useRef('');
 
+  // Reset playback state on unmount to avoid stuck "playing" indicators
+  useEffect(() => {
+    return () => {
+      setFields({ isPlayingEnglish: false, isPlayingRewritten: false, isPlayingNative: false });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Sync editable transcript when englishText changes from recording
   useEffect(() => {
     setEditableTranscript(state.englishText || '');

@@ -24,7 +24,7 @@ export default function WidgetSetup() {
   const [selected, setSelected] = useState([]);
   const [step, setStep] = useState(1); // 1 = language pick, 2 = widget enable
   const [enabling, setEnabling] = useState(false);
-  const [widgetMode, setLocalWidgetMode] = useState('englishToNative');
+  const [localWidgetMode, setLocalWidgetMode] = useState('englishToNative');
 
   const toggle = (code) => {
     setSelected(prev =>
@@ -45,12 +45,12 @@ export default function WidgetSetup() {
       await fetch(`${WIDGET_URL}/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: widgetMode, languages: selected }),
+        body: JSON.stringify({ mode: localWidgetMode, languages: selected }),
         signal: AbortSignal.timeout(1000),
       });
       await fetch(`${WIDGET_URL}/enable`, { signal: AbortSignal.timeout(1000) });
     } catch { /* widget may not be running yet — that's fine */ }
-    setWidgetMode(widgetMode);
+    setWidgetMode(localWidgetMode);
     setWidgetSetupDone();
     setWidgetEnabled(true);
     navigate('/app/home');
@@ -149,12 +149,11 @@ export default function WidgetSetup() {
                   icon: '⇠',
                 },
               ].map((option) => {
-                const isSelected = widgetMode === option.id;
+                const isSelected = localWidgetMode === option.id;
                 return (
                   <button
                     key={option.id}
-                    onClick={() => setLocalWidgetMode(option.id)}
-                    className={`rounded-2xl border-2 px-5 py-5 text-left transition-all ${
+                    onClick={() => setLocalWidgetMode(option.id)}                    className={`rounded-2xl border-2 px-5 py-5 text-left transition-all ${
                       isSelected
                         ? 'border-gray-900 bg-gray-900 text-white shadow-lg'
                         : 'border-gray-100 bg-white text-gray-900 hover:border-gray-300 hover:shadow-sm'
@@ -192,7 +191,7 @@ export default function WidgetSetup() {
               </div>
 
               <div className="max-w-sm space-y-3 mt-4">
-                {widgetMode === 'nativeToEnglish'
+                {localWidgetMode === 'nativeToEnglish'
                   ? [
                       { icon: '🌐', text: 'Pick your native language as the input language' },
                       { icon: '⌨️', text: 'Type in your native script inside the widget panel' },
