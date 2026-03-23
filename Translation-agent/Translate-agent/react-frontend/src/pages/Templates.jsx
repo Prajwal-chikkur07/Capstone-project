@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { BookmarkPlus, Copy, Check, Trash2, Search, Sparkles, X, Hash, Pin } from 'lucide-react';
+import { BookmarkPlus, Copy, Check, Trash2, Search, X, Hash, Pin } from 'lucide-react';
 import { getLabels } from '../services/uiLabels';
 
 const TONE_COLORS = {

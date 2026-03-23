@@ -36,7 +36,7 @@ export default function OutputBox({ label, content, language, type }) {
   }, [playingKey, setField]);
 
   const handleClear = useCallback(() => {
-    const key = { english: 'englishText', rewritten: 'rewrittenText', native: 'nativeTranslation' }[type];
+    const key = { english: 'englishText', native: 'nativeTranslation' }[type];
     if (key) setField(key, '');
   }, [type, setField]);
 

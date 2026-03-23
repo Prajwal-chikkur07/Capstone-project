@@ -71,6 +71,8 @@ export default function Settings() {
     finally { setClearing(false); }
   };
 
+  const isWidgetRunning = widgetRunning === true;
+
   const toggleWidget = async () => {
     if (!isWidgetRunning && !state.widgetEnabled) return; // can't enable if widget not running
     setWidgetLoading(true);
@@ -90,8 +92,6 @@ export default function Settings() {
 
   const hitRate = cacheStats && cacheStats.total_entries > 0
     ? Math.round((cacheStats.total_hits / (cacheStats.total_hits + cacheStats.total_entries)) * 100) : 0;
-
-  const isWidgetRunning = widgetRunning === true;
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] px-10 pt-10 pb-16 max-w-3xl mx-auto">

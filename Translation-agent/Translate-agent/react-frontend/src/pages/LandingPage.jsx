@@ -1,4 +1,4 @@
-import { Mic, Ear, FileAudio, ScanText, ArrowRight, Globe, Zap, Shield, Languages, Sparkles, Send } from 'lucide-react';
+import { Mic, Ear, FileAudio, ScanText, ArrowRight, Languages, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {

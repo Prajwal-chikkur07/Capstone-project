@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
 import { Copy, Check, ArrowLeft, Loader2, Link } from 'lucide-react';
 import * as api from '../services/api';
 
