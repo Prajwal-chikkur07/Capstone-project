@@ -15,6 +15,7 @@ from services.slack_service import send_to_slack, format_slack_message
 from services.linkedin_service import share_to_linkedin, format_linkedin_post, mock_linkedin_share
 from services.translation_cache import get_stats, clear_cache
 from routers.auth_router import router as auth_router
+from database import init_db
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,6 +23,11 @@ app = FastAPI(title="Voice Translation Backend")
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
 app.include_router(auth_router)
+
+# ── Create PostgreSQL tables on startup ───────────────────────────────────────
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # Configuration for file uploads
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB (supports up to 5 min audio)

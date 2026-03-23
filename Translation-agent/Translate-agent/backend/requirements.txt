@@ -9,3 +9,5 @@ python-multipart
 aiofiles
 gtts
 numpy>=1.26.4
+sqlalchemy>=2.0
+psycopg2-binary
