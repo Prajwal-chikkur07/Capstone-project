@@ -541,7 +541,7 @@ export default function Home() {
             <Keyboard className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{L.shortcuts || "Shortcuts"}</span>
           </button>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 hidden sm:flex">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
             <span className="text-[12px] text-gray-400 font-medium">SeedlingSpeaks v2.5</span>
           </div>
@@ -549,7 +549,7 @@ export default function Home() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col px-4 md:px-10 pt-6 md:pt-10 pb-40 max-w-3xl w-full mx-auto">
+      <div className="flex-1 flex flex-col px-4 md:px-10 pt-6 md:pt-10 pb-36 md:pb-40 max-w-3xl w-full mx-auto">
 
         {editableTranscript ? (
           <div className="animate-fade-in-blur">
@@ -583,7 +583,7 @@ export default function Home() {
               value={editableTranscript}
               onChange={e => setEditableTranscript(e.target.value)}
               rows={Math.max(4, editableTranscript.split('\n').length + 1)}
-              className="w-full text-[18px] text-gray-800 leading-[1.9] font-normal tracking-[-0.01em] bg-white rounded-xl px-4 py-3 border border-gray-100 focus:outline-none focus:border-gray-300 resize-none transition-all"
+              className="w-full text-[15px] md:text-[18px] text-gray-800 leading-[1.9] font-normal tracking-[-0.01em] bg-white rounded-xl px-4 py-3 border border-gray-100 focus:outline-none focus:border-gray-300 resize-none transition-all"
               spellCheck={false}
               placeholder="Your transcript will appear here..."
             />
@@ -696,7 +696,7 @@ export default function Home() {
             </div>
 
             {/* Translate row */}
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-4 flex items-center gap-3 flex-wrap">
               <div className="relative">
                 <select value={state.selectedLanguage} onChange={(e) => handleLangChange(e.target.value)}
                   className="appearance-none bg-white border border-gray-200 rounded-xl pl-3 pr-7 py-2 text-[13px] font-medium text-gray-600 cursor-pointer focus:outline-none hover:border-gray-300 transition-all shadow-sm">
@@ -924,8 +924,8 @@ export default function Home() {
       </div>
 
       {/* Fixed bottom toolbar */}
-      <div className="fixed bottom-0 inset-x-0 flex justify-center z-50 pb-6 pt-16 bg-gradient-to-t from-[#f8f8f8] via-[#f8f8f8]/90 to-transparent pointer-events-none" style={{ left: 220 }}>
-        <div className="pointer-events-auto">
+      <div className="fixed bottom-0 right-0 left-0 md:left-[220px] flex justify-center z-50 pb-[72px] md:pb-6 pt-16 bg-gradient-to-t from-[#f8f8f8] via-[#f8f8f8]/90 to-transparent pointer-events-none">
+        <div className="pointer-events-auto w-full px-4 md:px-0 md:w-auto flex justify-center">
           <RecordingControls />
         </div>
       </div>
