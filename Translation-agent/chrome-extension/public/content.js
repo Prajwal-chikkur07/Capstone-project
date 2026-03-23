@@ -384,76 +384,74 @@ function renderPanel() {
   let micBar;
   if (extMicRecording) {
     const waveBars = Array(22).fill(0).map(function() { return '<div class="vt-wave-bar" style="width:2px;height:3px;border-radius:2px;background:#fca5a5;transition:height 0.07s;"></div>'; }).join('');
-    micBar = '<div style="display:flex;align-items:center;gap:10px;background:#fff1f0;border:1px solid #ffd6d3;border-radius:12px;padding:10px 14px;">'
-      + '<div class="vt-rec-ring" style="width:8px;height:8px;border-radius:50%;background:#ff3b30;flex-shrink:0;"></div>'
-      + '<span id="vt-rec-timer" style="font-size:12px;font-family:monospace;font-weight:700;color:#ff3b30;flex-shrink:0;">' + fmtSec(extMicTimeSec) + '</span>'
-      + '<div id="vt-wave-bars" style="display:flex;align-items:center;gap:2px;flex:1;height:20px;">' + waveBars + '</div>'
-      + '<button id="vt-mic-stop" style="display:flex;align-items:center;gap:5px;background:#ff3b30;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,59,48,0.3);"><svg width="9" height="9" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>'
+    micBar = '<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;">'
+      + '<div style="width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0;animation:vtRecPulse 1s ease-in-out infinite;"></div>'
+      + '<span id="vt-rec-timer" style="font-size:12px;font-family:monospace;font-weight:700;color:#dc2626;flex-shrink:0;">' + fmtSec(extMicTimeSec) + '</span>'
+      + '<div id="vt-wave-bars" style="display:flex;align-items:center;gap:2px;flex:1;height:18px;">' + waveBars + '</div>'
+      + '<button id="vt-mic-stop" style="display:flex;align-items:center;gap:5px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;flex-shrink:0;"><svg width="9" height="9" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>'
       + '</div>';
   } else if (extMicLoading) {
-    micBar = '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;background:#f5f5f7;border-radius:12px;border:1px solid #e8e8ed;"><div class="vt-spinner"></div><span style="font-size:12px;font-weight:600;color:#86868b;letter-spacing:-0.01em;">Transcribing...</span></div>';
+    micBar = '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:#f8f8f8;border-radius:10px;border:1px solid #ececec;"><div class="vt-spinner"></div><span style="font-size:12px;font-weight:600;color:#9ca3af;">Transcribing...</span></div>';
   } else if (extRawText) {
     micBar = '<div style="display:flex;gap:8px;">'
-      + '<button id="vt-ext-send-box" class="vt-btn-primary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;font-size:12px;font-weight:700;letter-spacing:-0.01em;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>Send to Textbox</button>'
-      + '<button id="vt-ext-copy-bar" class="vt-btn-secondary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;font-size:12px;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>'
+      + '<button id="vt-ext-send-box" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.01em;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>Send to Textbox</button>'
+      + '<button id="vt-ext-copy-bar" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>'
       + '</div>';
   } else {
     micBar = '<div style="display:flex;gap:8px;">'
-      + '<button id="vt-mic-start" class="vt-btn-primary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;font-size:12px;font-weight:700;letter-spacing:-0.01em;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Start Speaking</button>'
-      + '<label class="vt-btn-secondary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;font-size:12px;font-weight:600;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload<input id="vt-file-input" type="file" accept="audio/*" style="display:none;" /></label>'
+      + '<button id="vt-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.01em;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Start Speaking</button>'
+      + '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Audio<input id="vt-file-input" type="file" accept="audio/*" style="display:none;" /></label>'
       + '</div>';
   }
 
   popupPanel.innerHTML = `
     <style>
-      @keyframes vtRecPulse{0%,100%{opacity:1}50%{opacity:0.25}}
-      #vt-mic-start:hover{background:linear-gradient(135deg,#3a3a3c,#1d1d1f) !important;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.22) !important;}
+      @keyframes vtRecPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+      #vt-mic-start:hover{background:#333 !important;}
       #vt-mic-start:active{transform:scale(0.97);}
-      #vt-ext-send-box:hover{background:linear-gradient(135deg,#3a3a3c,#1d1d1f) !important;transform:translateY(-1px);}
-      #vt-ext-copy-bar:hover{background:#f5f5f7 !important;border-color:#c7c7cc !important;}
     </style>
 
     <!-- HEADER -->
     <div id="vt-panel-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#1d1d1f,#3a3a3c);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:30px;height:30px;border-radius:9px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
         <div>
-          <div style="font-size:13px;font-weight:800;color:#1d1d1f;letter-spacing:-0.03em;line-height:1.2;">SeedlingSpeaks</div>
-          <div style="font-size:10px;color:#86868b;font-weight:500;letter-spacing:0.01em;">AI Translation</div>
+          <div style="font-size:13px;font-weight:800;color:#1a1a1a;letter-spacing:-0.02em;">SeedlingSpeaks</div>
+          <div style="font-size:10px;color:#9ca3af;font-weight:500;">AI Translation</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button id="vt-panel-toggle" style="width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;background:${isActive ? 'linear-gradient(135deg,#1d1d1f,#3a3a3c)' : '#e8e8ed'};position:relative;transition:background 0.22s;flex-shrink:0;box-shadow:${isActive ? '0 2px 8px rgba(0,0,0,0.2)' : 'inset 0 1px 3px rgba(0,0,0,0.08)'};">
-          <span style="position:absolute;top:3px;left:${isActive ? '21px' : '3px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.22s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+        <button id="vt-panel-toggle" style="width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;background:${isActive ? '#1a1a1a' : '#e5e7eb'};position:relative;transition:background 0.2s;flex-shrink:0;">
+          <span style="position:absolute;top:3px;left:${isActive ? '20px' : '3px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
         </button>
-        <button id="vt-panel-close" style="width:28px;height:28px;background:#f5f5f7;border:1px solid #e8e8ed;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#86868b;transition:all 0.15s;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button id="vt-panel-close" style="width:26px;height:26px;background:#f3f4f6;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9ca3af;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- ACTION BUTTONS -->
+    <!-- 4 ACTION BUTTONS -->
     <div id="vt-action-bar">
       ${iconActionBtn('vt-btn-all',   'Translate',  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`)}
-      ${iconActionBtn('vt-btn-sel',   'Select',     `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`)}
+      ${iconActionBtn('vt-btn-sel',   'Selection',  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`)}
       ${iconActionBtn('vt-btn-click', smartSelectActive ? 'Click ✓' : 'Click', `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg>`, smartSelectActive)}
-      ${iconActionBtn('vt-btn-chat',  window._vtLiveChatActive?.() ? 'Chat ✓' : 'Chat', `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`, window._vtLiveChatActive?.())}
+      ${iconActionBtn('vt-btn-chat',  window._vtLiveChatActive?.() ? 'Chat ✓' : 'Live Chat', `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`, window._vtLiveChatActive?.())}
       ${iconActionBtn('vt-btn-stop',  'Restore',    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`)}
     </div>
 
     <!-- MAIN CONTENT -->
-    <div id="vt-tab-content" class="vt-panel-animate">
+    <div id="vt-tab-content">
       ${window._vtLiveChatActive?.() ? (window._vtRenderChatPanel?.() || '') : renderMicOutput()}
     </div>
 
-    <!-- TONE BAR -->
+    <!-- TONE + ACTIONS BOTTOM SECTION -->
     <div id="vt-tone-bar">
       ${window._vtLiveChatActive?.() ? '' : renderToneBar()}
     </div>
 
-    <!-- MIC BAR -->
+    <!-- BOTTOM MIC BAR -->
     <div id="vt-mic-bar">
       ${window._vtLiveChatActive?.() ? '' : micBar}
     </div>`;
@@ -468,16 +466,14 @@ function renderPanel() {
 
 function iconActionBtn(id, label, svg, active = false) {
   const dimmed = !isActive && id !== 'vt-btn-stop';
-  const isOn = active;
-  const bg = isOn ? 'linear-gradient(135deg,#1d1d1f,#3a3a3c)' : '#ffffff';
-  const border = isOn ? 'transparent' : '#e8e8ed';
-  const iconBg = isOn ? 'rgba(255,255,255,0.12)' : '#f5f5f7';
-  const iconColor = isOn ? '#ffffff' : (dimmed ? '#c7c7cc' : '#3a3a3c');
-  const textColor = isOn ? '#ffffff' : (dimmed ? '#c7c7cc' : '#86868b');
-  const shadow = isOn ? '0 2px 8px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.04)';
-  return `<button id="${id}" class="vt-action-btn" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;background:${bg};border:1px solid ${border};border-radius:10px;cursor:pointer;opacity:${dimmed ? '0.45' : '1'};box-shadow:${shadow};" title="${label}">
-    <div style="width:28px;height:28px;border-radius:8px;background:${iconBg};display:flex;align-items:center;justify-content:center;color:${iconColor};">${svg}</div>
-    <span style="font-size:9px;font-weight:700;color:${textColor};letter-spacing:0.03em;text-transform:uppercase;">${label}</span>
+  const isActive2 = active;
+  const bg = isActive2 ? '#1a1a1a' : '#ffffff';
+  const border = isActive2 ? '#1a1a1a' : '#ececec';
+  const iconColor = isActive2 ? '#ffffff' : (dimmed ? '#d1d5db' : '#374151');
+  const textColor = isActive2 ? '#ffffff' : (dimmed ? '#d1d5db' : '#6b7280');
+  return `<button id="${id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;background:${bg};border:1px solid ${border};border-radius:10px;cursor:pointer;transition:all 0.12s;opacity:${dimmed ? '0.5' : '1'};" title="${label}">
+    <div style="width:28px;height:28px;border-radius:8px;background:${isActive2 ? 'rgba(255,255,255,0.12)' : '#f3f4f6'};display:flex;align-items:center;justify-content:center;color:${iconColor};">${svg}</div>
+    <span style="font-size:9px;font-weight:700;color:${textColor};letter-spacing:0.02em;text-transform:uppercase;">${label}</span>
   </button>`;
 }
 
@@ -486,35 +482,39 @@ function renderMicOutput() {
   const toneLabel = extSelectedTone || 'Transcript';
 
   if (!extRawText) {
-    return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px 16px;text-align:center;gap:12px;">'
-      + '<div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#f5f5f7,#e8e8ed);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">'
-      + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.8" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
-      + '</div>'
-      + '<div>'
-      + '<div style="font-size:14px;font-weight:700;color:#1d1d1f;margin-bottom:4px;letter-spacing:-0.02em;">Speak in your language</div>'
-      + '<div style="font-size:12px;color:#86868b;line-height:1.6;max-width:220px;">Tap Start Speaking, say something in your native language, and get an English translation.</div>'
-      + '</div>'
-      + '</div>';
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;gap:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:3px;">Speak in your language</div>
+          <div style="font-size:11px;color:#9ca3af;line-height:1.6;">Tap Start Speaking below, say something in your native language, and get an English translation.</div>
+        </div>
+      </div>`;
   }
 
-  return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;">'
-    + '<div style="width:6px;height:6px;border-radius:50%;background:#34c759;flex-shrink:0;"></div>'
-    + '<span class="vt-section-label">' + toneLabel + '</span>'
-    + (extToneLoading ? '<div class="vt-spinner" style="margin-left:auto;border-top-color:#1d1d1f;border-color:rgba(29,29,31,0.1);"></div>' : '')
-    + '</div>'
-    + (extToneLoading
-      ? '<div style="flex:1;background:#fff;border:1px solid #e8e8ed;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;color:#86868b;font-size:12px;min-height:80px;"><div class="vt-spinner"></div>Rewriting…</div>'
-      : '<div style="position:relative;flex:1;display:flex;flex-direction:column;">'
-        + '<textarea id="vt-ext-output" class="vt-textarea" style="flex:1;width:100%;padding:10px 44px 10px 12px;min-height:80px;">' + escapeHtml(displayText) + '</textarea>'
-        + '<div style="position:absolute;top:6px;right:6px;display:flex;gap:3px;">'
-        + '<button id="vt-ext-copy-out" title="Copy" style="width:26px;height:26px;background:rgba(255,255,255,0.95);border:1px solid #e8e8ed;border-radius:7px;color:#86868b;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06);">'
-        + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
-        + '</button>'
-        + '<button id="vt-ext-clear-out" title="Clear" style="width:26px;height:26px;background:rgba(255,255,255,0.95);border:1px solid #e8e8ed;border-radius:7px;color:#86868b;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06);">'
-        + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>'
-        + '</button>'
-        + '</div>'
-        + '</div>');
+  return `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0;">
+      <div style="width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+      <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">${toneLabel}</span>
+      ${extToneLoading ? `<div class="vt-spinner" style="margin-left:auto;border-top-color:#1a1a1a;border-color:rgba(26,26,26,0.1);"></div>` : ''}
+    </div>
+
+    ${extToneLoading
+      ? `<div style="flex:1;background:#fff;border:1px solid #ececec;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:#9ca3af;font-size:12px;"><div class="vt-spinner"></div>Rewriting…</div>`
+      : `<div style="position:relative;flex:1;display:flex;flex-direction:column;">
+          <textarea id="vt-ext-output" style="flex:1;width:100%;padding:10px 12px 10px 12px;padding-right:60px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:400;line-height:1.8;outline:none;resize:none;box-shadow:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ececec'">${escapeHtml(displayText)}</textarea>
+          <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px;">
+            <button id="vt-ext-copy-out" title="Copy" style="width:24px;height:24px;background:rgba(255,255,255,0.9);border:1px solid #e5e7eb;border-radius:6px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button id="vt-ext-clear-out" title="Clear" style="width:24px;height:24px;background:rgba(255,255,255,0.9);border:1px solid #e5e7eb;border-radius:6px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>`
+    }`;
 }
 
 function renderToneBar() {
@@ -522,22 +522,21 @@ function renderToneBar() {
   const displayText = extToneText || extRawText;
   const toneChips = EXT_TONES.map(function(t) {
     const active = extSelectedTone === t;
-    const border = active ? 'transparent' : '#e8e8ed';
-    const bg = active ? 'linear-gradient(135deg,#1d1d1f,#3a3a3c)' : '#ffffff';
-    const color = active ? '#fff' : '#3a3a3c';
-    const shadow = active ? '0 2px 6px rgba(0,0,0,0.18)' : '0 1px 2px rgba(0,0,0,0.04)';
-    return '<button class="vt-tone-chip" data-tone="' + t + '" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid ' + border + ';background:' + bg + ';color:' + color + ';box-shadow:' + shadow + ';letter-spacing:0.01em;">' + t + '</button>';
+    const border = active ? '#1a1a1a' : '#e5e7eb';
+    const bg = active ? '#1a1a1a' : '#fff';
+    const color = active ? '#fff' : '#6b7280';
+    return '<button class="vt-tone-chip" data-tone="' + t + '" style="padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid ' + border + ';background:' + bg + ';color:' + color + ';transition:all 0.12s;">' + t + '</button>';
   }).join('');
 
   const customBlock = extSelectedTone === 'Custom'
-    ? '<div style="display:flex;gap:6px;margin-top:8px;"><input id="vt-ext-custom-tone" type="text" placeholder="Describe your tone" value="' + esc(extCustomTone) + '" class="vt-input" style="flex:1;padding:8px 10px;font-size:11px;" /><button id="vt-ext-apply-custom" class="vt-btn-primary" style="padding:8px 12px;font-size:11px;font-weight:700;border-radius:8px;">Apply</button></div>'
+    ? '<div style="display:flex;gap:6px;margin-top:7px;"><input id="vt-ext-custom-tone" type="text" placeholder="Describe your tone" value="' + esc(extCustomTone) + '" style="flex:1;padding:7px 10px;border:1px solid #ececec;border-radius:8px;font-size:11px;outline:none;color:#1a1a1a;background:#fff;" /><button id="vt-ext-apply-custom" style="padding:7px 12px;background:#1a1a1a;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Apply</button></div>'
     : '';
 
   const rerecordBlock = displayText
-    ? '<div style="display:flex;gap:8px;margin-top:8px;"><button id="vt-tone-mic-start" class="vt-btn-primary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;font-size:11px;font-weight:700;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Re-record</button><label class="vt-btn-secondary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload<input id="vt-tone-file-input" type="file" accept="audio/*" style="display:none;" /></label></div>'
+    ? '<div style="display:flex;gap:8px;margin-top:8px;"><button id="vt-tone-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Start Speaking</button><label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Audio<input id="vt-tone-file-input" type="file" accept="audio/*" style="display:none;" /></label></div>'
     : '';
 
-  return '<div style="margin-bottom:8px;"><div class="vt-section-label" style="margin-bottom:6px;">Tone</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + toneChips + '</div>' + customBlock + '</div>' + rerecordBlock;
+  return '<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Tone</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + toneChips + '</div>' + customBlock + '</div>' + rerecordBlock;
 }
 
 

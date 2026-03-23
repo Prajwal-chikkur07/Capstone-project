@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: (typeof process !== 'undefined' && process.env?.VITE_API_URL)
+    ? process.env.VITE_API_URL + '/api'
+    : 'https://saaras-backend.onrender.com/api',
   timeout: 120000,
 });
 

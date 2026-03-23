@@ -63,7 +63,7 @@ function SentimentBadge({ sentiment, score }) {
 }
 
 function ChannelModal({ channel, text, onClose }) {
-  const { state, setField } = useApp();
+  const { state } = useApp();
   const navigate = useNavigate();
   const creds = state.channelCredentials || {};
   const [toEmail, setToEmail] = useState('');
@@ -116,7 +116,7 @@ function ChannelModal({ channel, text, onClose }) {
 }
 
 export default function ContinuousListening() {
-  const { state, setField, setFields, TARGET_LANGUAGES, showError, showSuccess, addHistory, saveTemplates, incrementUsage } = useApp();
+  const { state, setFields, TARGET_LANGUAGES, showError, showSuccess, addHistory, saveTemplates, incrementUsage } = useApp();
   const L = getLabels(state.uiLanguage);
   const { isPlaying, speak } = useSpeech();
 
@@ -437,6 +437,17 @@ export default function ContinuousListening() {
                     </button>
                   </div>
                   {summary && <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3"><p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">Summary</p><p className="text-[13px] text-gray-700 leading-relaxed">{summary}</p></div>}
+                  {meetingNotes && (
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 space-y-2">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Meeting Notes</p>
+                      {meetingNotes.summary && <p className="text-[13px] text-gray-700">{meetingNotes.summary}</p>}
+                      {meetingNotes.action_items && meetingNotes.action_items.length > 0 && (
+                        <div><p className="text-[11px] font-semibold text-gray-400 mt-2 mb-1">Action Items</p>
+                          <ul className="list-disc list-inside space-y-0.5">{meetingNotes.action_items.map((a, i) => <li key={i} className="text-[13px] text-gray-700">{a}</li>)}</ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {shareLink && <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5"><Link className="w-3.5 h-3.5 text-gray-400 shrink-0" /><span className="text-[13px] text-gray-600 flex-1">Link ID: <span className="font-mono font-semibold text-gray-900">{shareLink}</span></span><button onClick={() => { navigator.clipboard.writeText(shareLink); showSuccess('Copied!'); }} className="text-[12px] text-gray-400 hover:text-gray-700">Copy</button></div>}
                   <div>
                     <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Ask about this transcript</p>
@@ -455,7 +466,7 @@ export default function ContinuousListening() {
                 <select value={state.selectedLanguage} onChange={e => {
                   const lang = e.target.value;
                   setFields({ selectedLanguage: lang });
-                  if (transcript?.trim()) {
+                  if (transcript && transcript.trim()) {
                     setIsTranslating(true);
                     api.translateText(transcript, lang)
                       .then(t => setNativeTranslation(t))
