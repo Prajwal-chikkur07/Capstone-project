@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Clock, Trash2, RotateCcw, X, Search, Download, Star, Tag, Plus } from 'lucide-react';
 import * as api from '../services/api';
@@ -26,6 +27,7 @@ function ConfidencePill({ score }) {
 
 export default function History() {
   const { state, setField, setFields, deleteHistory, clearHistory, toggleStar, setHistoryTags } = useApp();
+  const navigate = useNavigate();
   const L = getLabels(state.uiLanguage);
   const [search, setSearch] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
@@ -60,7 +62,8 @@ export default function History() {
   };
 
   const handleRestore = (entry) => {
-    setFields({ englishText: entry.text, selectedLanguage: entry.lang || 'hi-IN', currentView: 'home' });
+    setFields({ englishText: entry.text, selectedLanguage: entry.lang || 'hi-IN' });
+    navigate('/app/home');
   };
 
   const handleExport = async (format) => {
