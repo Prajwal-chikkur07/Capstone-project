@@ -1779,12 +1779,14 @@ if (isContextValid()) {
 
   const SITES = {
     'web.whatsapp.com': {
-      // Use only .copyable-text (parent) — .selectable-text is a child of it, avoid double-matching
-      msgSelector: 'div.message-in .copyable-text',
+      // Match the outermost copyable-text container only — avoids partial child matches
+      msgSelector: 'div.message-in div.copyable-text',
       compose: () =>
         document.querySelector('div[contenteditable="true"][data-tab="10"]') ||
+        document.querySelector('div[contenteditable="true"][data-lexical-editor="true"]') ||
         document.querySelector('footer div[contenteditable="true"]') ||
-        document.querySelector('div[role="textbox"][contenteditable="true"]'),
+        document.querySelector('div[role="textbox"][contenteditable="true"]') ||
+        document.querySelector('div[contenteditable="true"][spellcheck="true"]'),
       sendBtn: () =>
         document.querySelector('button[data-tab="11"]') ||
         document.querySelector('button[aria-label="Send"]') ||
@@ -1856,7 +1858,13 @@ if (isContextValid()) {
     if (el.hasAttribute('data-vt-chat-done')) return;
     // Skip if any ancestor is already processed (avoids parent+child double-processing)
     if (el.closest('[data-vt-chat-done]')) return;
-    const text = (el.innerText || el.textContent || '').trim();
+
+    // For WhatsApp: get text from the inner span.selectable-text to avoid metadata
+    let text = '';
+    const innerSpan = el.querySelector('span.selectable-text span') || el.querySelector('span.selectable-text') || el;
+    text = (innerSpan.innerText || innerSpan.textContent || '').trim();
+    if (!text) text = (el.innerText || el.textContent || '').trim();
+
     if (!text || text.length < 2) return;
     if (/^\d{1,2}:\d{2}/.test(text)) return;
     // Skip UI chrome elements (buttons, labels, etc.)
@@ -1938,8 +1946,11 @@ if (isContextValid()) {
       chatMicTimeSec = 0;
       chatMicTimer = setInterval(() => {
         chatMicTimeSec++;
-        const el = document.getElementById('vt-chat-rec-timer');
-        if (el) el.textContent = fmtSec(chatMicTimeSec);
+        // Only update the timer text, don't re-render the whole panel
+        const timerEl = document.getElementById('vt-chat-rec-timer');
+        if (timerEl) {
+          timerEl.textContent = fmtSec(chatMicTimeSec);
+        }
       }, 1000);
       refreshChatPanel();
     } catch { showToast('Microphone access denied.'); }
@@ -1961,25 +1972,75 @@ if (isContextValid()) {
     const compose = site.compose();
     if (!compose) { showToast('Could not find compose box.'); return; }
 
-    const host = window.location.hostname;
-    if (host.includes('whatsapp.com')) {
-      _fillWhatsApp(compose, text);
-    } else {
-      _injectIntoContentEditable(compose, text);
-    }
+    // Fill the compose box then send
+    fillCompose(compose, text, window.location.hostname, function() {
+      setTimeout(function() {
+        const btn = site.sendBtn?.();
+        if (btn) {
+          btn.click();
+        } else {
+          compose.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+        }
+        chatMessages.push({ id: 'vtmsg_out_' + Date.now(), sender: 'me', original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+        chatOutgoingText = '';
+        refreshChatPanel();
+        showToast('✓ Sent');
+      }, 400);
+    });
+  }
 
-    setTimeout(() => {
-      const btn = site.sendBtn?.();
-      if (btn) {
-        btn.click();
-      } else {
-        compose.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-      }
-      chatMessages.push({ id: 'vtmsg_out_' + Date.now(), sender: 'me', original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
-      chatOutgoingText = '';
-      refreshChatPanel();
-      showToast('✓ Sent');
-    }, 200);
+  // Fill a contenteditable compose box reliably across WhatsApp/Slack/Gmail
+  function fillCompose(el, text, host, callback) {
+    el.focus();
+
+    // Method 1: DataTransfer paste event (works in WhatsApp Lexical, Slack)
+    try {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      const pasteEvent = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+      el.dispatchEvent(pasteEvent);
+      // Check if it worked after a tick
+      setTimeout(function() {
+        const val = (el.innerText || el.textContent || '').trim();
+        if (val && val !== '\n') { callback(); return; }
+        // Method 2: execCommand insertText
+        el.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, text);
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+        setTimeout(function() {
+          const val2 = (el.innerText || el.textContent || '').trim();
+          if (val2 && val2 !== '\n') { callback(); return; }
+          // Method 3: clipboard writeText + paste
+          navigator.clipboard.writeText(text).then(function() {
+            el.focus();
+            document.execCommand('paste');
+            setTimeout(callback, 200);
+          }).catch(function() {
+            // Method 4: manual DOM insertion
+            el.focus();
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) {
+              const range = sel.getRangeAt(0);
+              range.selectNodeContents(el);
+              range.deleteContents();
+              range.insertNode(document.createTextNode(text));
+              range.collapse(false);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+            el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+            callback();
+          });
+        }, 80);
+      }, 80);
+    } catch(e) {
+      // Fallback
+      el.focus();
+      document.execCommand('selectAll', false, null);
+      document.execCommand('insertText', false, text);
+      callback();
+    }
   }
 
   function renderChatPanel() {
@@ -2022,21 +2083,19 @@ if (isContextValid()) {
         <div class="vt-spinner"></div><span style="font-size:11px;color:#6b7280;">Transcribing…</span>
       </div>`;
     } else if (chatOutgoingText) {
-      outgoingHtml = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;">
-        <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Ready to send</div>
-        <div id="vt-chat-outgoing-text" contenteditable="true" style="font-size:12px;color:#1a1a1a;line-height:1.5;outline:none;min-height:20px;border:none;background:transparent;">${escapeHtml(chatOutgoingText)}</div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button id="vt-chat-send-btn" style="flex:1;padding:8px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send
-          </button>
-          <button id="vt-chat-discard-btn" style="padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;font-size:11px;font-weight:600;cursor:pointer;">Discard</button>
-        </div>
-      </div>`;
+      outgoingHtml = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;">'
+        + '<div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Ready to send</div>'
+        + '<div id="vt-chat-outgoing-text" contenteditable="true" style="font-size:12px;color:#1a1a1a;line-height:1.5;outline:none;min-height:20px;border:none;background:transparent;">' + escapeHtml(chatOutgoingText) + '</div>'
+        + '<div style="display:flex;gap:6px;margin-top:8px;">'
+        + '<button id="vt-chat-send-btn" style="flex:1;padding:8px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</button>'
+        + '<button id="vt-chat-discard-btn" style="padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;font-size:11px;font-weight:600;cursor:pointer;">Discard</button>'
+        + '</div></div>';
     } else {
-      outgoingHtml = `<button id="vt-chat-mic-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        Speak to send
-      </button>`;
+      outgoingHtml = '<div style="display:flex;gap:6px;align-items:center;">'
+        + '<input id="vt-chat-text-input" type="text" placeholder="Type a message..." value="' + escapeHtml(chatOutgoingText) + '" style="flex:1;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:12px;outline:none;color:#1a1a1a;background:#fff;" />'
+        + '<button id="vt-chat-text-send-btn" style="padding:10px 14px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'
+        + '<button id="vt-chat-mic-btn" title="Speak to send" style="padding:10px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:10px;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>'
+        + '</div>';
     }
 
     return `
@@ -2063,6 +2122,11 @@ if (isContextValid()) {
     if (!popupPanel || !liveChatActive) return;
     const content = popupPanel.querySelector('#vt-tab-content');
     if (!content) return;
+    // Preserve any typed text in the input before re-render
+    const existingInput = content.querySelector('#vt-chat-text-input');
+    if (existingInput && existingInput.value.trim()) {
+      chatOutgoingText = existingInput.value;
+    }
     content.innerHTML = renderChatPanel();
     wireChatEvents();
     const feed = content.querySelector('#vt-chat-messages');
@@ -2094,6 +2158,27 @@ if (isContextValid()) {
 
     const stopRec = content.querySelector('#vt-chat-stop-rec');
     if (stopRec) stopRec.onclick = stopChatMic;
+
+    // Text input — update chatOutgoingText on input
+    const textInput = content.querySelector('#vt-chat-text-input');
+    if (textInput) {
+      textInput.oninput = (e) => { chatOutgoingText = e.target.value; };
+      textInput.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          chatOutgoingText = textInput.value.trim();
+          if (chatOutgoingText) sendOutgoing();
+        }
+      };
+    }
+
+    // Text send button
+    const textSendBtn = content.querySelector('#vt-chat-text-send-btn');
+    if (textSendBtn) textSendBtn.onclick = () => {
+      const inp = content.querySelector('#vt-chat-text-input');
+      chatOutgoingText = (inp ? inp.value : chatOutgoingText).trim();
+      if (chatOutgoingText) sendOutgoing();
+    };
 
     const sendBtn = content.querySelector('#vt-chat-send-btn');
     if (sendBtn) sendBtn.onclick = () => {
