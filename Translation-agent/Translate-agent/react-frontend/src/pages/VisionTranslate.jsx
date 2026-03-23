@@ -214,58 +214,90 @@ export default function VisionTranslate() {
               </div>
             )}
 
-            {/* Image with overlay */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div ref={containerRef} className="relative inline-block w-full flex justify-center bg-[#f0f0f0] p-4">
-                <div className="relative inline-block">
-                  <img
-                    ref={imgRef}
-                    src={imageUrl}
-                    alt="Uploaded"
-                    onLoad={() => {
-                      if (imgRef.current) setImgSize({ w: imgRef.current.offsetWidth, h: imgRef.current.offsetHeight });
-                    }}
-                    style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block', borderRadius: 8 }}
-                  />
-
-                  {/* Translation overlays — Google Translate style */}
-                  {!showOriginal && imgSize.w > 0 && regions.map((r, i) => {
-                    const left = r.x * imgSize.w;
-                    const top = r.y * imgSize.h;
-                    const width = r.w * imgSize.w;
-                    const height = r.h * imgSize.h;
-                    const fontSize = Math.max(10, Math.min(r.font_size * imgSize.h, 28));
-                    const bg = r.bg_color || '#ffffff';
-                    const color = r.text_color || '#000000';
-
-                    return (
-                      <div
-                        key={i}
-                        style={{
-                          position: 'absolute',
-                          left, top, width, height,
-                          background: bg,
-                          color,
-                          fontSize,
-                          fontWeight: 500,
-                          lineHeight: 1.3,
-                          padding: '2px 4px',
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                          display: 'flex',
-                          alignItems: 'center',
-                          boxSizing: 'border-box',
-                          wordBreak: 'break-word',
-                          hyphens: 'auto',
-                        }}
-                        title={`Original: ${r.original}`}
-                      >
-                        {r.translated}
-                      </div>
-                    );
-                  })}
+            {/* Image + translations side by side */}
+            <div className={`flex gap-4 ${regions.length > 0 ? 'items-start' : ''}`}>
+              {/* Image with numbered dot overlays */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex-1 min-w-0">
+                <div ref={containerRef} className="relative flex justify-center bg-[#f0f0f0] p-4">
+                  <div className="relative inline-block">
+                    <img
+                      ref={imgRef}
+                      src={imageUrl}
+                      alt="Uploaded"
+                      onLoad={() => {
+                        if (imgRef.current) setImgSize({ w: imgRef.current.offsetWidth, h: imgRef.current.offsetHeight });
+                      }}
+                      style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', display: 'block', borderRadius: 8 }}
+                    />
+                    {/* Numbered dot markers on image */}
+                    {imgSize.w > 0 && regions.map((r, i) => {
+                      const cx = (r.x + r.w / 2) * imgSize.w;
+                      const cy = (r.y + r.h / 2) * imgSize.h;
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            position: 'absolute',
+                            left: cx - 10,
+                            top: cy - 10,
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            background: '#111827',
+                            color: '#fff',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                            cursor: 'default',
+                            userSelect: 'none',
+                          }}
+                          title={`${r.original} → ${r.translated}`}
+                        >
+                          {i + 1}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
+
+              {/* Translation list panel */}
+              {regions.length > 0 && (
+                <div className="w-80 shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">
+                      {showOriginal ? 'Original text' : `${LANG_LABELS[targetLang]} translation`}
+                    </p>
+                    <span className="text-[11px] text-gray-300">{regions.length} blocks</span>
+                  </div>
+                  <div className="overflow-y-auto" style={{ maxHeight: '70vh' }}>
+                    {regions.map((r, i) => (
+                      <div key={i} className="flex gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                        <div className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {i + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] text-gray-800 leading-relaxed">
+                            {showOriginal ? r.original : r.translated}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-1 truncate">
+                            {showOriginal ? r.translated : r.original}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(showOriginal ? r.original : r.translated)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-300 hover:text-gray-600 transition-all shrink-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
