@@ -2,20 +2,12 @@ import { useState } from 'react';
 import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-
-const DEMO = { email: 'demo@saaras.ai', password: 'demo1234' };
-
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem('saaras_users') || '[]'); } catch { return []; }
-}
-function saveUsers(users) {
-  localStorage.setItem('saaras_users', JSON.stringify(users));
-}
+import { authLogin, authSignup, setToken } from '../services/api';
 
 export default function AuthPage() {
   const { login } = useApp();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('login'); // 'login' | 'signup'
+  const [tab, setTab] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
@@ -24,46 +16,37 @@ export default function AuthPage() {
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(''); };
 
-  const fillDemo = () => {
-    setForm(f => ({ ...f, email: DEMO.email, password: DEMO.password }));
-    setError('');
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      const users = getUsers();
-      const isDemo = form.email === DEMO.email && form.password === DEMO.password;
-      const found = users.find(u => u.email === form.email && u.password === form.password);
-      if (isDemo || found) {
-        const name = found ? found.name : 'Demo User';
-        login({ name, email: form.email });
-        navigate('/app');
-      } else {
-        setError('Invalid email or password.');
-      }
+    setLoading(true); setError('');
+    try {
+      const { token, user } = await authLogin({ email: form.email, password: form.password });
+      setToken(token);
+      login(user, token);
+      navigate('/app');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Invalid email or password.');
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('Name is required.'); return; }
     if (!form.email.includes('@')) { setError('Enter a valid email.'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    setLoading(true);
-    setTimeout(() => {
-      const users = getUsers();
-      if (users.find(u => u.email === form.email)) {
-        setError('An account with this email already exists.');
-        setLoading(false); return;
-      }
-      saveUsers([...users, { name: form.name, email: form.email, password: form.password }]);
-      setSignedUp(true);
+    setLoading(true); setError('');
+    try {
+      const { token, user } = await authSignup({ name: form.name, email: form.email, password: form.password });
+      setToken(token);
+      login(user, token);
+      navigate('/app');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Signup failed. Please try again.');
+    } finally {
       setLoading(false);
-      setTimeout(() => { setTab('login'); setSignedUp(false); setForm(f => ({ ...f, name: '' })); }, 1500);
-    }, 600);
+    }
   };
 
   return (
@@ -92,21 +75,17 @@ export default function AuthPage() {
             </div>
           ))}
         </div>
-        <div>
-          <p className="text-[12px] text-white/20">Powered by Seedlinglabs · v2.5</p>
-        </div>
+        <p className="text-[12px] text-white/20">Powered by Seedlinglabs · v2.5</p>
       </div>
 
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-4 md:px-6 py-12">
         <div className="w-full max-w-[400px]">
-          {/* Back to landing */}
           <button onClick={() => navigate('/landing')}
             className="flex items-center gap-1.5 text-[12px] text-gray-400 hover:text-[#8a5c2e] font-medium mb-8 transition-colors">
             ← Back to home
           </button>
 
-          {/* Logo (mobile) */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
             <img src="/seedlinglabs-logo.png" alt="Seedlinglabs" className="w-8 h-8 rounded-full object-cover" />
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
@@ -119,20 +98,6 @@ export default function AuthPage() {
             {tab === 'login' ? 'Sign in to continue to SeedlingSpeaks.' : 'Get started with SeedlingSpeaks for free.'}
           </p>
 
-
-          {/* Demo credentials hint */}
-          {tab === 'login' && (
-            <button onClick={fillDemo}
-              className="w-full mb-6 flex items-center justify-between px-4 py-3 rounded-xl border border-[#c9a84c]/40 bg-[#fdf6e8] hover:bg-[#f5ead0] transition-all group">
-              <div className="text-left">
-                <p className="text-[12px] font-bold text-[#8a5c2e] mb-0.5">Try demo account</p>
-                <p className="text-[11px] text-[#b08040] font-mono">{DEMO.email} · {DEMO.password}</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#c9a84c] group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          )}
-
-          {/* Form */}
           <form onSubmit={tab === 'login' ? handleLogin : handleSignup} className="space-y-4">
             {tab === 'signup' && (
               <div>
@@ -162,15 +127,17 @@ export default function AuthPage() {
             </div>
 
             {error && <p className="text-[13px] text-red-500 font-medium">{error}</p>}
-            {signedUp && <p className="text-[13px] text-green-600 font-medium flex items-center gap-1.5"><Check className="w-3.5 h-3.5" />Account created! Redirecting to sign in…</p>}
+            {signedUp && (
+              <p className="text-[13px] text-green-600 font-medium flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />Account created! Signing you in…
+              </p>
+            )}
 
             <button type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[14px] font-bold transition-all disabled:opacity-50 mt-2">
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>{tab === 'login' ? 'Sign in' : 'Create account'}<ArrowRight className="w-4 h-4" /></>
-              )}
+              {loading
+                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <>{tab === 'login' ? 'Sign in' : 'Create account'}<ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
 

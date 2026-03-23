@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { getToken, setToken, clearToken, authMe } from '../services/api';
 
 const AppContext = createContext();
 
@@ -45,6 +46,7 @@ function loadDictionary() {
 }
 
 function loadAuth() {
+  // Only restore from localStorage — token validity verified async in AppProvider
   try { return JSON.parse(localStorage.getItem('saaras_auth') || 'null'); } catch { return null; }
 }
 
@@ -94,11 +96,12 @@ function reducer(state, action) {
   switch (action.type) {
     case 'LOGIN':
       localStorage.setItem('saaras_auth', JSON.stringify(action.user));
-      // Also persist name to userProfile for sidebar display
       localStorage.setItem('userProfile', JSON.stringify({ name: action.user.name, email: action.user.email }));
+      if (action.token) setToken(action.token);
       return { ...state, authUser: action.user };
     case 'LOGOUT':
       localStorage.removeItem('saaras_auth');
+      clearToken();
       return { ...state, authUser: null };
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
@@ -208,6 +211,21 @@ function reducer(state, action) {
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  // ── Auto-login: verify stored JWT on mount ────────────────────────────────
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    authMe()
+      .then(user => dispatch({ type: 'LOGIN', user, token }))
+      .catch(() => {
+        // Token invalid/expired — clear it
+        clearToken();
+        localStorage.removeItem('saaras_auth');
+        dispatch({ type: 'LOGOUT' });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const setField = useCallback((field, value) => {
     dispatch({ type: 'SET_FIELD', field, value });
   }, []);
@@ -276,7 +294,7 @@ export function AppProvider({ children }) {
   const clearNotificationLog = useCallback(() => dispatch({ type: 'CLEAR_NOTIFICATION_LOG' }), []);
   const toggleFocusMode = useCallback(() => dispatch({ type: 'TOGGLE_FOCUS_MODE' }), []);
   const setOnline = useCallback((value) => dispatch({ type: 'SET_ONLINE', value }), []);
-  const login = useCallback((user) => dispatch({ type: 'LOGIN', user }), []);
+  const login = useCallback((user, token) => dispatch({ type: 'LOGIN', user, token }), []);
   const logout = useCallback(() => dispatch({ type: 'LOGOUT' }), []);
 
   return (

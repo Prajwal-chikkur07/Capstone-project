@@ -5,6 +5,35 @@ const API = axios.create({
   timeout: 120000,
 });
 
+// ── JWT token helpers ─────────────────────────────────────────────────────────
+export const getToken = () => localStorage.getItem('auth_token');
+export const setToken = (t) => localStorage.setItem('auth_token', t);
+export const clearToken = () => localStorage.removeItem('auth_token');
+
+// Attach JWT to every request if present
+API.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ── Auth endpoints ────────────────────────────────────────────────────────────
+export const authSignup = async ({ name, email, password }) => {
+  const { data } = await API.post('/auth/signup', { name, email, password });
+  return data; // { token, user }
+};
+
+export const authLogin = async ({ email, password }) => {
+  const { data } = await API.post('/auth/login', { email, password });
+  return data; // { token, user }
+};
+
+export const authMe = async () => {
+  const { data } = await API.get('/auth/me');
+  return data; // { id, name, email, created_at }
+};
+
+
 export const translateAudio = async (file) => {
   const formData = new FormData();
   formData.append('file', file);

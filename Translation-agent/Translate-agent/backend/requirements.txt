@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 pydantic
+pydantic[email]
 requests
 python-dotenv
 google-generativeai
