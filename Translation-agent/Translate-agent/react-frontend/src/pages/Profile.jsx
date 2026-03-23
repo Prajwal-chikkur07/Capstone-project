@@ -332,7 +332,7 @@ export default function Profile() {
 
         {/* Default language */}
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
                 <Globe className="w-4 h-4 text-gray-600" />
@@ -344,7 +344,7 @@ export default function Profile() {
             </div>
             <div className="relative">
               <select value={state.selectedLanguage} onChange={e => setField('selectedLanguage', e.target.value)}
-                className="appearance-none bg-gray-50 border border-gray-200 rounded-xl pl-3 pr-8 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none hover:border-gray-300 transition-all">
+                className="appearance-none bg-gray-50 border border-gray-200 rounded-xl pl-3 pr-8 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none hover:border-gray-300 transition-all w-full sm:w-auto">
                 {Object.entries(LANG_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />

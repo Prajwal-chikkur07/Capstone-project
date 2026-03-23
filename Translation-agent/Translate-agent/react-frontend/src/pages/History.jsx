@@ -80,7 +80,7 @@ export default function History() {
   return (
     <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.transcriptHistory}</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
@@ -219,7 +219,7 @@ export default function History() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1.5 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button onClick={() => toggleStar(entry.id)}
                     title={state.starredIds?.includes(entry.id) ? 'Unstar' : 'Star'}
                     className={`p-2 rounded-lg transition-all ${

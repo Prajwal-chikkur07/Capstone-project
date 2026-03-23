@@ -218,7 +218,7 @@ function MoreDrawer({ open, onClose, transcript, onResult }) {
   return (
     <>
       {open && <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={onClose} />}
-      <div className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
@@ -445,12 +445,12 @@ function InputBar({ onTranscribed, onTextSubmit }) {
             <div className="flex items-center gap-2">
               {/* Mic */}
               <button onClick={handleMic}
-                className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white rounded-xl px-4 py-2.5 text-[13px] font-semibold active:scale-95 transition-all">
+                className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white rounded-xl px-4 py-2.5 sm:py-2 text-[14px] sm:text-[13px] font-semibold active:scale-95 transition-all">
                 <Mic className="w-4 h-4" />Speak
               </button>
               {/* Upload */}
               <button onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all">
+                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl px-3 py-2.5 sm:py-2 text-[13px] font-medium transition-all">
                 <Upload className="w-3.5 h-3.5" />Upload
               </button>
             </div>
@@ -564,7 +564,7 @@ function ActionBar({ transcript, onRewrite, onTranslate, onSummarize, onSend, on
       )}
 
       {/* Language selector (shown when Translate is active) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 action-bar-scroll">
         {actions.map(a => (
           <button key={a.id} onClick={a.onClick} disabled={a.loading || !transcript?.trim()}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold border whitespace-nowrap transition-all disabled:opacity-40 ${
@@ -671,7 +671,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
       {/* Language selector bar */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 overflow-x-auto action-bar-scroll">
         <span className="text-[11px] text-gray-400 font-medium shrink-0">Translate to:</span>
         {Object.entries(TARGET_LANGUAGES || {}).map(([name, code]) => (
           <button key={code} onClick={() => { setSelectedLang(code); setField('selectedLanguage', code); }}
@@ -683,7 +683,7 @@ export default function Home() {
       </div>
 
       {/* Main scrollable area */}
-      <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 overflow-y-auto pb-32">
+      <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 overflow-y-auto pb-48 md:pb-36">
 
         {/* Empty state */}
         {!hasOutput && (
@@ -716,7 +716,7 @@ export default function Home() {
       </div>
 
       {/* Fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 md:left-[220px] right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-4 py-3 space-y-2 z-30">
+      <div className="fixed bottom-0 left-0 md:left-[220px] right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-4 pt-3 pb-3 space-y-2 z-30 fixed-bottom-bar" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         {hasOutput && (
           <ActionBar
             transcript={editableTranscript}

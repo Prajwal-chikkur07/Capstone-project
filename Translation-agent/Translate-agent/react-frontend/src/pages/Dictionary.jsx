@@ -58,14 +58,16 @@ export default function Dictionary() {
       {/* Add term */}
       <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
         <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.addTerm}</p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input value={native} onChange={e => setNative(e.target.value)} placeholder="Original term"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
-          <input value={english} onChange={e => setEnglish(e.target.value)} placeholder="Keep as (English)"
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input value={native} onChange={e => setNative(e.target.value)} placeholder="Original term"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
+            <input value={english} onChange={e => setEnglish(e.target.value)} placeholder="Keep as (English)"
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
+          </div>
           <button onClick={handleAdd} disabled={!native.trim() || !english.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-30 transition-all">
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-30 transition-all sm:self-start">
             <Plus className="w-4 h-4" />Add
           </button>
         </div>
@@ -91,16 +93,19 @@ export default function Dictionary() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_1fr_40px] px-5 py-3 border-b border-gray-50 bg-gray-50">
+          <div className="hidden sm:grid grid-cols-[1fr_1fr_40px] px-5 py-3 border-b border-gray-50 bg-gray-50">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Original</span>
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Keep as</span>
             <span />
           </div>
           {filtered.map((d, i) => (
-            <div key={d.id} className={`grid grid-cols-[1fr_1fr_40px] items-center px-5 py-3.5 hover:bg-gray-50 transition-colors ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
-              <span className="text-[14px] text-gray-800 font-medium truncate pr-4">{d.native}</span>
-              <span className="text-[14px] text-gray-500 truncate pr-4">{d.english}</span>
-              <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-all">
+            <div key={d.id} className={`flex sm:grid sm:grid-cols-[1fr_1fr_40px] items-center px-5 py-3.5 hover:bg-gray-50 transition-colors gap-3 ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
+              <div className="flex-1 min-w-0">
+                <span className="text-[14px] text-gray-800 font-medium block truncate">{d.native}</span>
+                <span className="text-[12px] text-gray-400 sm:hidden block truncate mt-0.5">→ {d.english}</span>
+              </div>
+              <span className="hidden sm:block text-[14px] text-gray-500 truncate pr-4">{d.english}</span>
+              <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-all shrink-0">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

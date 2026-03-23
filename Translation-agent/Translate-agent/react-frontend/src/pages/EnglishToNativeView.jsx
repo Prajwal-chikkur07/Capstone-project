@@ -220,7 +220,7 @@ export default function EnglishToNativeView() {
             onChange={(e) => setField('englishText', e.target.value)}
             placeholder={L.typeEnglishHere}
             className="flex-1 w-full px-5 py-4 text-[15px] text-gray-800 placeholder-gray-300 resize-none focus:outline-none leading-[1.8]"
-            style={{ minHeight: 420 }}
+            style={{ minHeight: 'clamp(200px, 40vh, 420px)' }}
           />
           <div className="px-5 py-4 border-t border-gray-100">
             <button onClick={handleTranslateClick} disabled={!state.englishText?.trim() || isTranslating}
@@ -263,7 +263,7 @@ export default function EnglishToNativeView() {
           </div>
 
           {/* Output */}
-          <div className="flex-1 px-5 py-4 overflow-y-auto" style={{ minHeight: 420 }}>
+          <div className="flex-1 px-5 py-4 overflow-y-auto" style={{ minHeight: 'clamp(160px, 35vh, 420px)' }}>
             {isTranslating ? (
               <div className="flex items-center gap-2 text-gray-300">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -277,7 +277,7 @@ export default function EnglishToNativeView() {
           </div>
 
           {/* Bottom toolbar — tone pills + context-aware send */}
-          <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="px-5 py-3.5 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap">
             {/* Tone pills */}
             <div className="flex items-center gap-2 flex-wrap">
               {TONES.map((tone) => (

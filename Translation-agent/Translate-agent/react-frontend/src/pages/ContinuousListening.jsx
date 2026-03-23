@@ -390,8 +390,8 @@ export default function ContinuousListening() {
             ))}
           </div>
           <button onClick={isListening ? stopListening : startListening}
-            className={'flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all shadow-sm active:scale-95 ' + (isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-900 hover:bg-gray-700 text-white')}>
-            {isListening ? <><Square className="w-4 h-4 fill-white" />{L.stopListening}</> : <><Ear className="w-4 h-4" />{L.startListening}</>}
+            className={'flex items-center gap-2.5 px-8 py-4 sm:py-3.5 rounded-2xl text-[16px] sm:text-[15px] font-bold transition-all shadow-sm active:scale-95 w-full sm:w-auto justify-center ' + (isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-900 hover:bg-gray-700 text-white')}>
+            {isListening ? <><Square className="w-5 h-5 fill-white" />{L.stopListening}</> : <><Ear className="w-5 h-5" />{L.startListening}</>}
           </button>
           {isProcessing && <div className="flex items-center gap-2 text-[13px] text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.transcribingAudio}</div>}
           {isListening && <p className="text-[12px] text-gray-400 animate-pulse">Listening… auto-stops after {SILENCE_DURATION / 1000}s of silence</p>}

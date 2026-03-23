@@ -122,7 +122,7 @@ export default function Templates() {
                       <span className="text-[11px] text-gray-300">{wc} words</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button onClick={() => togglePinTemplate(t.id)} title={isPinned ? 'Unpin' : 'Pin'}
                       className={`p-1.5 rounded-lg transition-all ${isPinned ? 'text-amber-400 hover:bg-amber-50' : 'text-gray-300 hover:text-amber-400 hover:bg-amber-50'}`}>
                       <Pin className={`w-3.5 h-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />

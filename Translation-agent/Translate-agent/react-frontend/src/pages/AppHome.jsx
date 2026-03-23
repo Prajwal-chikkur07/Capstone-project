@@ -37,10 +37,10 @@ export default function AppHome() {
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span className="text-[12px] font-semibold text-amber-500 uppercase tracking-widest">Powered by Team ARTiculate</span>
         </div>
-        <h2 className="text-[24px] md:text-[32px] font-bold text-gray-900 leading-tight tracking-tight mb-3">
-          Break language barriers<br />with AI-powered translation.
+        <h2 className="text-[22px] sm:text-[28px] md:text-[32px] font-bold text-gray-900 leading-tight tracking-tight mb-3">
+          Break language barriers<br className="hidden sm:block" />with AI-powered translation.
         </h2>
-        <p className="text-[15px] text-gray-400 leading-relaxed max-w-lg">
+        <p className="text-[14px] sm:text-[15px] text-gray-400 leading-relaxed max-w-lg">
           Speak, type, or scan — translate between Indian regional languages and English with professional tone styling.
         </p>
       </div>
