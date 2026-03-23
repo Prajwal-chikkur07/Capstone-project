@@ -34,6 +34,7 @@ app.add_middleware(
 
 class TranslationRequest(BaseModel):
     text: str
+    source_language: str = "en-IN"
     target_language: str
 
 class RewriteRequest(BaseModel):
@@ -177,7 +178,7 @@ async def handle_text_translation(request: TranslationRequest):
             raise HTTPException(status_code=400, detail="Text cannot be empty")
         native_translation = translate_text(
             text=request.text, 
-            source_language="en-IN", 
+            source_language=request.source_language,
             target_language=request.target_language
         )
         return {"translated_text": native_translation}
@@ -649,6 +650,31 @@ async def handle_vision_translate(
     except Exception as e:
         logger.error(f"Vision translate error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Widget → Extension fill bridge ───────────────────────────────────────────
+# Stores a pending fill request that the Chrome extension polls for
+_pending_fill: dict | None = None
+
+class WidgetFillRequest(BaseModel):
+    subject: str = ""
+    body: str = ""
+    target: str = "gmail"  # gmail | slack | generic
+
+@app.post("/api/widget-fill")
+async def set_widget_fill(request: WidgetFillRequest):
+    global _pending_fill
+    _pending_fill = {"subject": request.subject, "body": request.body, "target": request.target}
+    return {"ok": True}
+
+@app.get("/api/widget-fill")
+async def get_widget_fill():
+    global _pending_fill
+    if _pending_fill is None:
+        return {"pending": False}
+    data = _pending_fill
+    _pending_fill = None  # consume it — one-shot
+    return {"pending": True, **data}
 
 
 if __name__ == "__main__":

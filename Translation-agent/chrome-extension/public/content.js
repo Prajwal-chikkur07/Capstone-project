@@ -29,7 +29,7 @@ let targetLanguage = 'kn-IN';
 let selectedTone = 'Email Formal';
 let customTone = '';
 let panelActiveTab = 'page';
-let expandedSections = { record: false, tone: false, translate: false };
+let expandedSections = { record: true, tone: false, translate: false };
 let smartSelectActive = false;
 let highlightedEl = null;
 let stopTranslationFlag = false;
@@ -73,29 +73,198 @@ if (isContextValid()) {
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'GET_SELECTION') { sendResponse({ text: getSmartSelection() }); return; }
-    if (message.type === 'SHOW_NOTIFICATION') { showToast(message.message); return; }
-    if (message.type === 'INSERT_TEXT') { sendResponse(insertTextIntoActive(message.text)); return; }
+    if (message.type === 'GET_SELECTION') { sendResponse({ text: getSmartSelection() }); return false; }
+    if (message.type === 'SHOW_NOTIFICATION') { showToast(message.message); return false; }
+    if (message.type === 'INSERT_TEXT') { sendResponse(insertTextIntoActive(message.text)); return false; }
     if (message.type === 'TOGGLE_ACTIVE') {
       if (message.active) activateMode(); else deactivateMode();
-      sendResponse({ active: isActive }); return;
+      sendResponse({ active: isActive }); return false;
     }
     if (message.type === 'UPDATE_SETTINGS') {
       if (message.language) targetLanguage = message.language;
-      if (message.tone) selectedTone = message.tone; return;
+      if (message.tone) selectedTone = message.tone; return false;
     }
-    if (message.type === 'TRANSLATE_ALL_PAGE') { translateAllVisibleText(); sendResponse({ started: true }); return; }
+    if (message.type === 'TRANSLATE_ALL_PAGE') {
+      translateAllVisibleText();
+      sendResponse({ started: true });
+      return false;
+    }
     if (message.type === 'TRANSLATE_SELECTION_FROM_POPUP') {
       const text = getSmartSelection();
       if (text) { try { translateAndShowInline(text, window.getSelection().getRangeAt(0)); } catch { translateAndShowInline(text, null); } }
       else showToast('No text selected.');
-      sendResponse({ started: true }); return;
+      sendResponse({ started: true }); return false;
     }
     if (message.type === 'STOP_TRANSLATION') {
-      stopTranslationFlag = true; removeAllTranslationOverlays(); sendResponse({ done: true }); return;
+      stopTranslationFlag = true; removeAllTranslationOverlays(); sendResponse({ done: true }); return false;
     }
+    return false;
   });
 } // end init guard
+
+// ========== WIDGET POLLING — talks to desktop widget at 127.0.0.1:27182 ==========
+// Polling only starts after widget confirms it's alive via chrome.storage
+(function startWidgetPolling() {
+  const WIDGET_URL = 'http://127.0.0.1:27182/pending-action';
+  let clickModeActive = false;
+  let clickHoverFn = null;
+  let clickFn = null;
+  let clickHighlightEl = null;
+  let polling = false;
+
+  function stopClickMode() {
+    clickModeActive = false;
+    document.body.style.cursor = '';
+    if (clickHoverFn) { document.removeEventListener('mouseover', clickHoverFn); clickHoverFn = null; }
+    if (clickFn) { document.removeEventListener('click', clickFn, true); clickFn = null; }
+    if (clickHighlightEl) { clickHighlightEl.style.outline = ''; clickHighlightEl = null; }
+    const banner = document.getElementById('vt-widget-click-banner');
+    if (banner) banner.remove();
+  }
+
+  async function pollWithBackoff() {
+    if (!polling) return;
+    try {
+      const res = await fetch(WIDGET_URL, { method: 'GET', signal: AbortSignal.timeout(400) });
+      if (res.ok) {
+        const action = await res.json();
+        if (action) await handleAction(action);
+        setTimeout(pollWithBackoff, 500);
+      } else {
+        setTimeout(pollWithBackoff, 1000);
+      }
+    } catch {
+      // Widget stopped — stop polling silently
+      polling = false;
+      chrome.storage.local.remove('widgetAlive');
+    }
+  }
+
+  function startPolling() {
+    if (polling) return;
+    polling = true;
+    pollWithBackoff();
+  }
+
+  // Check storage on load — if widget was alive in this session, start polling
+  chrome.storage.local.get('widgetAlive', (r) => {
+    if (r.widgetAlive) startPolling();
+  });
+
+  // Listen for widget activation message
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'WIDGET_ACTIVE') startPolling();
+    if (msg.type === 'WIDGET_INACTIVE') { polling = false; }
+  });
+
+  // Extract action handling into its own function
+  async function handleAction(action) {
+    const lang = action.lang || targetLanguage || 'hi-IN';
+
+    if (action.type === 'TRANSLATE_ALL_PAGE') {
+      const prevLang = targetLanguage;
+      targetLanguage = lang;
+      translateAllVisibleText();
+      targetLanguage = prevLang;
+
+    } else if (action.type === 'TRANSLATE_SELECTION') {
+      const sel = window.getSelection();
+      const text = sel?.toString().trim();
+      if (text) {
+        try { translateAndShowInline(text, sel.getRangeAt(0)); }
+        catch { translateAndShowInline(text, null); }
+      } else {
+        showToast('Select some text first, then click Selection.');
+      }
+
+    } else if (action.type === 'TOGGLE_CLICK_MODE') {
+      if (clickModeActive) {
+        stopClickMode();
+      } else {
+        clickModeActive = true;
+        document.body.style.cursor = 'crosshair';
+        let banner = document.getElementById('vt-widget-click-banner');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'vt-widget-click-banner';
+          banner.style.cssText = [
+            'position:fixed', 'bottom:80px', 'left:50%', 'transform:translateX(-50%)',
+            'background:rgba(10,12,20,0.9)', 'backdrop-filter:blur(12px)',
+            'border:1px solid rgba(99,102,241,0.5)', 'border-radius:12px',
+            'padding:8px 16px', 'font-size:12px', 'font-weight:600',
+            'color:rgba(255,255,255,0.9)', 'z-index:2147483647',
+            'display:flex', 'align-items:center', 'gap:8px',
+            'box-shadow:0 8px 24px rgba(0,0,0,0.4)',
+            'font-family:-apple-system,BlinkMacSystemFont,sans-serif',
+          ].join(';');
+          banner.innerHTML = `
+            <span style="width:7px;height:7px;border-radius:50%;background:#818cf8;box-shadow:0 0 6px #818cf8;flex-shrink:0;animation:vtPulse 1s ease-in-out infinite;"></span>
+            Click any text to translate
+            <button id="vt-widget-click-off" style="margin-left:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#f87171;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;">✕ Stop</button>
+          `;
+          if (!document.getElementById('vt-widget-style')) {
+            const style = document.createElement('style');
+            style.id = 'vt-widget-style';
+            style.textContent = '@keyframes vtPulse{0%,100%{opacity:1}50%{opacity:0.3}}';
+            document.head.appendChild(style);
+          }
+          document.body.appendChild(banner);
+          document.getElementById('vt-widget-click-off').addEventListener('click', stopClickMode);
+        }
+
+        clickHoverFn = (e) => {
+          const el = e.target;
+          if (el.closest('#vt-widget-click-banner') || el.closest('#vt-popup-panel') || el.closest('#vt-floating-icon')) return;
+          if (clickHighlightEl && clickHighlightEl !== el) clickHighlightEl.style.outline = '';
+          clickHighlightEl = el;
+          el.style.outline = '2px solid rgba(99,102,241,0.8)';
+        };
+
+        clickFn = async (e) => {
+          const el = e.target;
+          if (el.closest('#vt-widget-click-banner') || el.closest('#vt-popup-panel') || el.closest('#vt-floating-icon')) return;
+          if (el.classList.contains('vt-undo-btn')) return;
+          e.preventDefault(); e.stopPropagation();
+          if (clickHighlightEl) { clickHighlightEl.style.outline = ''; clickHighlightEl = null; }
+          const text = (el.innerText || el.textContent || '').replace(/↩/g, '').trim();
+          if (!text || text.length < 2) return;
+          el.style.opacity = '0.5';
+          try {
+            const prevLang = targetLanguage;
+            targetLanguage = lang;
+            const res = await sendMsg({ type: 'API_TRANSLATE_TEXT', text, targetLanguage: lang });
+            targetLanguage = prevLang;
+            el.style.opacity = '';
+            if (res?.success) {
+              const translated = res.data.translated_text || text;
+              const orig = el.innerHTML;
+              el.setAttribute('data-vt-original', orig);
+              el.textContent = translated;
+              const btn = document.createElement('button');
+              btn.className = 'vt-undo-btn';
+              btn.textContent = '↩';
+              btn.title = 'Restore original';
+              btn.onclick = (ev) => { ev.stopPropagation(); el.innerHTML = orig; el.removeAttribute('data-vt-original'); };
+              el.appendChild(btn);
+            }
+          } catch { el.style.opacity = ''; }
+        };
+
+        document.addEventListener('mouseover', clickHoverFn);
+        document.addEventListener('click', clickFn, true);
+      }
+
+    } else if (action.type === 'STOP_TRANSLATION') {
+      stopTranslationFlag = true;
+      stopClickMode();
+      removeAllTranslationOverlays();
+      showToast('Page restored.');
+    }
+  }
+
+  // Polling starts only when WIDGET_ACTIVE message is received from background.js
+  // No auto-start — prevents 404 spam when widget isn't running
+})();
 
 // ========== FLOATING ICON ==========
 function createFloatingIcon() {
@@ -145,16 +314,18 @@ function togglePopupPanel() {
 function closeSidebar() {
   if (!popupPanel) return;
   popupPanel.style.transform = 'translateX(100%)';
-  // Restore page layout
-  document.documentElement.style.marginRight = '';
-  document.documentElement.style.width = '';
-  document.documentElement.style.overflowX = '';
-  // remove overlay if any
+  // Remove the injected style tag to restore page layout
+  const styleTag = document.getElementById('vt-sidebar-style');
+  if (styleTag) {
+    styleTag.textContent = `
+      html { width: 100vw !important; max-width: 100vw !important; }
+    `;
+    setTimeout(() => styleTag.remove(), 310);
+  }
   const overlay = document.getElementById('vt-sidebar-overlay');
   if (overlay) { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 300); }
   setTimeout(() => {
     if (popupPanel) { popupPanel.remove(); popupPanel = null; }
-    // Restore floating icon
     if (floatingIcon) floatingIcon.style.display = '';
   }, 300);
 }
@@ -162,22 +333,39 @@ function closeSidebar() {
 function buildPanel() {
   const PANEL_WIDTH = 360;
 
-  // Push page content to the left
-  document.documentElement.style.transition = 'margin-right 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)';
-  document.documentElement.style.marginRight = PANEL_WIDTH + 'px';
-  document.documentElement.style.width = `calc(100% - ${PANEL_WIDTH}px)`;
-  document.documentElement.style.overflowX = 'hidden';
+  // Inject a style tag that forces the page to shrink
+  let styleTag = document.getElementById('vt-sidebar-style');
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = 'vt-sidebar-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = `
+    /* Shrink the entire page to make room for the sidebar */
+    html {
+      width: calc(100vw - ${PANEL_WIDTH}px) !important;
+      max-width: calc(100vw - ${PANEL_WIDTH}px) !important;
+      overflow-x: hidden !important;
+      position: relative !important;
+    }
+    body {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
+    /* For apps that use position:fixed full-width containers (Gmail, WhatsApp, etc.) */
+    body > * {
+      max-width: 100% !important;
+    }
+  `;
 
   popupPanel = document.createElement('div');
   popupPanel.id = 'vt-popup-panel';
-  // Start off-screen
   popupPanel.style.cssText = 'transform:translateX(100%);';
 
   renderPanel();
   document.body.appendChild(popupPanel);
-  // Hide floating icon while panel is open
   if (floatingIcon) floatingIcon.style.display = 'none';
-  // Slide in on next frame
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       popupPanel.style.transform = 'translateX(0)';
@@ -192,76 +380,166 @@ function getIconURL() {
 
 function renderPanel() {
   if (!popupPanel) return;
+
+  let micBar;
+  if (extMicRecording) {
+    const waveBars = Array(22).fill(0).map(function() { return '<div class="vt-wave-bar" style="width:2px;height:3px;border-radius:2px;background:#fca5a5;transition:height 0.07s;"></div>'; }).join('');
+    micBar = '<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;">'
+      + '<div style="width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0;animation:vtRecPulse 1s ease-in-out infinite;"></div>'
+      + '<span id="vt-rec-timer" style="font-size:12px;font-family:monospace;font-weight:700;color:#dc2626;flex-shrink:0;">' + fmtSec(extMicTimeSec) + '</span>'
+      + '<div id="vt-wave-bars" style="display:flex;align-items:center;gap:2px;flex:1;height:18px;">' + waveBars + '</div>'
+      + '<button id="vt-mic-stop" style="display:flex;align-items:center;gap:5px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;flex-shrink:0;"><svg width="9" height="9" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>'
+      + '</div>';
+  } else if (extMicLoading) {
+    micBar = '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:#f8f8f8;border-radius:10px;border:1px solid #ececec;"><div class="vt-spinner"></div><span style="font-size:12px;font-weight:600;color:#9ca3af;">Transcribing...</span></div>';
+  } else if (extRawText) {
+    micBar = '<div style="display:flex;gap:8px;">'
+      + '<button id="vt-ext-send-box" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.01em;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>Send to Textbox</button>'
+      + '<button id="vt-ext-copy-bar" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>'
+      + '</div>';
+  } else {
+    micBar = '<div style="display:flex;gap:8px;">'
+      + '<button id="vt-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.01em;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Start Speaking</button>'
+      + '<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Audio<input id="vt-file-input" type="file" accept="audio/*" style="display:none;" /></label>'
+      + '</div>';
+  }
+
   popupPanel.innerHTML = `
+    <style>
+      @keyframes vtRecPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+      #vt-mic-start:hover{background:#333 !important;}
+      #vt-mic-start:active{transform:scale(0.97);}
+    </style>
+
+    <!-- HEADER -->
     <div id="vt-panel-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <img src="${getIconURL()}" width="28" height="28" style="border-radius:8px;flex-shrink:0;" />
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:30px;height:30px;border-radius:9px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
         <div>
-          <div style="font-size:13px;font-weight:700;color:#ffffff;line-height:1.2;">SeedlingSpeaks</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">AI Translation</div>
+          <div style="font-size:13px;font-weight:800;color:#1a1a1a;letter-spacing:-0.02em;">SeedlingSpeaks</div>
+          <div style="font-size:10px;color:#9ca3af;font-weight:500;">AI Translation</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button id="vt-panel-toggle" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background 0.25s;background:${isActive ? '#10b981' : 'rgba(255,255,255,0.15)'};">
-          <div style="width:20px;height:20px;border-radius:10px;background:white;position:absolute;top:2px;transition:left 0.25s;box-shadow:0 1px 4px rgba(0,0,0,0.3);${isActive ? 'left:22px;' : 'left:2px;'}"></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="vt-panel-toggle" style="width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;background:${isActive ? '#1a1a1a' : '#e5e7eb'};position:relative;transition:background 0.2s;flex-shrink:0;">
+          <span style="position:absolute;top:3px;left:${isActive ? '20px' : '3px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
         </button>
-        <button id="vt-panel-clear" title="Clear all" style="width:30px;height:30px;background:rgba(255,255,255,0.08);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
-        <button id="vt-panel-close" title="Close" style="width:30px;height:30px;background:rgba(255,255,255,0.08);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button id="vt-panel-close" style="width:26px;height:26px;background:#f3f4f6;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9ca3af;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>
-    <div id="vt-tab-content">${renderMainContent()}</div>
+
+    <!-- 4 ACTION BUTTONS -->
     <div id="vt-action-bar">
-      ${iconActionBtn('vt-btn-all',   'Translate Page',      '#6366f1', `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`)}
-      ${iconActionBtn('vt-btn-sel',   'Selection',           '#8b5cf6', `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>`)}
-      ${iconActionBtn('vt-btn-click', smartSelectActive ? 'Click: ON' : 'Click Mode', smartSelectActive ? '#10b981' : '#06b6d4', `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 15l-2 5L9 9l11 4-5 2z"/><path d="M15 15l5 5"/></svg>`)}
-      ${iconActionBtn('vt-btn-stop',  'Restore',             '#f43f5e', `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`)}
+      ${iconActionBtn('vt-btn-all',   'Translate',  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`)}
+      ${iconActionBtn('vt-btn-sel',   'Selection',  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`)}
+      ${iconActionBtn('vt-btn-click', smartSelectActive ? 'Click ✓' : 'Click', `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 15l-2 5L9 9l11 4-5 2z"/></svg>`, smartSelectActive)}
+      ${iconActionBtn('vt-btn-chat',  window._vtLiveChatActive?.() ? 'Chat ✓' : 'Live Chat', `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`, window._vtLiveChatActive?.())}
+      ${iconActionBtn('vt-btn-stop',  'Restore',    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`)}
     </div>
-    <div id="vt-loading-overlay" style="display:${loadingMessage ? 'flex' : 'none'};">
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);">
-        <span class="vt-spinner"></span>
-        <span id="vt-loading-text" style="font-size:12px;font-weight:500;color:#374151;">${loadingMessage || ''}</span>
-      </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="vt-tab-content">
+      ${window._vtLiveChatActive?.() ? (window._vtRenderChatPanel?.() || '') : renderMicOutput()}
+    </div>
+
+    <!-- TONE + ACTIONS BOTTOM SECTION -->
+    <div id="vt-tone-bar">
+      ${window._vtLiveChatActive?.() ? '' : renderToneBar()}
+    </div>
+
+    <!-- BOTTOM MIC BAR -->
+    <div id="vt-mic-bar">
+      ${window._vtLiveChatActive?.() ? '' : micBar}
     </div>`;
 
-  popupPanel.querySelector('#vt-panel-close').onclick = () => { closeSidebar(); };
-  popupPanel.querySelector('#vt-panel-clear').onclick = () => {
-    englishText = ''; rewrittenText = ''; nativeText = ''; inputText = ''; playingType = null;
-    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    renderPanel();
+  popupPanel.querySelector('#vt-panel-close').onclick = () => closeSidebar();
+  popupPanel.querySelector('#vt-panel-toggle').onclick = () => {
+    if (isActive) deactivateMode(); else activateMode();
+    renderPanel(); wireTabEvents();
   };
   wireTabEvents();
 }
 
-function iconActionBtn(id, label, color, svg) {
-  return `<button id="${id}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;background:none;border:none;cursor:pointer;border-radius:10px;transition:background 0.15s;" title="${label}">
-    <div style="width:38px;height:38px;border-radius:12px;background:${color}18;display:flex;align-items:center;justify-content:center;color:${color};">${svg}</div>
-    <span style="font-size:9px;font-weight:600;color:#6b7280;text-align:center;line-height:1.2;">${label}</span>
+function iconActionBtn(id, label, svg, active = false) {
+  const dimmed = !isActive && id !== 'vt-btn-stop';
+  const isActive2 = active;
+  const bg = isActive2 ? '#1a1a1a' : '#ffffff';
+  const border = isActive2 ? '#1a1a1a' : '#ececec';
+  const iconColor = isActive2 ? '#ffffff' : (dimmed ? '#d1d5db' : '#374151');
+  const textColor = isActive2 ? '#ffffff' : (dimmed ? '#d1d5db' : '#6b7280');
+  return `<button id="${id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;background:${bg};border:1px solid ${border};border-radius:10px;cursor:pointer;transition:all 0.12s;opacity:${dimmed ? '0.5' : '1'};" title="${label}">
+    <div style="width:28px;height:28px;border-radius:8px;background:${isActive2 ? 'rgba(255,255,255,0.12)' : '#f3f4f6'};display:flex;align-items:center;justify-content:center;color:${iconColor};">${svg}</div>
+    <span style="font-size:9px;font-weight:700;color:${textColor};letter-spacing:0.02em;text-transform:uppercase;">${label}</span>
   </button>`;
 }
 
-function renderMainContent() {
-  const s = 'width:100%;padding:9px 12px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;color:#111827;font-size:12px;font-weight:500;outline:none;box-shadow:0 1px 3px rgba(0,0,0,0.05);';
+function renderMicOutput() {
+  const displayText = extToneText || extRawText;
+  const toneLabel = extSelectedTone || 'Transcript';
+
+  if (!extRawText) {
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;gap:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:3px;">Speak in your language</div>
+          <div style="font-size:11px;color:#9ca3af;line-height:1.6;">Tap Start Speaking below, say something in your native language, and get an English translation.</div>
+        </div>
+      </div>`;
+  }
+
   return `
-    <div style="margin-bottom:12px;">
-      <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Target Language</div>
-      <div style="position:relative;">
-        <select id="vt-panel-lang" style="${s}cursor:pointer;appearance:none;padding-right:36px;">
-          ${Object.entries(TARGET_LANGUAGES).map(([n, c]) => `<option value="${c}" ${c === targetLanguage ? 'selected' : ''}>${n}</option>`).join('')}
-        </select>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0;">
+      <div style="width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+      <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">${toneLabel}</span>
+      ${extToneLoading ? `<div class="vt-spinner" style="margin-left:auto;border-top-color:#1a1a1a;border-color:rgba(26,26,26,0.1);"></div>` : ''}
     </div>
-    ${sectionHeader('record', '🎙 Voice Record', expandedSections.record)}
-    ${expandedSections.record ? `<div style="padding:8px 0;">${renderRecordSection()}</div>` : ''}
-    ${sectionHeader('tone', '✨ Tone Rewrite', expandedSections.tone)}
-    ${expandedSections.tone ? `<div style="padding:8px 0;">${renderToneSection()}</div>` : ''}
-    ${sectionHeader('translate', '🌐 Translate Text', expandedSections.translate)}
-    ${expandedSections.translate ? `<div style="padding:8px 0;">${renderTranslateSection()}</div>` : ''}`;
+
+    ${extToneLoading
+      ? `<div style="flex:1;background:#fff;border:1px solid #ececec;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:#9ca3af;font-size:12px;"><div class="vt-spinner"></div>Rewriting…</div>`
+      : `<div style="position:relative;flex:1;display:flex;flex-direction:column;">
+          <textarea id="vt-ext-output" style="flex:1;width:100%;padding:10px 12px 10px 12px;padding-right:60px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:400;line-height:1.8;outline:none;resize:none;box-shadow:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ececec'">${escapeHtml(displayText)}</textarea>
+          <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px;">
+            <button id="vt-ext-copy-out" title="Copy" style="width:24px;height:24px;background:rgba(255,255,255,0.9);border:1px solid #e5e7eb;border-radius:6px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button id="vt-ext-clear-out" title="Clear" style="width:24px;height:24px;background:rgba(255,255,255,0.9);border:1px solid #e5e7eb;border-radius:6px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>`
+    }`;
 }
+
+function renderToneBar() {
+  if (!extRawText) return '';
+  const displayText = extToneText || extRawText;
+  const toneChips = EXT_TONES.map(function(t) {
+    const active = extSelectedTone === t;
+    const border = active ? '#1a1a1a' : '#e5e7eb';
+    const bg = active ? '#1a1a1a' : '#fff';
+    const color = active ? '#fff' : '#6b7280';
+    return '<button class="vt-tone-chip" data-tone="' + t + '" style="padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid ' + border + ';background:' + bg + ';color:' + color + ';transition:all 0.12s;">' + t + '</button>';
+  }).join('');
+
+  const customBlock = extSelectedTone === 'Custom'
+    ? '<div style="display:flex;gap:6px;margin-top:7px;"><input id="vt-ext-custom-tone" type="text" placeholder="Describe your tone" value="' + esc(extCustomTone) + '" style="flex:1;padding:7px 10px;border:1px solid #ececec;border-radius:8px;font-size:11px;outline:none;color:#1a1a1a;background:#fff;" /><button id="vt-ext-apply-custom" style="padding:7px 12px;background:#1a1a1a;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Apply</button></div>'
+    : '';
+
+  const rerecordBlock = displayText
+    ? '<div style="display:flex;gap:8px;margin-top:8px;"><button id="vt-tone-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Start Speaking</button><label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Audio<input id="vt-tone-file-input" type="file" accept="audio/*" style="display:none;" /></label></div>'
+    : '';
+
+  return '<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Tone</div><div style="display:flex;flex-wrap:wrap;gap:4px;">' + toneChips + '</div>' + customBlock + '</div>' + rerecordBlock;
+}
+
+
 
 function sectionHeader(id, title, expanded) {
   return `<button class="vt-section-toggle" data-section="${id}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 12px;margin-top:8px;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;color:#111827;font-size:12px;font-weight:600;cursor:pointer;text-align:left;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
@@ -270,36 +548,107 @@ function sectionHeader(id, title, expanded) {
   </button>`;
 }
 
+// ── Native→English mic state (extension) ─────────────────────────────────────
+let extMicRecording = false;
+let extMicChunks = [];
+let extMicRecorder = null;
+let extMicStream = null;
+let extMicTimeSec = 0;
+let extMicTimer = null;
+let extMicWaveInterval = null;
+let extMicLoading = false;
+let extToneLoading = false;
+let extRawText = '';      // transcript from /api/translate-audio
+let extToneText = '';     // rewritten by tone chip
+let extSelectedTone = null;
+let extCustomTone = '';
+
+const EXT_TONES = ['Email Formal', 'Email Casual', 'Slack', 'LinkedIn', 'WhatsApp Business', 'Custom'];
+
+function fmtSec(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+
 function renderRecordSection() {
-  const modes = [{ v: 'pushToTalk', l: 'PTT', i: '🎤' }, { v: 'continuous', l: 'Listen', i: '👂' }, { v: 'fileUpload', l: 'Upload', i: '📁' }];
-  let recUI = '';
-  if (recordingMode === 'pushToTalk') {
-    recUI = `<button id="vt-ptt-btn" style="width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;${isPTTPressed ? 'background:#ef4444;box-shadow:0 0 0 8px rgba(239,68,68,0.15),0 8px 24px rgba(239,68,68,0.4);transform:scale(1.05);' : 'background:#111827;box-shadow:0 8px 24px rgba(0,0,0,0.2);'}">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-    </button>
-    <p style="font-size:11px;font-weight:500;color:${isPTTPressed ? '#ef4444' : '#9ca3af'};margin:0;">${isPTTPressed ? '● Recording...' : 'Hold to record'}</p>`;
-  } else if (recordingMode === 'continuous') {
-    recUI = `<button id="vt-cont-btn" style="width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;${isRecording ? 'background:#ef4444;box-shadow:0 0 0 8px rgba(239,68,68,0.15),0 8px 24px rgba(239,68,68,0.4);' : 'background:#111827;box-shadow:0 8px 24px rgba(0,0,0,0.2);'}">
-      ${isRecording ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>` : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>`}
-    </button>
-    <p style="font-size:11px;font-weight:500;color:${isRecording ? '#ef4444' : '#9ca3af'};margin:0;">${isRecording ? '● Listening...' : 'Tap to start'}</p>`;
+  const displayText = extToneText || extRawText;
+  const toneLabel = extSelectedTone && extSelectedTone !== 'Smart Suggest' ? extSelectedTone : 'English';
+
+  let micUI = '';
+  if (extMicRecording) {
+    micUI = `
+      <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:10px 14px;width:100%;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.7);flex-shrink:0;animation:vtRecPulse 1s ease-in-out infinite;"></div>
+        <span id="vt-rec-timer" style="font-size:11px;font-family:monospace;font-weight:700;color:#6b7280;flex-shrink:0;">${fmtSec(extMicTimeSec)}</span>
+        <div id="vt-wave-bars" style="display:flex;align-items:center;gap:2px;flex:1;height:24px;">
+          ${Array(28).fill(0).map(() => `<div class="vt-wave-bar" style="width:2px;height:3px;border-radius:2px;background:#374151;transition:height 0.07s;"></div>`).join('')}
+        </div>
+        <button id="vt-mic-stop" style="display:flex;align-items:center;gap:5px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;flex-shrink:0;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop
+        </button>
+      </div>`;
+  } else if (extMicLoading) {
+    micUI = `<div style="display:flex;align-items:center;gap:8px;color:#9ca3af;font-size:12px;padding:12px 0;"><div class="vt-spinner"></div>Transcribing…</div>`;
   } else {
-    recUI = `<label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 20px;background:#111827;border-radius:12px;color:white;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-      Select Audio File
-      <input type="file" id="vt-file-input" accept=".mp3,.wav,.m4a,.webm,.ogg,.flac" style="display:none;" />
-    </label>
-    <p style="font-size:10px;color:#9ca3af;margin:0;">MP3 · WAV · M4A · WebM · OGG</p>`;
+    micUI = `
+      <div style="display:flex;gap:10px;width:100%;">
+        <button id="vt-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#111827;border:none;border-radius:50px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          Start Speaking
+        </button>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#fff;border:1.5px solid #e5e7eb;border-radius:50px;color:#374151;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Audio
+          <input id="vt-file-input" type="file" accept="audio/*" style="display:none;" />
+        </label>
+      </div>`;
   }
+
+  const toneChips = EXT_TONES.map(t => {
+    const active = extSelectedTone === t;
+    return `<button class="vt-tone-chip" data-tone="${t}" style="padding:5px 10px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${active ? '#111827' : '#e5e7eb'};background:${active ? '#111827' : '#fff'};color:${active ? '#fff' : '#6b7280'};transition:all 0.15s;">${t === 'Custom' ? 'Custom' : t}</button>`;
+  }).join('');
+
   return `
-    <div style="display:flex;gap:4px;margin-bottom:12px;">
-      ${modes.map(m => `<button class="vt-mode-btn" data-mode="${m.v}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 4px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1px solid ${recordingMode === m.v ? '#111827' : '#e5e7eb'};background:${recordingMode === m.v ? '#111827' : '#ffffff'};color:${recordingMode === m.v ? '#ffffff' : '#9ca3af'};">${m.i} ${m.l}</button>`).join('')}
+    <style>
+      @keyframes vtRecPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    </style>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:8px 0 4px;">
+      ${micUI}
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 8px;">${recUI}</div>
-    ${outputBox('Translated English', englishText, 'en', 'english')}
-    ${outputBox('Styled Text', rewrittenText, 'en', 'rewritten')}
-    ${rewrittenText ? shareButtons() : ''}`;
+
+    ${extRawText ? `
+      <div style="margin-top:10px;">
+        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px;">${toneLabel}</div>
+        ${extToneLoading
+          ? `<div style="display:flex;align-items:center;gap:8px;color:#9ca3af;font-size:12px;padding:10px 0;"><div class="vt-spinner"></div>Rewriting…</div>`
+          : `<textarea id="vt-ext-output" rows="4" style="width:100%;padding:9px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;color:#111827;font-size:12px;font-weight:500;outline:none;resize:none;box-shadow:0 1px 3px rgba(0,0,0,0.05);">${escapeHtml(displayText)}</textarea>`
+        }
+      </div>
+
+      <div style="margin-top:8px;">
+        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Tone</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${toneChips}</div>
+        ${extSelectedTone === 'Custom' ? `
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <input id="vt-ext-custom-tone" type="text" placeholder="Describe your tone…" value="${esc(extCustomTone)}" style="flex:1;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:11px;outline:none;" />
+            <button id="vt-ext-apply-custom" style="padding:7px 12px;background:#111827;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Apply</button>
+          </div>` : ''}
+      </div>
+
+      ${displayText ? `
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <button id="vt-mic-start" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            Start Speaking
+          </button>
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;color:#374151;font-size:11px;font-weight:600;cursor:pointer;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload Audio
+            <input id="vt-file-input" type="file" accept="audio/*" style="display:none;" />
+          </label>
+        </div>` : ''}
+    ` : ''}
+  `;
 }
+
 
 function renderToneSection() {
   const s = 'width:100%;padding:9px 12px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;color:#111827;font-size:12px;font-weight:500;outline:none;box-shadow:0 1px 3px rgba(0,0,0,0.05);';
@@ -368,7 +717,10 @@ function wireTabEvents() {
 
   // Toggle active
   const toggleBtn = popupPanel.querySelector('#vt-panel-toggle');
-  if (toggleBtn) toggleBtn.onclick = () => { isActive ? deactivateMode() : activateMode(); };
+  if (toggleBtn) toggleBtn.onclick = () => {
+    if (isActive) deactivateMode(); else activateMode();
+    renderPanel(); wireTabEvents();
+  };
 
   // Language selector
   const langSel = popupPanel.querySelector('#vt-panel-lang');
@@ -377,12 +729,16 @@ function wireTabEvents() {
     safeStorage({ vtLanguage: targetLanguage });
   };
 
-  // Bottom icon action buttons
+  // Bottom icon action buttons — only work when toggle is ON
   const btnAll = popupPanel.querySelector('#vt-btn-all');
-  if (btnAll) btnAll.onclick = () => { translateAllVisibleText(); };
+  if (btnAll) btnAll.onclick = () => {
+    if (!isActive) { showToast('Turn on the toggle first.'); return; }
+    translateAllVisibleText();
+  };
 
   const btnSel = popupPanel.querySelector('#vt-btn-sel');
   if (btnSel) btnSel.onclick = () => {
+    if (!isActive) { showToast('Turn on the toggle first.'); return; }
     const text = getSmartSelection();
     if (!text) { showToast('Select some text first.'); return; }
     try { translateAndShowInline(text, window.getSelection().getRangeAt(0)); }
@@ -390,10 +746,25 @@ function wireTabEvents() {
   };
 
   const btnClick = popupPanel.querySelector('#vt-btn-click');
-  if (btnClick) btnClick.onclick = () => { toggleSmartSelect(); renderPanel(); wireTabEvents(); };
+  if (btnClick) btnClick.onclick = () => {
+    if (!isActive) { showToast('Turn on the toggle first.'); return; }
+    toggleSmartSelect(); renderPanel(); wireTabEvents();
+  };
 
   const btnStop = popupPanel.querySelector('#vt-btn-stop');
   if (btnStop) btnStop.onclick = () => { stopTranslationFlag = true; removeAllTranslationOverlays(); showToast('Translations removed.'); };
+
+  // Live Chat button
+  const btnChat = popupPanel.querySelector('#vt-btn-chat');
+  if (btnChat) btnChat.onclick = () => {
+    window._vtToggleLiveChat?.();
+    // renderPanel + wireTabEvents already called inside _vtToggleLiveChat
+  };
+
+  // If live chat is active, wire its events now
+  if (window._vtLiveChatActive?.()) {
+    window._vtWireChatEvents?.();
+  }
 
   // Section toggles (tools tab)
   popupPanel.querySelectorAll('.vt-section-toggle').forEach(btn => {
@@ -424,11 +795,69 @@ function wireTabEvents() {
     renderPanel(); wireTabEvents();
   };
 
-  // File upload
-  const fileInput = popupPanel.querySelector('#vt-file-input');
-  if (fileInput) fileInput.onchange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+  // ── New mic section wiring ────────────────────────────────────────────────
+  const micStart = popupPanel.querySelector('#vt-mic-start');
+  if (micStart) micStart.onclick = () => extStartMic();
 
-  // Tone section
+  const toneMicStart = popupPanel.querySelector('#vt-tone-mic-start');
+  if (toneMicStart) toneMicStart.onclick = () => extStartMic();
+
+  const micStop = popupPanel.querySelector('#vt-mic-stop');
+  if (micStop) micStop.onclick = () => extStopMic();
+
+  // File upload (bottom bar or tone bar)
+  popupPanel.querySelectorAll('#vt-file-input, #vt-tone-file-input').forEach(fi => {
+    fi.onchange = (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+  });
+
+  popupPanel.querySelectorAll('.vt-tone-chip').forEach(btn => {
+    btn.onclick = () => {
+      extSelectedTone = btn.dataset.tone;
+      if (extSelectedTone === 'Custom') {
+        renderPanel(); wireTabEvents();
+      } else {
+        extApplyTone(extSelectedTone);
+      }
+    };
+  });
+
+  const customToneInp = popupPanel.querySelector('#vt-ext-custom-tone');
+  if (customToneInp) customToneInp.oninput = e => { extCustomTone = e.target.value; };
+  const applyCustomBtn = popupPanel.querySelector('#vt-ext-apply-custom');
+  if (applyCustomBtn) applyCustomBtn.onclick = () => extApplyTone('Custom');
+
+  const outTA = popupPanel.querySelector('#vt-ext-output');
+  if (outTA) outTA.oninput = e => { if (extToneText) extToneText = e.target.value; else extRawText = e.target.value; };
+
+  const sendBoxBtn = popupPanel.querySelector('#vt-ext-send-box');
+  if (sendBoxBtn) sendBoxBtn.onclick = () => {
+    const text = extToneText || extRawText;
+    if (!text) return;
+    const inserted = insertTextIntoActive(text);
+    if (!inserted) {
+      navigator.clipboard.writeText(text).then(() => showToast('✓ Copied! No text field found — press ⌘V to paste'));
+    }
+  };
+
+  const copyBarBtn = popupPanel.querySelector('#vt-ext-copy-bar');
+  if (copyBarBtn) copyBarBtn.onclick = () => {
+    navigator.clipboard.writeText(extToneText || extRawText).then(() => showToast('✓ Copied!'));
+  };
+
+  const copyOutBtn = popupPanel.querySelector('#vt-ext-copy-out');
+  if (copyOutBtn) copyOutBtn.onclick = () => {
+    navigator.clipboard.writeText(extToneText || extRawText).then(() => showToast('✓ Copied!'));
+  };
+
+  const clearOutBtn = popupPanel.querySelector('#vt-ext-clear-out');
+  if (clearOutBtn) clearOutBtn.onclick = () => {
+    extRawText = '';
+    extToneText = '';
+    extSelectedTone = null;
+    extCustomTone = '';
+    renderPanel(); wireTabEvents();
+  };
+
   const toneSel = popupPanel.querySelector('#vt-tone-sel');
   if (toneSel) toneSel.onchange = () => {
     selectedTone = toneSel.value;
@@ -531,6 +960,131 @@ async function stopAndProcess() {
     };
     mediaRecorder.stop();
   });
+}
+
+// ── New Native→English mic functions ─────────────────────────────────────────
+async function extStartMic() {
+  try {
+    extMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    extMicChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    extMicRecorder = new MediaRecorder(extMicStream, { mimeType });
+    extMicRecorder.ondataavailable = e => { if (e.data.size > 0) extMicChunks.push(e.data); };
+    extMicRecorder.start();
+    extMicRecording = true;
+    extMicTimeSec = 0;
+    extMicTimer = setInterval(() => {
+      extMicTimeSec++;
+      const el = popupPanel && popupPanel.querySelector('#vt-rec-timer');
+      if (el) el.textContent = fmtSec(extMicTimeSec);
+    }, 1000);
+    // Waveform animation
+    try {
+      const ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(extMicStream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      extMicWaveInterval = setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const bars = popupPanel && popupPanel.querySelectorAll('.vt-wave-bar');
+        if (bars) bars.forEach((bar, i) => {
+          const val = data[Math.floor(i / bars.length * data.length)] || 0;
+          bar.style.height = Math.max(3, Math.round(val / 255 * 22)) + 'px';
+        });
+      }, 60);
+    } catch {}
+    renderPanel(); wireTabEvents();
+  } catch {
+    showToast('Microphone access denied.');
+  }
+}
+
+async function extStopMic() {
+  if (extMicTimer) { clearInterval(extMicTimer); extMicTimer = null; }
+  if (extMicWaveInterval) { clearInterval(extMicWaveInterval); extMicWaveInterval = null; }
+  if (!extMicRecorder || extMicRecorder.state === 'inactive') return;
+  extMicRecording = false;
+  extMicLoading = true;
+  renderPanel(); wireTabEvents();
+
+  await new Promise(resolve => {
+    extMicRecorder.onstop = resolve;
+    extMicRecorder.stop();
+  });
+  if (extMicStream) { extMicStream.getTracks().forEach(t => t.stop()); extMicStream = null; }
+
+  const blob = new Blob(extMicChunks, { type: 'audio/webm' });
+  if (blob.size < 500) { extMicLoading = false; renderPanel(); wireTabEvents(); return; }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', blob, 'recording.webm');
+    const res = await fetch('http://127.0.0.1:8000/api/translate-audio', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    extRawText = data.transcript || '';
+    extToneText = '';
+    extSelectedTone = null;
+  } catch (e) {
+    showToast('Transcription failed: ' + e.message);
+    extRawText = '';
+  }
+  extMicLoading = false;
+  renderPanel(); wireTabEvents();
+}
+
+async function extApplyTone(tone) {
+  const text = extRawText.trim();
+  if (!text) return;
+
+  // Map display names to exact backend tone names
+  const TONE_MAP = {
+    'Email Formal':      'Email Formal',
+    'Email Casual':      'Email Casual',
+    'Slack':             'Slack',
+    'LinkedIn':          'LinkedIn',
+    'WhatsApp Business': 'WhatsApp Business',
+    'Custom':            'Custom',
+  };
+
+  extToneLoading = true;
+  extToneText = '';
+  extSelectedTone = tone;
+  renderPanel(); wireTabEvents();
+
+  try {
+    const backendTone = TONE_MAP[tone] || tone;
+    const userOverride = tone === 'Custom' ? (extCustomTone.trim() || null) : null;
+
+    if (tone === 'Custom' && !userOverride) {
+      extToneLoading = false;
+      showToast('Enter a custom tone description first.');
+      renderPanel(); wireTabEvents();
+      return;
+    }
+
+    const r = await fetch('http://127.0.0.1:8000/api/rewrite-tone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, tone: backendTone, user_override: userOverride }),
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${r.status}`);
+    }
+
+    const d = await r.json();
+    extToneText = d.rewritten_text || text;
+  } catch (e) {
+    showToast('Tone rewrite failed: ' + e.message);
+    extToneText = '';
+  }
+
+  extToneLoading = false;
+  renderPanel(); wireTabEvents();
 }
 
 async function handleFile(file) {
@@ -807,6 +1361,7 @@ function replaceSelectionWithTranslation(mark, originalText, translatedText, ran
   // Build the inline span
   const span = document.createElement('span');
   span.className = 'vt-translated-inline';
+  span.dataset.vtOriginal = originalText;
   span.textContent = translatedText;
 
   const undoBtn = document.createElement('button');
@@ -872,6 +1427,7 @@ async function translateAllVisibleText() {
       if (res?.success && node.parentNode) {
         const span = document.createElement('span');
         span.className = 'vt-translated-inline';
+        span.dataset.vtOriginal = text;
         span.textContent = res.data.translated_text || text;
         const undoBtn = document.createElement('button');
         undoBtn.className = 'vt-undo-btn';
@@ -891,7 +1447,7 @@ async function translateAllVisibleText() {
 
 function removeAllTranslationOverlays() {
   document.querySelectorAll('.vt-translated-inline').forEach(span => {
-    const original = span.textContent.replace(/↩$/, '').trim();
+    const original = span.dataset.vtOriginal || span.textContent.replace(/↩$/, '').trim();
     span.replaceWith(document.createTextNode(original));
   });
   document.querySelectorAll('.vt-translated-element').forEach(el => {
@@ -901,21 +1457,193 @@ function removeAllTranslationOverlays() {
 }
 
 // ========== HELPERS ==========
-function insertTextIntoActive(text) {
-  const el = document.activeElement;
-  if (!el) return false;
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    const start = el.selectionStart ?? el.value.length;
-    const end = el.selectionEnd ?? el.value.length;
-    el.value = el.value.slice(0, start) + text + el.value.slice(end);
-    el.selectionStart = el.selectionEnd = start + text.length;
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    return true;
-  }
-  if (el.isContentEditable) {
+
+// Inject text into a contenteditable element reliably
+function _fillWhatsApp(el, text) {
+  // WhatsApp Web uses Lexical editor.
+  // Most reliable approach: write to clipboard then trigger Ctrl+V.
+  el.focus();
+  document.execCommand('selectAll', false, null);
+
+  navigator.clipboard.writeText(text).then(() => {
+    // Simulate Ctrl+V — Lexical handles real paste events from clipboard
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', code: 'KeyV', ctrlKey: true, bubbles: true, cancelable: true }));
+    document.execCommand('paste');
+
+    // Fallback after 80ms: if still empty, use insertText
+    setTimeout(() => {
+      const current = (el.innerText || el.textContent || '').trim();
+      if (!current) {
+        el.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, text);
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+      }
+    }, 80);
+  }).catch(() => {
+    // clipboard API unavailable — fall back to execCommand directly
+    el.focus();
+    document.execCommand('selectAll', false, null);
     document.execCommand('insertText', false, text);
+    el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+  });
+}
+
+function _injectIntoContentEditable(el, text) {
+  el.focus();
+  // Clear and insert via execCommand (works in Gmail, Slack, WhatsApp, LinkedIn)
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(text));
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    document.execCommand('selectAll', false, null);
+    document.execCommand('insertText', false, text);
+  }
+  el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// Detect and fill the best compose field on the current page
+function insertTextIntoActive(text) {
+  const host = window.location.hostname;
+
+  // ── Gmail ──────────────────────────────────────────────────────────────────
+  if (host.includes('mail.google.com')) {
+    // Find the compose body — try multiple selectors, pick the one inside the compose window
+    const gmailBody =
+      document.querySelector('div[aria-label="Message Body"][contenteditable="true"]') ||
+      document.querySelector('div[g_editable="true"][contenteditable="true"]') ||
+      document.querySelector('div.Am.Al.editable[contenteditable="true"]') ||
+      document.querySelector('div.editable[contenteditable="true"]') ||
+      [...document.querySelectorAll('div[contenteditable="true"]')]
+        .find(el => !el.closest('#vt-popup-panel') && el.getBoundingClientRect().height > 80);
+
+    if (gmailBody) {
+      // Parse "Subject: ..." from the text
+      let subject = '';
+      let body = text;
+
+      const subjectMatch = text.match(/^Subject:\s*(.+?)[\r\n]+/i);
+      if (subjectMatch) {
+        subject = subjectMatch[1].trim();
+        body = text.slice(subjectMatch[0].length).trim();
+      }
+
+      // Fill subject field
+      if (subject) {
+        const subjectEl =
+          document.querySelector('input[name="subjectbox"]') ||
+          document.querySelector('input[placeholder="Subject"]') ||
+          document.querySelector('input[data-hm="subject"]') ||
+          document.querySelector('td.aoD.hl input') ||
+          document.querySelector('.aoT');
+        if (subjectEl) {
+          subjectEl.focus();
+          const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          nativeSetter.call(subjectEl, subject);
+          subjectEl.dispatchEvent(new Event('input', { bubbles: true }));
+          subjectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+
+      // Fill body after a short delay so subject fill settles
+      setTimeout(() => {
+        gmailBody.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, body);
+        gmailBody.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      }, 80);
+
+      showToast(subject ? '✓ Filled subject + body' : '✓ Filled Gmail compose');
+      return true;
+    }
+  }
+
+  // ── Slack Web ──────────────────────────────────────────────────────────────
+  if (host.includes('slack.com') || host.includes('app.slack.com')) {
+    const slackInput = document.querySelector(
+      '[data-qa="message_input"] [contenteditable="true"], ' +
+      '.ql-editor[contenteditable="true"], ' +
+      'div[aria-label="Message"][contenteditable="true"], ' +
+      'div[data-qa="message-input"][contenteditable="true"]'
+    );
+    if (slackInput) {
+      _injectIntoContentEditable(slackInput, text);
+      showToast('✓ Filled Slack message');
+      return true;
+    }
+  }
+
+  // ── WhatsApp Web ───────────────────────────────────────────────────────────
+  if (host.includes('web.whatsapp.com') || host.includes('whatsapp.com')) {
+    const waInput =
+      document.querySelector('div[contenteditable="true"][data-tab="10"]') ||
+      document.querySelector('div[contenteditable="true"][data-tab="1"]') ||
+      document.querySelector('footer div[contenteditable="true"]') ||
+      document.querySelector('div[role="textbox"][contenteditable="true"][spellcheck="true"]') ||
+      document.querySelector('div[role="textbox"][contenteditable="true"]');
+
+    if (waInput) {
+      _fillWhatsApp(waInput, text);
+      showToast('✓ Filled WhatsApp message');
+      return true;
+    }
+  }
+
+  // ── LinkedIn ───────────────────────────────────────────────────────────────
+  if (host.includes('linkedin.com')) {
+    // LinkedIn message compose or post box
+    const liInput = document.querySelector(
+      'div.msg-form__contenteditable[contenteditable="true"], ' +
+      'div[data-placeholder][contenteditable="true"], ' +
+      'div.ql-editor[contenteditable="true"], ' +
+      'div[role="textbox"][contenteditable="true"], ' +
+      'div.share-creation-state__text-editor [contenteditable="true"]'
+    );
+    if (liInput) {
+      _injectIntoContentEditable(liInput, text);
+      showToast('✓ Filled LinkedIn compose');
+      return true;
+    }
+  }
+
+  // ── Generic fallback: try document.activeElement ───────────────────────────
+  const el = document.activeElement;
+  if (el) {
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      el.value = el.value.slice(0, start) + text + el.value.slice(end);
+      el.selectionStart = el.selectionEnd = start + text.length;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      showToast('✓ Text inserted');
+      return true;
+    }
+    if (el.isContentEditable) {
+      _injectIntoContentEditable(el, text);
+      showToast('✓ Text inserted');
+      return true;
+    }
+  }
+
+  // ── Last resort: find any visible contenteditable on the page ─────────────
+  const allEditable = [...document.querySelectorAll('[contenteditable="true"]')]
+    .filter(el => {
+      if (el.closest('#vt-popup-panel')) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 50 && r.height > 20;
+    });
+  if (allEditable.length) {
+    _injectIntoContentEditable(allEditable[allEditable.length - 1], text);
+    showToast('✓ Text inserted into field');
     return true;
   }
+
   return false;
 }
 
@@ -938,3 +1666,491 @@ function showToast(msg) {
   document.body.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; setTimeout(() => toast.remove(), 300); }, 2500);
 }
+
+// ========== WIDGET FILL BRIDGE ==========
+const WIDGET_FILL_API = 'http://127.0.0.1:8000/api/widget-fill';
+let _fillPollInterval = null;
+
+function startWidgetFillPolling() {
+  if (_fillPollInterval) return;
+  // Only poll on Gmail and Slack
+  const host = window.location.hostname;
+  const isGmail = host.includes('mail.google.com');
+  const isSlack = host.includes('slack.com');
+  if (!isGmail && !isSlack) return;
+
+  _fillPollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(WIDGET_FILL_API, { method: 'GET' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.pending) return;
+
+      if (isGmail) {
+        fillGmailCompose(data.subject || '', data.body || '');
+      } else if (isSlack) {
+        fillSlackCompose(data.body || data.subject || '');
+      }
+    } catch {}
+  }, 800);
+}
+
+function fillGmailCompose(subject, body) {
+  // Gmail subject input — try multiple selectors
+  const subjectEl = document.querySelector(
+    'input[name="subjectbox"], ' +
+    'input[placeholder="Subject"], ' +
+    'input[data-hm="subject"], ' +
+    'td.aoD.hl input, ' +
+    '.aoT'
+  );
+
+  if (subjectEl && subject) {
+    subjectEl.focus();
+    // Native input value setter to bypass React's synthetic events
+    const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    nativeInputSetter.call(subjectEl, subject);
+    subjectEl.dispatchEvent(new Event('input', { bubbles: true }));
+    subjectEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // Gmail body — contenteditable div, wait a tick for compose to be ready
+  setTimeout(() => {
+    const bodyEl = document.querySelector(
+      'div[aria-label="Message Body"], ' +
+      'div[g_editable="true"], ' +
+      'div.Am.Al.editable[contenteditable="true"], ' +
+      'div[contenteditable="true"][role="textbox"]'
+    );
+    if (bodyEl && body) {
+      bodyEl.focus();
+      // Clear existing content and insert
+      bodyEl.innerHTML = '';
+      document.execCommand('insertText', false, body);
+      bodyEl.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    }
+    showToast('✓ Email filled from widget');
+  }, 200);
+}
+
+function fillSlackCompose(text) {
+  // Slack message input — contenteditable div
+  const slackInput = document.querySelector(
+    '[data-qa="message_input"] [contenteditable="true"], .ql-editor[contenteditable="true"], [aria-label="Message"] [contenteditable="true"]'
+  );
+  if (slackInput) {
+    slackInput.focus();
+    document.execCommand('selectAll', false, null);
+    document.execCommand('insertText', false, text);
+    slackInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    showToast('✓ Message filled from widget');
+  } else {
+    insertTextIntoActive(text);
+    showToast('✓ Text inserted from widget');
+  }
+}
+
+// Start polling when the page loads
+if (isContextValid()) {
+  startWidgetFillPolling();
+}
+
+
+// ========== LIVE CHAT TRANSLATION ==========
+// Flow:
+// - Incoming: new messages auto-translated and shown in the extension panel
+// - Outgoing: speak in native → transcript shown → click Send → fills compose + sends
+(function initLiveChat() {
+  if (!isContextValid()) return;
+
+  const CHAT_LANGUAGES = {
+    'English':   'en-IN',
+    'Hindi':     'hi-IN',
+    'Kannada':   'kn-IN',
+    'Tamil':     'ta-IN',
+    'Telugu':    'te-IN',
+    'Malayalam': 'ml-IN',
+    'Bengali':   'bn-IN',
+    'Marathi':   'mr-IN',
+    'Gujarati':  'gu-IN',
+    'Punjabi':   'pa-IN',
+    'Odia':      'or-IN',
+  };
+
+  const SITES = {
+    'web.whatsapp.com': {
+      // Use only .copyable-text (parent) — .selectable-text is a child of it, avoid double-matching
+      msgSelector: 'div.message-in .copyable-text',
+      compose: () =>
+        document.querySelector('div[contenteditable="true"][data-tab="10"]') ||
+        document.querySelector('footer div[contenteditable="true"]') ||
+        document.querySelector('div[role="textbox"][contenteditable="true"]'),
+      sendBtn: () =>
+        document.querySelector('button[data-tab="11"]') ||
+        document.querySelector('button[aria-label="Send"]') ||
+        document.querySelector('span[data-icon="send"]')?.closest('button'),
+      platform: 'WhatsApp',
+    },
+    'mail.google.com': {
+      msgSelector: 'div.a3s.aiL, div[data-message-id] .ii.gt',
+      compose: () =>
+        document.querySelector('div[aria-label="Message Body"][contenteditable="true"]') ||
+        document.querySelector('div.Am.Al.editable[contenteditable="true"]'),
+      sendBtn: () => document.querySelector('div[data-tooltip="Send"] .T-I'),
+      platform: 'Gmail',
+    },
+    'app.slack.com': {
+      // Slack Web uses multiple possible selectors depending on version
+      msgSelector: [
+        'div.c-message_kit__blocks',
+        'div.p-rich_text_block',
+        'span.p-rich_text_section',
+        'div.c-message__body',
+        '[data-qa="message-text"]',
+        'div.c-message_kit__text',
+      ].join(', '),
+      compose: () =>
+        document.querySelector('div[data-qa="message_input"] [contenteditable="true"]') ||
+        document.querySelector('.ql-editor[contenteditable="true"]') ||
+        document.querySelector('div[aria-label][contenteditable="true"]') ||
+        document.querySelector('div[contenteditable="true"][role="textbox"]'),
+      sendBtn: () =>
+        document.querySelector('button[data-qa="texty_send_button"]') ||
+        document.querySelector('button[aria-label="Send message"]') ||
+        document.querySelector('button[data-qa="message_input_send_button"]'),
+      platform: 'Slack',
+    },
+    'linkedin.com': {
+      msgSelector: 'div.msg-s-event__content, p.msg-s-event-listitem__body',
+      compose: () => document.querySelector('div.msg-form__contenteditable[contenteditable="true"]'),
+      sendBtn: () => document.querySelector('button.msg-form__send-button'),
+      platform: 'LinkedIn',
+    },
+  };
+
+  let liveChatActive = false;
+  let chatObserver = null;
+  let chatTargetLang = 'en-IN';
+  let chatMessages = [];
+  let chatSeenTexts = new Set(); // dedup by text content
+  let chatMicRecording = false;
+  let chatMicChunks = [];
+  let chatMicRecorder = null;
+  let chatMicStream = null;
+  let chatMicTimeSec = 0;
+  let chatMicTimer = null;
+  let chatOutgoingText = '';
+  let chatLoading = false;
+
+  chrome.storage.local.get('vtChatLang', r => { if (r.vtChatLang) chatTargetLang = r.vtChatLang; });
+
+  function getSite() {
+    const host = window.location.hostname;
+    for (const key of Object.keys(SITES)) {
+      if (host.includes(key)) return SITES[key];
+    }
+    return null;
+  }
+
+  async function processMessage(el, sender) {
+    if (el.hasAttribute('data-vt-chat-done')) return;
+    // Skip if any ancestor is already processed (avoids parent+child double-processing)
+    if (el.closest('[data-vt-chat-done]')) return;
+    const text = (el.innerText || el.textContent || '').trim();
+    if (!text || text.length < 2) return;
+    if (/^\d{1,2}:\d{2}/.test(text)) return;
+    // Skip UI chrome elements (buttons, labels, etc.)
+    if (el.closest('button, [role="button"], [data-qa="reaction_button"]')) return;
+
+    // Dedup: skip if we've already processed this exact text recently
+    const dedupeKey = sender + ':' + text;
+    if (chatSeenTexts.has(dedupeKey)) { el.setAttribute('data-vt-chat-done', '1'); return; }
+    chatSeenTexts.add(dedupeKey);
+
+    el.setAttribute('data-vt-chat-done', '1');
+    const msgId = 'vtmsg_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    chatMessages.push({ id: msgId, sender, original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+    refreshChatPanel();
+
+    try {
+      const res = await sendMsg({ type: 'API_TRANSLATE_TEXT', text, targetLanguage: chatTargetLang });
+      const msg = chatMessages.find(m => m.id === msgId);
+      if (msg) { msg.translated = res?.success ? (res.data?.translated_text || text) : text; refreshChatPanel(); }
+    } catch {
+      const msg = chatMessages.find(m => m.id === msgId);
+      if (msg) { msg.translated = text; refreshChatPanel(); }
+    }
+  }
+
+  async function scanExisting() {
+    const site = getSite();
+    if (!site) return;
+    const els = [...document.querySelectorAll(site.msgSelector)].slice(-10);
+    for (const el of els) await processMessage(el, 'them');
+  }
+
+  function startObserver() {
+    if (chatObserver) return;
+    const site = getSite();
+    if (!site) return;
+    chatObserver = new MutationObserver((mutations) => {
+      if (!liveChatActive) return;
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          // Check the node itself
+          if (node.matches?.(site.msgSelector)) {
+            processMessage(node, 'them');
+          }
+          // Check all descendants
+          const descendants = node.querySelectorAll?.(site.msgSelector);
+          if (descendants) descendants.forEach(el => processMessage(el, 'them'));
+        }
+      }
+    });
+    chatObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function stopObserver() {
+    if (chatObserver) { chatObserver.disconnect(); chatObserver = null; }
+  }
+
+  async function startChatMic() {
+    try {
+      chatMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chatMicChunks = [];
+      chatMicRecorder = new MediaRecorder(chatMicStream, { mimeType: 'audio/webm' });
+      chatMicRecorder.ondataavailable = e => { if (e.data.size > 0) chatMicChunks.push(e.data); };
+      chatMicRecorder.onstop = async () => {
+        chatLoading = true; refreshChatPanel();
+        const blob = new Blob(chatMicChunks, { type: 'audio/webm' });
+        try {
+          const reader = new FileReader();
+          const base64 = await new Promise(r => { reader.onloadend = () => r(reader.result); reader.readAsDataURL(blob); });
+          const res = await sendMsg({ type: 'API_TRANSLATE_AUDIO', audioData: base64, mimeType: 'audio/webm' });
+          chatOutgoingText = res?.success ? (res.data?.transcript || res.data?.english_text || '') : '';
+          if (!chatOutgoingText) showToast('Could not transcribe. Try again.');
+        } catch { showToast('Transcription failed.'); }
+        chatLoading = false; chatMicRecording = false; refreshChatPanel();
+      };
+      chatMicRecorder.start();
+      chatMicRecording = true;
+      chatMicTimeSec = 0;
+      chatMicTimer = setInterval(() => {
+        chatMicTimeSec++;
+        const el = document.getElementById('vt-chat-rec-timer');
+        if (el) el.textContent = fmtSec(chatMicTimeSec);
+      }, 1000);
+      refreshChatPanel();
+    } catch { showToast('Microphone access denied.'); }
+  }
+
+  function stopChatMic() {
+    if (chatMicTimer) { clearInterval(chatMicTimer); chatMicTimer = null; }
+    if (chatMicRecorder && chatMicRecording) {
+      chatMicRecorder.stop();
+      chatMicStream?.getTracks().forEach(t => t.stop());
+    }
+  }
+
+  function sendOutgoing() {
+    const text = chatOutgoingText.trim();
+    if (!text) return;
+    const site = getSite();
+    if (!site) return;
+    const compose = site.compose();
+    if (!compose) { showToast('Could not find compose box.'); return; }
+
+    const host = window.location.hostname;
+    if (host.includes('whatsapp.com')) {
+      _fillWhatsApp(compose, text);
+    } else {
+      _injectIntoContentEditable(compose, text);
+    }
+
+    setTimeout(() => {
+      const btn = site.sendBtn?.();
+      if (btn) {
+        btn.click();
+      } else {
+        compose.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+      }
+      chatMessages.push({ id: 'vtmsg_out_' + Date.now(), sender: 'me', original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+      chatOutgoingText = '';
+      refreshChatPanel();
+      showToast('✓ Sent');
+    }, 200);
+  }
+
+  function renderChatPanel() {
+    const site = getSite();
+    const platform = site?.platform || 'Chat';
+    const langOptions = Object.entries(CHAT_LANGUAGES).map(([name, code]) =>
+      `<option value="${code}" ${chatTargetLang === code ? 'selected' : ''}>${name}</option>`
+    ).join('');
+
+    const messagesHtml = chatMessages.length === 0
+      ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:#9ca3af;text-align:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span style="font-size:11px;font-weight:600;">Waiting for messages…</span>
+          <span style="font-size:10px;">New messages will appear here translated</span>
+        </div>`
+      : chatMessages.map(msg => {
+          const isMe = msg.sender === 'me';
+          const displayText = msg.translated !== null ? msg.translated : msg.original;
+          const isLoading = msg.translated === null && msg.sender !== 'me';
+          return `<div style="display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'};margin-bottom:8px;">
+            <div style="max-width:88%;background:${isMe ? '#1a1a1a' : '#f3f4f6'};color:${isMe ? '#fff' : '#1a1a1a'};border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};padding:8px 11px;font-size:12px;line-height:1.5;word-break:break-word;">
+              ${isLoading ? `<span style="color:#9ca3af;font-style:italic;">Translating…</span>` : escapeHtml(displayText)}
+              ${!isLoading && msg.translated && msg.translated !== msg.original && msg.sender !== 'me'
+                ? `<div style="font-size:10px;margin-top:3px;opacity:0.5;font-style:italic;">${escapeHtml(msg.original)}</div>` : ''}
+            </div>
+            <span style="font-size:9px;color:#9ca3af;margin-top:2px;">${msg.time}</span>
+          </div>`;
+        }).join('');
+
+    let outgoingHtml = '';
+    if (chatMicRecording) {
+      outgoingHtml = `<div style="display:flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:9px 12px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0;animation:vtRecPulse 1s ease-in-out infinite;"></div>
+        <span id="vt-chat-rec-timer" style="font-size:11px;font-family:monospace;font-weight:700;color:#dc2626;">${fmtSec(chatMicTimeSec)}</span>
+        <span style="font-size:11px;color:#dc2626;flex:1;">Recording…</span>
+        <button id="vt-chat-stop-rec" style="padding:6px 12px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Stop</button>
+      </div>`;
+    } else if (chatLoading) {
+      outgoingHtml = `<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f9fafb;border-radius:10px;">
+        <div class="vt-spinner"></div><span style="font-size:11px;color:#6b7280;">Transcribing…</span>
+      </div>`;
+    } else if (chatOutgoingText) {
+      outgoingHtml = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;">
+        <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Ready to send</div>
+        <div id="vt-chat-outgoing-text" contenteditable="true" style="font-size:12px;color:#1a1a1a;line-height:1.5;outline:none;min-height:20px;border:none;background:transparent;">${escapeHtml(chatOutgoingText)}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button id="vt-chat-send-btn" style="flex:1;padding:8px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send
+          </button>
+          <button id="vt-chat-discard-btn" style="padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;font-size:11px;font-weight:600;cursor:pointer;">Discard</button>
+        </div>
+      </div>`;
+    } else {
+      outgoingHtml = `<button id="vt-chat-mic-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:#1a1a1a;border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        Speak to send
+      </button>`;
+    }
+
+    return `
+      <style>@keyframes vtRecPulse{0%,100%{opacity:1}50%{opacity:0.3}}</style>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+          <span style="font-size:11px;font-weight:700;color:#374151;">Live Chat · ${platform}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:10px;color:#9ca3af;font-weight:600;">To</span>
+          <select id="vt-chat-lang-sel" style="padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:11px;font-weight:600;color:#374151;background:#f9fafb;outline:none;cursor:pointer;">${langOptions}</select>
+          <button id="vt-chat-clear-btn" title="Clear messages" style="padding:4px 7px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;color:#9ca3af;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Clear
+          </button>
+        </div>
+      </div>
+      <div id="vt-chat-messages" style="flex:1;overflow-y:auto;padding:2px 0;min-height:0;">${messagesHtml}</div>
+      <div style="flex-shrink:0;margin-top:8px;">${outgoingHtml}</div>`;
+  }
+
+  function refreshChatPanel() {
+    if (!popupPanel || !liveChatActive) return;
+    const content = popupPanel.querySelector('#vt-tab-content');
+    if (!content) return;
+    content.innerHTML = renderChatPanel();
+    wireChatEvents();
+    const feed = content.querySelector('#vt-chat-messages');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+  }
+
+  function wireChatEvents() {
+    if (!popupPanel) return;
+    const content = popupPanel.querySelector('#vt-tab-content');
+    if (!content) return;
+
+    const langSel = content.querySelector('#vt-chat-lang-sel');
+    if (langSel) langSel.onchange = (e) => {
+      chatTargetLang = e.target.value;
+      safeStorage({ vtChatLang: chatTargetLang });
+      chatMessages.forEach(m => { if (m.sender !== 'me') m.translated = null; });
+      refreshChatPanel();
+      chatMessages.filter(m => m.sender !== 'me').forEach(async (m) => {
+        try {
+          const res = await sendMsg({ type: 'API_TRANSLATE_TEXT', text: m.original, targetLanguage: chatTargetLang });
+          m.translated = res?.success ? (res.data?.translated_text || m.original) : m.original;
+          refreshChatPanel();
+        } catch { m.translated = m.original; refreshChatPanel(); }
+      });
+    };
+
+    const micBtn = content.querySelector('#vt-chat-mic-btn');
+    if (micBtn) micBtn.onclick = startChatMic;
+
+    const stopRec = content.querySelector('#vt-chat-stop-rec');
+    if (stopRec) stopRec.onclick = stopChatMic;
+
+    const sendBtn = content.querySelector('#vt-chat-send-btn');
+    if (sendBtn) sendBtn.onclick = () => {
+      const editEl = content.querySelector('#vt-chat-outgoing-text');
+      if (editEl) chatOutgoingText = (editEl.innerText || editEl.textContent || chatOutgoingText).trim();
+      sendOutgoing();
+    };
+
+    const discardBtn = content.querySelector('#vt-chat-discard-btn');
+    if (discardBtn) discardBtn.onclick = () => { chatOutgoingText = ''; refreshChatPanel(); };
+
+    const clearBtn = content.querySelector('#vt-chat-clear-btn');
+    if (clearBtn) clearBtn.onclick = () => {
+      chatMessages = [];
+      chatSeenTexts = new Set();
+      // Also remove data-vt-chat-done attributes so messages can be re-scanned
+      document.querySelectorAll('[data-vt-chat-done]').forEach(el => el.removeAttribute('data-vt-chat-done'));
+      refreshChatPanel();
+    };
+  }
+
+  window._vtToggleLiveChat = function() {
+    const site = getSite();
+    if (!site) {
+      showToast('Live chat works on WhatsApp Web, Gmail, Slack, and LinkedIn.');
+      return false;
+    }
+    if (liveChatActive) {
+      liveChatActive = false;
+      stopObserver();
+      chatMessages = [];
+      chatSeenTexts = new Set();
+      chatOutgoingText = '';
+      renderPanel(); wireTabEvents();
+      showToast('Live chat stopped.');
+    } else {
+      liveChatActive = true;
+      chatMessages = [];
+      chatSeenTexts = new Set();
+      chatOutgoingText = '';
+      // Mark all existing DOM elements as already seen — don't translate old messages
+      const site = getSite();
+      if (site) {
+        document.querySelectorAll(site.msgSelector).forEach(el => {
+          el.setAttribute('data-vt-chat-done', '1');
+          const text = (el.innerText || el.textContent || '').trim();
+          if (text) chatSeenTexts.add('them:' + text);
+        });
+      }
+      startObserver();
+      renderPanel(); wireTabEvents();
+      showToast(`Live chat active on ${site?.platform || 'page'} — waiting for new messages`);
+    }
+    return liveChatActive;
+  };
+
+  window._vtLiveChatActive = () => liveChatActive;
+  window._vtRenderChatPanel = renderChatPanel;
+  window._vtWireChatEvents = wireChatEvents;
+})();

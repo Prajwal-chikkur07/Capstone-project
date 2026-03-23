@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       background: transparent;
       overflow: hidden;
@@ -13,10 +12,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      -webkit-app-region: no-drag;
     }
 
-    #bubble {
+    .bubble {
       width: 48px;
       height: 48px;
       border-radius: 50%;
@@ -25,95 +23,76 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
-      transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
-      user-select: none;
-      position: relative;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+      animation: breathe 3s ease-in-out infinite;
     }
 
-    #bubble:hover {
-      transform: scale(1.12);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    .bubble:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 28px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1);
+      animation: none;
     }
 
-    #bubble:active {
-      transform: scale(0.93);
+    .bubble.active {
+      background: #1d4ed8;
+      box-shadow: 0 4px 20px rgba(29,78,216,0.6), 0 0 0 1px rgba(99,102,241,0.4);
+      animation: none;
     }
 
-    #bubble.active {
-      background: #10b981;
-      box-shadow: 0 4px 20px rgba(16,185,129,0.5), 0 0 0 4px rgba(16,185,129,0.2);
-      animation: pulse 2s ease-in-out infinite;
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); }
+      50% { box-shadow: 0 4px 28px rgba(99,102,241,0.35), 0 0 0 1px rgba(99,102,241,0.2); }
     }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 4px 20px rgba(16,185,129,0.5), 0 0 0 4px rgba(16,185,129,0.2); }
-      50%       { box-shadow: 0 4px 24px rgba(16,185,129,0.6), 0 0 0 8px rgba(16,185,129,0.08); }
-    }
-
-    img {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      pointer-events: none;
-    }
-
-    #play-icon {
-      color: white;
-      font-size: 18px;
-      line-height: 1;
-      pointer-events: none;
-      user-select: none;
-    }
+    svg { pointer-events: none; }
   </style>
 </head>
 <body>
-  <div id="bubble">
-    <span id="play-icon">▶︎</span>
+  <div class="bubble" id="bubble">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
-
     const bubble = document.getElementById('bubble');
+
     let isDragging = false;
+    let dragStartX, dragStartY, winStartX, winStartY;
     let hasMoved = false;
-    let startX, startY, winStartX, winStartY;
 
-    // Click = toggle panel
-    bubble.addEventListener('click', () => {
-      if (!hasMoved) ipcRenderer.send('toggle-panel');
-    });
-
-    // Drag to reposition bubble anywhere on screen
-    bubble.addEventListener('mousedown', (e) => {
+    bubble.addEventListener('mousedown', async (e) => {
       isDragging = true;
       hasMoved = false;
-      startX = e.screenX;
-      startY = e.screenY;
-
-      // Get current window position via IPC
-      ipcRenderer.invoke('get-bubble-pos').then(({ x, y }) => {
-        winStartX = x;
-        winStartY = y;
-      });
-
-      e.preventDefault();
+      dragStartX = e.screenX;
+      dragStartY = e.screenY;
+      const pos = await ipcRenderer.invoke('get-bubble-pos');
+      winStartX = pos.x;
+      winStartY = pos.y;
     });
 
-    document.addEventListener('mousemove', (e) => {
+    window.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
-      const dx = e.screenX - startX;
-      const dy = e.screenY - startY;
+      const dx = e.screenX - dragStartX;
+      const dy = e.screenY - dragStartY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved = true;
       ipcRenderer.send('bubble-drag', { x: winStartX + dx, y: winStartY + dy });
     });
 
-    document.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mouseup', () => {
+      if (isDragging && !hasMoved) {
+        ipcRenderer.send('toggle-panel');
+      }
+      isDragging = false;
+    });
 
-    // Active state from main
-    ipcRenderer.on('panel-state', (e, isOpen) => {
-      bubble.classList.toggle('active', isOpen);
+    ipcRenderer.on('panel-state', (_, open) => {
+      bubble.classList.toggle('active', open);
     });
   </script>
 </body>

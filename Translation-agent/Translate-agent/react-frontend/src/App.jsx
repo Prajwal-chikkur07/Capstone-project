@@ -53,15 +53,23 @@ function AppShell() {
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state.darkMode]);
 
-  // Offline detection — poll backend every 15s
+  // Offline detection — poll backend every 30s, only mark offline after 2 consecutive failures
+  const failCountRef = useRef(0);
   useEffect(() => {
     const check = async () => {
       const online = await api.checkHealth();
-      setOnline(online);
+      if (online) {
+        failCountRef.current = 0;
+        setOnline(true);
+      } else {
+        failCountRef.current += 1;
+        if (failCountRef.current >= 2) setOnline(false);
+      }
     };
-    check();
-    pollRef.current = setInterval(check, 15000);
-    return () => clearInterval(pollRef.current);
+    // Delay first check by 3s to let backend warm up
+    const initTimer = setTimeout(check, 3000);
+    pollRef.current = setInterval(check, 30000);
+    return () => { clearTimeout(initTimer); clearInterval(pollRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 100vw; height: 100vh;
+      background: rgba(99, 102, 241, 0.04);
+      overflow: hidden;
+      cursor: crosshair;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* Top banner */
+    #banner {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 12, 22, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      border-radius: 14px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.88);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      pointer-events: auto;
+      z-index: 99999;
+    }
+
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #818cf8;
+      box-shadow: 0 0 6px #818cf8;
+      animation: pulse 1.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .stop-btn {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 7px;
+      color: #f87171;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+    .stop-btn:hover { background: rgba(239,68,68,0.28); }
+
+    /* Spinner at click point */
+    .click-spinner {
+      position: absolute;
+      width: 28px; height: 28px;
+      border: 3px solid rgba(129,140,248,0.2);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 99997;
+    }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+    /* Ripple on click */
+    .click-ripple {
+      position: absolute;
+      width: 40px; height: 40px;
+      border: 2px solid rgba(129,140,248,0.6);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple 0.5s ease-out forwards;
+      pointer-events: none;
+      z-index: 99996;
+    }
+    @keyframes ripple {
+      to { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+    }
+
+    /* Translation popup */
+    .trans-popup {
+      position: absolute;
+      background: rgba(10, 12, 22, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(129, 140, 248, 0.45);
+      border-radius: 14px;
+      padding: 10px 32px 10px 14px;
+      max-width: 300px;
+      min-width: 120px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.65);
+      animation: popIn 0.18s ease;
+      z-index: 99998;
+      pointer-events: auto;
+      cursor: default;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .trans-popup .translated {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .trans-popup .original {
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    .trans-popup .close-x {
+      position: absolute;
+      top: 6px; right: 9px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.22);
+      cursor: pointer;
+      line-height: 1;
+    }
+    .trans-popup .close-x:hover { color: #f87171; }
+
+    /* Crosshair guide lines that follow cursor */
+    #crosshair-h, #crosshair-v {
+      position: fixed;
+      background: rgba(129, 140, 248, 0.12);
+      pointer-events: none;
+      z-index: 1;
+    }
+    #crosshair-h { left: 0; right: 0; height: 1px; }
+    #crosshair-v { top: 0; bottom: 0; width: 1px; }
+  </style>
+</head>
+<body>
+
+  <div id="crosshair-h"></div>
+  <div id="crosshair-v"></div>
+
+  <div id="banner">
+    <div class="pulse-dot"></div>
+    <span>Click on any text to translate it</span>
+    <button class="stop-btn" id="stopBtn">✕ Stop</button>
+  </div>
+
+  <div id="container"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const container = document.getElementById('container');
+    const crossH = document.getElementById('crosshair-h');
+    const crossV = document.getElementById('crosshair-v');
+
+    let lang = 'hi-IN';
+    let isTranslating = false;
+
+    ipcRenderer.on('init', (_, data) => { lang = data.lang; });
+
+    // Crosshair follows mouse
+    document.addEventListener('mousemove', (e) => {
+      crossH.style.top = e.clientY + 'px';
+      crossV.style.left = e.clientX + 'px';
+    });
+
+    // Click to translate
+    document.addEventListener('click', (e) => {
+      // Ignore clicks on our own UI elements
+      if (e.target.closest('#banner') || e.target.closest('.trans-popup')) return;
+      if (isTranslating) return;
+
+      isTranslating = true;
+
+      // Ripple effect
+      const ripple = document.createElement('div');
+      ripple.className = 'click-ripple';
+      ripple.style.left = e.clientX + 'px';
+      ripple.style.top = e.clientY + 'px';
+      container.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+
+      // Spinner
+      const spinner = document.createElement('div');
+      spinner.className = 'click-spinner';
+      spinner.id = 'active-spinner';
+      spinner.style.left = e.clientX + 'px';
+      spinner.style.top = e.clientY + 'px';
+      container.appendChild(spinner);
+
+      // Send to main process with screen coordinates
+      ipcRenderer.send('click-translate', {
+        x: e.screenX,
+        y: e.screenY,
+        lang,
+      });
+    });
+
+    // Show translation result
+    ipcRenderer.on('show-result', (_, { regions, offsetX, offsetY, regionW, regionH, clickX, clickY, message }) => {
+      const spinner = document.getElementById('active-spinner');
+      if (spinner) spinner.remove();
+      isTranslating = false;
+
+      if (message || !regions || regions.length === 0) {
+        showPopup(clickX - window.screenX, clickY - window.screenY, message || 'No text found', null);
+        return;
+      }
+
+      regions.forEach(region => {
+        // region.x/y are fractions (0-1) of regionW/H
+        const px = offsetX + (region.x || 0.5) * (regionW || 300);
+        const py = offsetY + (region.y || 0.5) * (regionH || 120);
+        const wx = px - window.screenX;
+        const wy = py - window.screenY;
+        showPopup(wx, wy, region.translated || '', region.original || '');
+      });
+    });
+
+    function showPopup(x, y, translated, original) {
+      if (!translated) return;
+
+      const popup = document.createElement('div');
+      popup.className = 'trans-popup';
+
+      // Position: try above click point, clamp to screen
+      const pw = 300, ph = 80;
+      let px = Math.max(8, Math.min(x - pw / 2, window.innerWidth - pw - 8));
+      let py = Math.max(8, y - ph - 16);
+      if (py < 60) py = y + 16; // flip below if too close to top
+
+      popup.style.left = px + 'px';
+      popup.style.top = py + 'px';
+      popup.innerHTML = `
+        <span class="close-x" data-close>✕</span>
+        <div class="translated">${esc(translated)}</div>
+        ${original && original !== translated ? `<div class="original">${esc(original)}</div>` : ''}
+      `;
+      popup.querySelector('[data-close]').addEventListener('click', () => popup.remove());
+      // Auto-dismiss after 8s
+      setTimeout(() => { if (popup.parentNode) popup.remove(); }, 8000);
+      container.appendChild(popup);
+    }
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      ipcRenderer.send('stop-click-mode');
+    });
+
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

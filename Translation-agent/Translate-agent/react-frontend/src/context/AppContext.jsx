@@ -29,6 +29,9 @@ function loadCredentials() {
   catch { return {}; }
 }
 
+// Widget always starts disabled — user must re-enable each session
+localStorage.removeItem('widgetEnabled');
+
 // Load transcript history from localStorage
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem('transcriptHistory') || '[]'); }
@@ -77,8 +80,9 @@ const initialState = {
   uiLanguage: localStorage.getItem('uiLanguage') || 'en',
   onboardingDone: localStorage.getItem('onboardingDone') === 'true',
   widgetSetupDone: localStorage.getItem('widgetSetupDone') === 'true',
-  widgetEnabled: localStorage.getItem('widgetEnabled') === 'true',
+  widgetEnabled: false, // always starts disabled — user must enable each session
   widgetLanguages: JSON.parse(localStorage.getItem('widgetLanguages') || '[]'),
+  widgetMode: localStorage.getItem('widgetMode') || 'englishToNative',
   starredIds: JSON.parse(localStorage.getItem('starredIds') || '[]'),
   pinnedTemplateIds: JSON.parse(localStorage.getItem('pinnedTemplateIds') || '[]'),
   historyTags: JSON.parse(localStorage.getItem('historyTags') || '{}'), // { entryId: ['tag1','tag2'] }
@@ -160,6 +164,9 @@ function reducer(state, action) {
     case 'SET_WIDGET_LANGUAGES':
       localStorage.setItem('widgetLanguages', JSON.stringify(action.value));
       return { ...state, widgetLanguages: action.value };
+    case 'SET_WIDGET_MODE':
+      localStorage.setItem('widgetMode', action.value);
+      return { ...state, widgetMode: action.value };
     case 'TOGGLE_STAR': {
       const starred = state.starredIds.includes(action.id)
         ? state.starredIds.filter(i => i !== action.id)
@@ -262,6 +269,7 @@ export function AppProvider({ children }) {
   const setWidgetSetupDone = useCallback(() => dispatch({ type: 'SET_WIDGET_SETUP_DONE' }), []);
   const setWidgetEnabled = useCallback((value) => dispatch({ type: 'SET_WIDGET_ENABLED', value }), []);
   const setWidgetLanguages = useCallback((value) => dispatch({ type: 'SET_WIDGET_LANGUAGES', value }), []);
+  const setWidgetMode = useCallback((value) => dispatch({ type: 'SET_WIDGET_MODE', value }), []);
   const toggleStar = useCallback((id) => dispatch({ type: 'TOGGLE_STAR', id }), []);
   const togglePinTemplate = useCallback((id) => dispatch({ type: 'TOGGLE_PIN_TEMPLATE', id }), []);
   const setHistoryTags = useCallback((entryId, tags) => dispatch({ type: 'SET_HISTORY_TAGS', entryId, tags }), []);
@@ -295,6 +303,7 @@ export function AppProvider({ children }) {
         setWidgetSetupDone,
         setWidgetEnabled,
         setWidgetLanguages,
+        setWidgetMode,
         toggleStar,
         togglePinTemplate,
         setHistoryTags,

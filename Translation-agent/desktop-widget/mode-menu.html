@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      padding: 8px;
+    }
+    .menu {
+      background: rgba(15, 18, 28, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .option {
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.8);
+      height: 46px;
+      padding: 0 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .option:hover { background: rgba(255,255,255,0.09); color: white; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    #englishToNative .dot { background: #818cf8; box-shadow: 0 0 6px rgba(129,140,248,0.6); }
+    #nativeToEnglish .dot { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.6); }
+    .arrow {
+      margin-left: auto;
+      color: rgba(255,255,255,0.25);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="menu">
+    <button class="option" id="englishToNative">
+      <span class="dot"></span>
+      English to Native
+      <span class="arrow">›</span>
+    </button>
+    <button class="option" id="nativeToEnglish">
+      <span class="dot"></span>
+      Native to English
+      <span class="arrow">›</span>
+    </button>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+    document.getElementById('englishToNative').addEventListener('click', () => {
+      ipcRenderer.send('select-mode', 'englishToNative');
+    });
+    document.getElementById('nativeToEnglish').addEventListener('click', () => {
+      ipcRenderer.send('select-mode', 'nativeToEnglish');
+    });
+  </script>
+</body>
+</html>

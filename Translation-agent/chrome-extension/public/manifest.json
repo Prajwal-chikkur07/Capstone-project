@@ -7,10 +7,11 @@
     "activeTab",
     "contextMenus",
     "storage",
-    "scripting"
+    "scripting",
+    "clipboardWrite",
+    "clipboardRead"
   ],
   "action": {
-    "default_popup": "index.html",
     "default_title": "Voice Translation",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -36,7 +37,8 @@
   ],
   "host_permissions": [
     "http://127.0.0.1:8000/*",
-    "http://localhost:8000/*"
+    "http://localhost:8000/*",
+    "http://127.0.0.1:27182/*"
   ],
   "web_accessible_resources": [
     {

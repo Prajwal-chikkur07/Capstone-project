@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 const WIDGET_URL = 'http://127.0.0.1:27182';
 
 const LANGUAGES = [
+  { code: 'en-IN', name: 'English',   native: 'English',    flag: '🇬🇧' },
   { code: 'hi-IN', name: 'Hindi',     native: 'हिन्दी',    flag: '🇮🇳' },
   { code: 'bn-IN', name: 'Bengali',   native: 'বাংলা',     flag: '🇮🇳' },
   { code: 'ta-IN', name: 'Tamil',     native: 'தமிழ்',     flag: '🇮🇳' },
@@ -17,10 +18,11 @@ const LANGUAGES = [
 ];
 
 export default function WidgetSetup() {
-  const { setField, setWidgetSetupDone, setWidgetEnabled, setWidgetLanguages } = useApp();
+  const { setField, setWidgetSetupDone, setWidgetEnabled, setWidgetLanguages, setWidgetMode } = useApp();
   const [selected, setSelected] = useState([]);
   const [step, setStep] = useState(1); // 1 = language pick, 2 = widget enable
   const [enabling, setEnabling] = useState(false);
+  const [widgetMode, setLocalWidgetMode] = useState('englishToNative');
 
   const toggle = (code) => {
     setSelected(prev =>
@@ -38,8 +40,15 @@ export default function WidgetSetup() {
   const handleEnable = async () => {
     setEnabling(true);
     try {
+      await fetch(`${WIDGET_URL}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: widgetMode, languages: selected }),
+        signal: AbortSignal.timeout(1000),
+      });
       await fetch(`${WIDGET_URL}/enable`, { signal: AbortSignal.timeout(1000) });
     } catch { /* widget may not be running yet — that's fine */ }
+    setWidgetMode(widgetMode);
     setWidgetSetupDone();
     setWidgetEnabled(true);
     setField('currentView', 'home');
@@ -120,13 +129,56 @@ export default function WidgetSetup() {
           <div style={{ animation: 'fadeIn 0.3s ease' }} className="text-center">
             <div className="mb-8">
               <h1 className="text-[28px] font-extrabold text-gray-900 tracking-tight mb-2">Enable Desktop Widget</h1>
-              <p className="text-[15px] text-gray-400">A floating bubble that lets you transliterate instantly</p>
+              <p className="text-[15px] text-gray-400">Choose what the floating bubble should do when you open it</p>
             </div>
 
-            {/* Widget preview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              {[
+                {
+                  id: 'nativeToEnglish',
+                  title: 'Native to English',
+                  desc: 'Type in your native language and get English output in the widget.',
+                  icon: '⇢',
+                },
+                {
+                  id: 'englishToNative',
+                  title: 'English to Native',
+                  desc: 'Type in English and translate into one of your selected languages.',
+                  icon: '⇠',
+                },
+              ].map((option) => {
+                const isSelected = widgetMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setLocalWidgetMode(option.id)}
+                    className={`rounded-2xl border-2 px-5 py-5 text-left transition-all ${
+                      isSelected
+                        ? 'border-gray-900 bg-gray-900 text-white shadow-lg'
+                        : 'border-gray-100 bg-white text-gray-900 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-[20px] ${isSelected ? 'bg-white/15' : 'bg-gray-100'}`}>
+                        {option.icon}
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-[16px] font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>{option.title}</p>
+                    <p className={`text-[13px] mt-2 leading-relaxed ${isSelected ? 'text-white/75' : 'text-gray-500'}`}>{option.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="flex flex-col items-center mb-8">
               <div className="relative mb-6">
-                {/* Simulated desktop */}
                 <div className="w-72 h-44 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-end justify-end p-4 shadow-2xl">
                   <div className="w-12 h-12 rounded-full bg-[#111827] flex items-center justify-center shadow-xl border-2 border-white/10">
                     <span style={{ color: 'white', fontSize: 18, lineHeight: 1 }}>▶︎</span>
@@ -138,11 +190,18 @@ export default function WidgetSetup() {
               </div>
 
               <div className="max-w-sm space-y-3 mt-4">
-                {[
-                  { icon: '▶︎', text: 'Floating ▶︎ bubble stays on top of all windows' },
-                  { icon: '⌨️', text: 'Click it to open the transliteration panel' },
-                  { icon: '🔤', text: 'Type English → get the same word in your script' },
-                ].map(({ icon, text }) => (
+                {widgetMode === 'nativeToEnglish'
+                  ? [
+                      { icon: '🌐', text: 'Pick your native language as the input language' },
+                      { icon: '⌨️', text: 'Type in your native script inside the widget panel' },
+                      { icon: 'A', text: 'Get clean English output instantly' },
+                    ]
+                  : [
+                      { icon: '▶︎', text: 'Floating bubble stays on top of all windows' },
+                      { icon: '⌨️', text: 'Click it to open the translation panel' },
+                      { icon: '🔤', text: 'Type English and translate it to your selected language' },
+                    ]
+                .map(({ icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-left bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
                     <span className="text-[18px] shrink-0">{icon}</span>
                     <p className="text-[13px] text-gray-600">{text}</p>

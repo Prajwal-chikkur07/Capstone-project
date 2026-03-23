@@ -44,3 +44,4 @@ temp_audio/
 *.swp
 *.swo
 *~
+.aider*

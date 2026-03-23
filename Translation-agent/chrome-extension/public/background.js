@@ -2,6 +2,13 @@
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 
+// Clicking the toolbar icon opens/toggles the sidebar panel on the active tab
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_SIDEBAR' }).catch(() => {});
+  }
+});
+
 // Create context menu on install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -219,4 +226,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'DEACTIVATED_FROM_PAGE') { return; }
+
+  // Desktop widget signals it's alive — store flag and notify all tabs
+  if (message.type === 'WIDGET_ALIVE') {
+    chrome.storage.local.set({ widgetAlive: true });
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(t => {
+        try { chrome.tabs.sendMessage(t.id, { type: 'WIDGET_ACTIVE' }); } catch {}
+      });
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === 'WIDGET_DEAD') {
+    chrome.storage.local.remove('widgetAlive');
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(t => {
+        try { chrome.tabs.sendMessage(t.id, { type: 'WIDGET_INACTIVE' }); } catch {}
+      });
+    });
+    return;
+  }
 });

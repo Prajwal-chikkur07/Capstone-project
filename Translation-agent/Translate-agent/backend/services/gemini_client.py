@@ -114,10 +114,36 @@ RULES:
 }
 
 
+def _is_quota_error(e) -> bool:
+    msg = str(e).lower()
+    return "quota" in msg or "429" in msg or "exceeded" in msg or "rate limit" in msg or "resource_exhausted" in msg
+
+
+def _hf_summarize(text: str) -> str:
+    """HuggingFace fallback for summarization using flan-t5."""
+    from services.huggingface_client import rewrite_tone_hf
+    prompt = f"Summarize this text in 2-3 sentences:\n\n{text}"
+    try:
+        import requests as req
+        resp = req.post(
+            "https://api-inference.huggingface.co/models/google/flan-t5-large",
+            headers={"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"},
+            json={"inputs": prompt, "parameters": {"max_new_tokens": 200}},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, list) and data:
+                return data[0].get("generated_text", "").strip()
+    except Exception as e:
+        logger.warning(f"HF summarize fallback failed: {e}")
+    return text[:300] + "..."
+
+
 def summarize_transcript(text: str) -> str:
     """Returns a 2-3 sentence TL;DR summary of the transcript."""
     if not GEMINI_API_KEY:
-        return ""
+        return _hf_summarize(text)
     prompt = f"""Summarize this transcript in 2-3 clear sentences. Be concise and capture the key points only.
 Output ONLY the summary, no labels, no markdown.
 
@@ -127,13 +153,16 @@ TRANSCRIPT: {text}"""
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Summarize failed: {e}")
-        return ""
+        if _is_quota_error(e):
+            return _hf_summarize(text)
+        return text[:300] + "..."
 
 
 def generate_meeting_notes(text: str) -> dict:
     """Returns structured meeting notes."""
+    empty = {"summary": "", "action_items": [], "decisions": [], "attendees": [], "follow_ups": []}
     if not GEMINI_API_KEY:
-        return {"summary": "", "action_items": [], "decisions": [], "attendees": [], "follow_ups": []}
+        return {**empty, "summary": _hf_summarize(text)}
     prompt = f"""Extract structured meeting notes from this transcript. Respond with ONLY a JSON object (no markdown):
 {{
   "summary": "2-3 sentence overview",
@@ -150,13 +179,15 @@ TRANSCRIPT: {text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Meeting notes failed: {e}")
-        return {"summary": text[:200], "action_items": [], "decisions": [], "attendees": [], "follow_ups": []}
+        if _is_quota_error(e):
+            return {**empty, "summary": _hf_summarize(text)}
+        return {**empty, "summary": text[:200]}
 
 
 def answer_question(transcript: str, question: str) -> str:
     """Answers a question about the transcript using Gemini."""
     if not GEMINI_API_KEY:
-        return "Gemini API key not configured."
+        return "AI Q&A unavailable — API key not configured."
     prompt = f"""You are a helpful assistant. Answer the question based ONLY on the transcript provided.
 If the answer is not in the transcript, say "I couldn't find that in the transcript."
 Be concise and direct.
@@ -172,13 +203,15 @@ ANSWER:"""
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Q&A failed: {e}")
+        if _is_quota_error(e):
+            return "Q&A unavailable — API quota exceeded. Please try again later."
         return "Could not process your question. Please try again."
 
 
 def analyze_sentiment(text: str) -> dict:
     """Returns sentiment analysis."""
     if not GEMINI_API_KEY:
-        return {"sentiment": "neutral", "score": 50, "summary": ""}
+        return _local_sentiment(text)
     prompt = f"""Analyze the sentiment of this text and respond with ONLY a JSON object (no markdown, no explanation):
 {{"sentiment": "positive", "score": 75, "summary": "one short sentence"}}
 Use "positive", "neutral", or "negative" for sentiment. Score is 0-100.
@@ -190,13 +223,29 @@ TEXT: {text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Sentiment analysis failed: {e}")
+        if _is_quota_error(e):
+            return _local_sentiment(text)
         return {"sentiment": "neutral", "score": 50, "summary": ""}
+
+
+def _local_sentiment(text: str) -> dict:
+    """Simple keyword-based sentiment fallback when API is unavailable."""
+    positive_words = {"good", "great", "excellent", "happy", "love", "wonderful", "amazing", "fantastic", "best", "perfect", "thanks", "thank", "appreciate", "glad", "pleased"}
+    negative_words = {"bad", "terrible", "awful", "hate", "worst", "horrible", "poor", "wrong", "fail", "failed", "issue", "problem", "error", "broken", "sorry", "unfortunately"}
+    words = set(text.lower().split())
+    pos = len(words & positive_words)
+    neg = len(words & negative_words)
+    if pos > neg:
+        return {"sentiment": "positive", "score": min(60 + pos * 5, 90), "summary": "Text appears positive."}
+    elif neg > pos:
+        return {"sentiment": "negative", "score": max(40 - neg * 5, 10), "summary": "Text appears negative."}
+    return {"sentiment": "neutral", "score": 50, "summary": "Text appears neutral."}
 
 
 def back_translate_check(native_text: str, source_lang: str) -> dict:
     """Translates native text back to English and rates accuracy."""
     if not GEMINI_API_KEY:
-        return {"back_translation": "", "accuracy_score": 0, "notes": ""}
+        return _hf_back_translate(native_text, source_lang)
     prompt = f"""You are a translation quality checker.
 1. Translate this {source_lang} text back to English.
 2. Rate how accurately it preserves the original meaning (0-100).
@@ -212,7 +261,20 @@ TEXT: {native_text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Back-translate failed: {e}")
+        if _is_quota_error(e):
+            return _hf_back_translate(native_text, source_lang)
         return {"back_translation": "", "accuracy_score": 0, "notes": ""}
+
+
+def _hf_back_translate(native_text: str, source_lang: str) -> dict:
+    """HuggingFace fallback for back-translation."""
+    try:
+        from services.huggingface_client import translate_text_hf
+        back = translate_text_hf(native_text, "en-IN")
+        return {"back_translation": back, "accuracy_score": 70, "notes": "Translated via HuggingFace fallback."}
+    except Exception as e:
+        logger.warning(f"HF back-translate failed: {e}")
+        return {"back_translation": "", "accuracy_score": 0, "notes": "Back-translation unavailable."}
 
 
 def get_readability_score(text: str) -> dict:
@@ -255,7 +317,7 @@ def get_readability_score(text: str) -> dict:
 def get_tone_confidence(text: str, tone: str) -> dict:
     """Rates how well the rewritten text matches the intended tone."""
     if not GEMINI_API_KEY:
-        return {"score": 0, "feedback": ""}
+        return {"score": 70, "feedback": "Tone confidence unavailable — API key not configured."}
     prompt = f"""Rate how well this text matches the "{tone}" communication style on a scale of 0-100.
 Be strict and precise.
 
@@ -269,6 +331,8 @@ TEXT: {text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Tone confidence failed: {e}")
+        if _is_quota_error(e):
+            return {"score": 70, "feedback": "Tone confidence unavailable — API quota exceeded."}
         return {"score": 0, "feedback": ""}
 
 
@@ -350,14 +414,33 @@ Coordinate rules:
             })
         return cleaned
     except Exception as e:
+        error_str = str(e)
         logger.error(f"Vision translate failed: {e}")
-        raise Exception(f"Vision translation failed: {str(e)}")
+
+        # Fallback: use HuggingFace BLIP for image description + HF translation
+        if "quota" in error_str.lower() or "429" in error_str or "rate" in error_str.lower():
+            logger.info("Gemini quota exceeded — trying HuggingFace fallback for vision translate")
+            try:
+                from services.huggingface_client import describe_image_hf, translate_text_hf
+                description = describe_image_hf(image_bytes, image_mime)
+                if description:
+                    translated = translate_text_hf(description, target_language)
+                    return [{
+                        "original": description,
+                        "translated": translated,
+                        "x": 0.1, "y": 0.1, "w": 0.8, "h": 0.1,
+                        "font_size": 0.04, "bg_color": "#ffffff", "text_color": "#000000"
+                    }]
+            except Exception as hf_err:
+                logger.error(f"HuggingFace vision fallback failed: {hf_err}")
+
+        raise Exception(f"Vision translation failed: {error_str}")
 
 
 def suggest_tone(text: str) -> str:
     """Returns the best tone option for the given text."""
     if not GEMINI_API_KEY:
-        return "Email Formal"
+        return _local_suggest_tone(text)
     prompt = f"""Based on this text, which communication tone fits best?
 Choose EXACTLY ONE from: Email Formal, Email Casual, Slack, LinkedIn, WhatsApp Business
 Respond with ONLY the tone name, nothing else.
@@ -370,7 +453,25 @@ TEXT: {text}"""
         return result if result in valid else "Email Formal"
     except Exception as e:
         logger.warning(f"Tone suggestion failed: {e}")
+        if _is_quota_error(e):
+            return _local_suggest_tone(text)
         return "Email Formal"
+
+
+def _local_suggest_tone(text: str) -> str:
+    """Keyword-based tone suggestion fallback."""
+    t = text.lower()
+    if any(w in t for w in ["dear", "sincerely", "regards", "formally", "request", "kindly"]):
+        return "Email Formal"
+    if any(w in t for w in ["hey", "hi", "thanks", "cheers", "catch up", "quick"]):
+        return "Email Casual"
+    if any(w in t for w in ["slack", "thread", "channel", "dm", "ping", "standup"]):
+        return "Slack"
+    if any(w in t for w in ["linkedin", "professional", "network", "career", "opportunity", "excited to share"]):
+        return "LinkedIn"
+    if any(w in t for w in ["whatsapp", "hello", "hi there", "business", "order", "delivery", "customer"]):
+        return "WhatsApp Business"
+    return "Email Formal"
 
 
 def rewrite_text_tone(text: str, tone_option: str, user_override: str = None, custom_vocabulary: list = None) -> str:
@@ -415,8 +516,16 @@ REWRITTEN OUTPUT:"""
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Gemini API Error: {error_msg}")
-        if "quota" in error_msg.lower() or "exceeded" in error_msg.lower():
-            return f"{text}\n\n[Note: Tone rewriting unavailable — API quota exceeded.]"
+        if "quota" in error_msg.lower() or "exceeded" in error_msg.lower() or "429" in error_msg:
+            logger.info("Gemini quota exceeded — falling back to HuggingFace for tone rewrite")
+            try:
+                from services.huggingface_client import rewrite_tone_hf
+                return rewrite_tone_hf(text, tone_option, user_override)
+            except Exception as hf_err:
+                logger.error(f"HuggingFace tone rewrite fallback failed: {hf_err}")
+                # Last resort: local rule-based rewrite — never raises
+                from services.huggingface_client import _local_tone_rewrite
+                return _local_tone_rewrite(text, tone_option, user_override)
         if hasattr(e, 'message'):
             raise Exception(f"Gemini error: {e.message}")
         raise e

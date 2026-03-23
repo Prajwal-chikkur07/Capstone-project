@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 100vw; height: 100vh;
+      background: transparent;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      /* CRITICAL: pointer-events none so this window never blocks the screen */
+      pointer-events: none;
+    }
+
+    /* Labels are pointer-events: auto so they can be clicked/dismissed */
+    .trans-label {
+      position: absolute;
+      background: rgba(10, 12, 22, 0.93);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      border-radius: 10px;
+      padding: 5px 28px 5px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.5;
+      max-width: 300px;
+      word-break: break-word;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+      pointer-events: auto;
+      cursor: default;
+      animation: fadeIn 0.18s ease;
+      z-index: 9999;
+    }
+
+    .trans-label .orig {
+      font-size: 9px;
+      color: rgba(255,255,255,0.28);
+      margin-bottom: 2px;
+    }
+
+    .trans-label .close-x {
+      position: absolute;
+      top: 4px; right: 7px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.22);
+      cursor: pointer;
+      line-height: 1;
+    }
+    .trans-label .close-x:hover { color: #f87171; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Click result popup */
+    .click-result {
+      position: absolute;
+      background: rgba(10,12,22,0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(129,140,248,0.45);
+      border-radius: 12px;
+      padding: 10px 30px 10px 14px;
+      max-width: 280px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      animation: fadeIn 0.18s ease;
+      z-index: 99998;
+      pointer-events: auto;
+    }
+    .click-result .result-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.5;
+    }
+    .click-result .result-orig {
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 3px;
+    }
+    .click-result .result-close {
+      position: absolute;
+      top: 6px; right: 8px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+      cursor: pointer;
+    }
+    .click-result .result-close:hover { color: #f87171; }
+
+    /* Click mode banner — always visible when click mode is on */
+    #click-banner {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,12,22,0.93);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(129,140,248,0.45);
+      border-radius: 14px;
+      padding: 9px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 99999;
+      pointer-events: auto;
+    }
+    #click-banner.active { display: flex; }
+
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #818cf8;
+      box-shadow: 0 0 6px #818cf8;
+      animation: pulse 1.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .stop-btn {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 7px;
+      color: #f87171;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      cursor: pointer;
+    }
+    .stop-btn:hover { background: rgba(239,68,68,0.28); }
+
+    /* Spinner for click mode */
+    .click-spinner {
+      position: absolute;
+      width: 26px; height: 26px;
+      border: 3px solid rgba(129,140,248,0.2);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 99997;
+    }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div id="labels-container"></div>
+
+  <div id="click-banner">
+    <div class="pulse-dot"></div>
+    <span>Press <kbd style="background:rgba(255,255,255,0.1);border-radius:4px;padding:1px 5px;font-size:10px;">⌘⇧T</kbd> on any text to translate it</span>
+    <button class="stop-btn" id="stop-click-btn">✕ Stop</button>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const labelsContainer = document.getElementById('labels-container');
+    const clickBanner = document.getElementById('click-banner');
+
+    // ── Clear all ──
+    ipcRenderer.on('clear', () => {
+      labelsContainer.innerHTML = '';
+      clickBanner.classList.remove('active');
+    });
+
+    // ── Show translated regions as floating labels ──
+    ipcRenderer.on('show-translations', (_, { regions, offsetX = 0, offsetY = 0, screenWidth, screenHeight }) => {
+      const imgW = screenWidth || window.screen.width;
+      const imgH = screenHeight || window.screen.height;
+
+      regions.forEach(region => {
+        const lx = Math.max(4, Math.min(offsetX + region.x * imgW, window.innerWidth - 320));
+        const ly = Math.max(4, Math.min(offsetY + region.y * imgH, window.innerHeight - 80));
+
+        const translated = region.translated || '';
+        const original = region.original || '';
+        if (!translated || translated === original) return; // skip if no translation
+
+        const label = document.createElement('div');
+        label.className = 'trans-label';
+        label.style.left = lx + 'px';
+        label.style.top = ly + 'px';
+        label.innerHTML = `
+          <div class="close-x" data-close>✕</div>
+          ${original ? `<div class="orig">${escHtml(original)}</div>` : ''}
+          <div>${escHtml(translated)}</div>
+        `;
+        label.querySelector('[data-close]').addEventListener('click', () => label.remove());
+        labelsContainer.appendChild(label);
+      });
+    });
+
+    // ── Show click result ──
+    ipcRenderer.on('show-click-result', (_, { regions, offsetX = 0, offsetY = 0, regionW, regionH, clickX, clickY, message }) => {
+      document.querySelectorAll('.click-spinner').forEach(s => s.remove());
+
+      if (message || !regions || regions.length === 0) {
+        showClickPopup(clickX, clickY, message || 'No text found', null);
+        return;
+      }
+
+      const imgW = regionW || window.screen.width;
+      const imgH = regionH || window.screen.height;
+
+      regions.forEach(region => {
+        const lx = offsetX + region.x * imgW;
+        const ly = offsetY + region.y * imgH;
+        showClickPopup(lx || clickX, ly || (clickY - 70), region.translated || '', region.original || '');
+      });
+    });
+
+    function showClickPopup(x, y, translated, original) {
+      if (!translated) return;
+      const popup = document.createElement('div');
+      popup.className = 'click-result';
+      popup.style.left = Math.max(4, Math.min(x, window.innerWidth - 300)) + 'px';
+      popup.style.top = Math.max(4, Math.min(y - 70, window.innerHeight - 120)) + 'px';
+      popup.innerHTML = `
+        <div class="result-close" data-close>✕</div>
+        <div class="result-text">${escHtml(translated)}</div>
+        ${original ? `<div class="result-orig">${escHtml(original)}</div>` : ''}
+      `;
+      popup.querySelector('[data-close]').addEventListener('click', () => popup.remove());
+      setTimeout(() => { if (popup.parentNode) popup.remove(); }, 7000);
+      labelsContainer.appendChild(popup);
+    }
+
+    // ── Click mode banner ──
+    ipcRenderer.on('start-click-mode', () => {
+      clickBanner.classList.add('active');
+      labelsContainer.innerHTML = '';
+    });
+
+    // Show spinner at cursor position when translating
+    ipcRenderer.on('show-click-spinner', (_, { x, y }) => {
+      document.querySelectorAll('.click-spinner').forEach(s => s.remove());
+      const spinner = document.createElement('div');
+      spinner.className = 'click-spinner';
+      spinner.style.left = x + 'px';
+      spinner.style.top = y + 'px';
+      document.body.appendChild(spinner);
+    });
+
+    document.getElementById('stop-click-btn').addEventListener('click', () => {
+      clickBanner.classList.remove('active');
+      labelsContainer.innerHTML = '';
+      ipcRenderer.send('stop-screen-mode');
+    });
+
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

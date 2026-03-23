@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.18);
+      overflow: hidden;
+      cursor: crosshair;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #hint {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,12,22,0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(129,140,248,0.4);
+      border-radius: 10px;
+      padding: 7px 16px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      pointer-events: none;
+    }
+
+    #cancel-hint {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      margin-left: 8px;
+    }
+
+    #cancel-btn {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: rgba(239,68,68,0.18);
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 9px;
+      color: #f87171;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+    #cancel-btn:hover { background: rgba(239,68,68,0.32); }
+
+    #sel-box {
+      position: absolute;
+      display: none;
+      border: 2px solid #818cf8;
+      background: rgba(99,102,241,0.1);
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.25), inset 0 0 0 1px rgba(99,102,241,0.1);
+      pointer-events: none;
+    }
+
+    #size-label {
+      position: absolute;
+      display: none;
+      background: rgba(99,102,241,0.9);
+      color: white;
+      font-family: -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="hint">Drag to select region <span id="cancel-hint">· Esc to cancel</span></div>
+  <button id="cancel-btn">✕ Cancel</button>
+  <div id="sel-box"></div>
+  <div id="size-label"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const selBox = document.getElementById('sel-box');
+    const sizeLabel = document.getElementById('size-label');
+
+    let lang = 'hi-IN';
+    let dragStart = null;
+
+    ipcRenderer.on('init', (_, data) => { lang = data.lang; });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') ipcRenderer.send('region-cancelled');
+    });
+
+    document.getElementById('cancel-btn').addEventListener('click', () => {
+      ipcRenderer.send('region-cancelled');
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      dragStart = { x: e.clientX, y: e.clientY };
+      selBox.style.left = e.clientX + 'px';
+      selBox.style.top = e.clientY + 'px';
+      selBox.style.width = '0';
+      selBox.style.height = '0';
+      selBox.style.display = 'block';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragStart) return;
+      const x = Math.min(e.clientX, dragStart.x);
+      const y = Math.min(e.clientY, dragStart.y);
+      const w = Math.abs(e.clientX - dragStart.x);
+      const h = Math.abs(e.clientY - dragStart.y);
+      selBox.style.left = x + 'px';
+      selBox.style.top = y + 'px';
+      selBox.style.width = w + 'px';
+      selBox.style.height = h + 'px';
+
+      // Size label
+      if (w > 30 && h > 20) {
+        sizeLabel.style.display = 'block';
+        sizeLabel.style.left = (x + w / 2 - 20) + 'px';
+        sizeLabel.style.top = (y + h / 2 - 8) + 'px';
+        sizeLabel.textContent = `${Math.round(w)} × ${Math.round(h)}`;
+      }
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!dragStart) return;
+      const x = Math.min(e.clientX, dragStart.x);
+      const y = Math.min(e.clientY, dragStart.y);
+      const w = Math.abs(e.clientX - dragStart.x);
+      const h = Math.abs(e.clientY - dragStart.y);
+      dragStart = null;
+
+      if (w > 20 && h > 20) {
+        ipcRenderer.send('region-selected', { x, y, w, h, lang });
+      } else {
+        ipcRenderer.send('region-cancelled');
+      }
+    });
+  </script>
+</body>
+</html>

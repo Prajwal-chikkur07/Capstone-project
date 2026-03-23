@@ -53,9 +53,16 @@ export default function Settings() {
 
   useEffect(() => {
     (async () => {
-      try { await fetch(`${WIDGET_URL}/status`, { signal: AbortSignal.timeout(800) }); setWidgetRunning(true); }
-      catch { setWidgetRunning(false); }
+      try {
+        await fetch(`${WIDGET_URL}/status`, { signal: AbortSignal.timeout(800) });
+        setWidgetRunning(true);
+      } catch {
+        setWidgetRunning(false);
+        // if widget isn't running but state says enabled, reset it
+        if (state.widgetEnabled) setWidgetEnabled(false);
+      }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClearCache = async () => {
@@ -65,12 +72,19 @@ export default function Settings() {
   };
 
   const toggleWidget = async () => {
+    if (!isWidgetRunning && !state.widgetEnabled) return; // can't enable if widget not running
     setWidgetLoading(true);
     try {
-      const res = await fetch(`${WIDGET_URL}${state.widgetEnabled ? '/disable' : '/enable'}`, { signal: AbortSignal.timeout(800) });
+      const res = await fetch(`${WIDGET_URL}${state.widgetEnabled ? '/disable' : '/enable'}`, { signal: AbortSignal.timeout(1500) });
       const data = await res.json();
       setWidgetEnabled(data.enabled);
-    } catch { setWidgetEnabled(!state.widgetEnabled); }
+      // re-check running status
+      setWidgetRunning(true);
+    } catch {
+      // if disabling and widget is gone, just turn it off locally
+      if (state.widgetEnabled) setWidgetEnabled(false);
+      // if enabling but widget unreachable, don't pretend it worked
+    }
     finally { setWidgetLoading(false); }
   };
 
@@ -209,14 +223,23 @@ export default function Settings() {
               </div>
               <div>
                 <p className="text-[14px] font-semibold text-gray-900">Desktop Widget</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">
-                  {!isWidgetRunning ? 'Widget app not running — start with npm start' : state.widgetEnabled ? '● Floating bubble visible' : '○ Floating bubble hidden'}
+                <p className={`text-[12px] mt-0.5 ${!isWidgetRunning ? 'text-amber-500 font-medium' : state.widgetEnabled ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
+                  {!isWidgetRunning
+                    ? '⚠ Widget app not running'
+                    : state.widgetEnabled
+                    ? '● Floating bubble visible'
+                    : '○ Floating bubble hidden'}
                 </p>
               </div>
             </div>
-            <Toggle on={state.widgetEnabled} onToggle={toggleWidget} disabled={widgetLoading} />
+            <Toggle on={state.widgetEnabled} onToggle={toggleWidget} disabled={widgetLoading || !isWidgetRunning} />
           </div>
-          {isWidgetRunning && (
+          {!isWidgetRunning ? (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-2">
+              <p className="text-[12px] text-amber-700 font-medium">Start the widget app first:</p>
+              <code className="text-[12px] text-amber-800 font-mono">cd desktop-widget && npm start</code>
+            </div>
+          ) : isWidgetRunning && (
             <p className="text-[12px] text-gray-400 mb-2">
               Shortcut: <span className="font-semibold text-gray-600">Cmd+Shift+Space</span> (Mac) · <span className="font-semibold text-gray-600">Ctrl+Shift+Space</span> (Win)
             </p>

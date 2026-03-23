@@ -98,49 +98,59 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
     """
     Translates text to the target language.
     Checks the semantic cache first — only calls Sarvam on a cache miss.
+    Falls back to HuggingFace if Sarvam fails.
     """
-    if not SARVAM_API_KEY:
-        raise Exception("SARVAM_API_KEY is not set")
-
     # ── Layer 1 & 2: cache lookup ─────────────────────────────────────────
     cached = get_cached(text, target_language)
     if cached:
         return cached
 
-    # ── Cache miss: call Sarvam ───────────────────────────────────────────
-    url = "https://api.sarvam.ai/translate"
-    payload = {
-        "input": text,
-        "source_language_code": source_language,
-        "target_language_code": target_language,
-        "speaker_gender": "Male",
-        "mode": "formal",
-        "model": "mayura:v1",
-        "enable_preprocessing": True,
-    }
-    headers = {
-        "api-subscription-key": SARVAM_API_KEY,
-        "Content-Type": "application/json",
-    }
+    # ── Cache miss: try Sarvam first ──────────────────────────────────────
+    if SARVAM_API_KEY:
+        try:
+            url = "https://api.sarvam.ai/translate"
+            payload = {
+                "input": text,
+                "source_language_code": source_language,
+                "target_language_code": target_language,
+                "speaker_gender": "Male",
+                "mode": "formal",
+                "model": "mayura:v1",
+                "enable_preprocessing": True,
+            }
+            headers = {
+                "api-subscription-key": SARVAM_API_KEY,
+                "Content-Type": "application/json",
+            }
+            logger.info(f"Sarvam translate: src={source_language}, tgt={target_language}, text='{text[:80]}'")
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            logger.info(f"Sarvam response: {response.status_code}")
 
-    logger.info(f"Sarvam translate request: src={source_language}, tgt={target_language}, text='{text[:80]}'")
-    response = requests.post(url, json=payload, headers=headers)
-    logger.info(f"Sarvam translate response: status={response.status_code}, body={response.text[:300]}")
+            if response.status_code == 200:
+                data = response.json()
+                if "translated_text" in data:
+                    result = data["translated_text"]
+                elif "translations" in data:
+                    r = data["translations"]
+                    result = r[0] if isinstance(r, list) else r
+                elif "translation" in data:
+                    result = data["translation"]
+                else:
+                    raise Exception(f"Unexpected Sarvam response: {data}")
+                store_translation(text, target_language, result)
+                return result
+            else:
+                logger.warning(f"Sarvam failed ({response.status_code}), falling back to HuggingFace")
+        except Exception as e:
+            logger.warning(f"Sarvam error: {e}, falling back to HuggingFace")
 
-    if response.status_code == 200:
-        data = response.json()
-        if "translated_text" in data:
-            result = data["translated_text"]
-        elif "translations" in data:
-            r = data["translations"]
-            result = r[0] if isinstance(r, list) else r
-        elif "translation" in data:
-            result = data["translation"]
-        else:
-            raise Exception(f"Unexpected Sarvam response format: {data}")
-
-        # ── Store in cache for future requests ────────────────────────────
+    # ── Fallback: HuggingFace ─────────────────────────────────────────────
+    try:
+        from services.huggingface_client import translate_text_hf
+        logger.info(f"Using HuggingFace fallback for {target_language}")
+        result = translate_text_hf(text, target_language)
         store_translation(text, target_language, result)
         return result
-    else:
-        raise Exception(f"Sarvam API Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"HuggingFace fallback also failed: {e}")
+        raise Exception(f"Translation failed: both Sarvam and HuggingFace unavailable. {e}")
