@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from '../components/Toast';
 
 const API = axios.create({
   baseURL: '/api',
@@ -10,12 +11,71 @@ export const getToken = () => localStorage.getItem('auth_token');
 export const setToken = (t) => localStorage.setItem('auth_token', t);
 export const clearToken = () => localStorage.removeItem('auth_token');
 
-// Attach JWT to every request if present
+// ── Retry config ──────────────────────────────────────────────────────────────
+const RETRY_COUNT   = 2;          // retry up to 2 times (3 total attempts)
+const RETRY_DELAY   = 1000;       // 1s base delay, doubles each attempt
+const NO_RETRY_CODES = [400, 401, 403, 404, 422]; // don't retry client errors
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function shouldRetry(error) {
+  if (!error.response) return true; // network error — always retry
+  return !NO_RETRY_CODES.includes(error.response.status);
+}
+
+function friendlyMessage(error) {
+  if (!error.response) return 'Network error — check your connection';
+  const status = error.response.status;
+  if (status === 503 || status === 502) return 'Server busy, please try again';
+  if (status === 504) return 'Request timed out — server is slow';
+  if (status === 500) return 'Server error — try again in a moment';
+  if (status === 401) return 'Session expired — please log in again';
+  if (status === 429) return 'Too many requests — slow down a bit';
+  return error.response?.data?.detail || error.message || 'Something went wrong';
+}
+
+// ── Request interceptor: attach JWT ──────────────────────────────────────────
 API.interceptors.request.use((config) => {
   const token = getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Track retry count on config
+  config._retryCount = config._retryCount ?? 0;
   return config;
 });
+
+// ── Response interceptor: retry + toast errors ───────────────────────────────
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    if (!config) {
+      toast.error('Network error — check your connection');
+      return Promise.reject(error);
+    }
+
+    // Retry logic
+    if (shouldRetry(error) && config._retryCount < RETRY_COUNT) {
+      config._retryCount += 1;
+      const delay = RETRY_DELAY * config._retryCount;
+      if (config._retryCount === 1) {
+        toast.warn(`Server busy, retrying… (${config._retryCount}/${RETRY_COUNT})`);
+      }
+      await sleep(delay);
+      return API(config);
+    }
+
+    // All retries exhausted — show toast
+    const msg = friendlyMessage(error);
+    // Don't toast auth errors (handled by AuthPage itself)
+    const isAuthEndpoint = config.url?.includes('/auth/');
+    if (!isAuthEndpoint) {
+      toast.error(msg);
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 
 // ── Auth endpoints ────────────────────────────────────────────────────────────
 export const authSignup = async ({ name, email, password }) => {

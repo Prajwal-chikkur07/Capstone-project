@@ -25,6 +25,7 @@ import AppHome from './pages/AppHome';
 import WidgetSetup from './pages/WidgetSetup';
 import { useApp } from './context/AppContext';
 import * as api from './services/api';
+import ToastContainer from './components/Toast';
 import { Menu } from 'lucide-react';
 
 // Guard: redirect to /auth if not logged in
@@ -131,6 +132,7 @@ function AppShell() {
       <Notifications />
       <CommandPalette />
       <NotificationCenter />
+      <ToastContainer />
       {!state.onboardingDone && <Onboarding />}
     </div>
   );
