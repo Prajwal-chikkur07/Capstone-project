@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import LoadingOverlay from './components/LoadingOverlay';

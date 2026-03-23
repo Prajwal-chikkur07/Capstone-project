@@ -30,7 +30,7 @@ const STEPS = [
 ];
 
 export default function Onboarding() {
-  const { setOnboardingDone, setField } = useApp();
+  const { setOnboardingDone } = useApp();
   const [step, setStep] = useState(0);
 
   const current = STEPS[step];
