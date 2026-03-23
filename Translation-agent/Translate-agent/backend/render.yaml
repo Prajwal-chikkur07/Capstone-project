@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: SeedlingSpeaks
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheckPath: /api/health
