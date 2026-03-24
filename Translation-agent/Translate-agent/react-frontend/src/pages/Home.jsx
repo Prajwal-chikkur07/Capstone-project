@@ -670,18 +670,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
-      {/* Language selector bar */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 overflow-x-auto action-bar-scroll">
-        <span className="text-[11px] text-gray-400 font-medium shrink-0">Translate to:</span>
-        {Object.entries(TARGET_LANGUAGES || {}).map(([name, code]) => (
-          <button key={code} onClick={() => { setSelectedLang(code); setField('selectedLanguage', code); }}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap transition-all ${
-              selectedLang === code ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
-            {name}
-          </button>
-        ))}
-      </div>
-
       {/* Main scrollable area */}
       <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 overflow-y-auto pb-48 md:pb-36">
 
