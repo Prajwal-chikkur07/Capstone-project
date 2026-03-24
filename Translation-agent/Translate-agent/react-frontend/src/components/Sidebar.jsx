@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings, X, Menu } from 'lucide-react';
+import { Globe, User, LogOut, Mic2, Clock, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings, X, Menu } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getLabels } from '../services/uiLabels';
 
@@ -75,9 +75,8 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
           <NavBtn icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}           onClick={nav('/app/vision')} />
 
           <SectionLabel label={L.library} />
-          <NavBtn icon={Clock}        label={L.history}    active={is('/app/history')}    onClick={nav('/app/history')} />
-          <NavBtn icon={BookmarkPlus} label={L.templates}  active={is('/app/templates')}  onClick={nav('/app/templates')} />
-          <NavBtn icon={BookOpen}     label={L.dictionary} active={is('/app/dictionary')} onClick={nav('/app/dictionary')} />
+          <NavBtn icon={Clock}    label={L.history}    active={is('/app/history')}    onClick={nav('/app/history')} />
+          <NavBtn icon={BookOpen} label={L.dictionary} active={is('/app/dictionary')} onClick={nav('/app/dictionary')} />
 
           <SectionLabel label={L.insights} />
           <NavBtn icon={BarChart2} label={L.analytics} active={is('/app/analytics')} onClick={nav('/app/analytics')} />

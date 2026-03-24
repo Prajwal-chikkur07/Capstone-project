@@ -16,7 +16,6 @@ import EnglishToNativeView from './pages/EnglishToNativeView';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import History from './pages/History';
-import Templates from './pages/Templates';
 import Dictionary from './pages/Dictionary';
 import Analytics from './pages/Analytics';
 import ShareView from './pages/ShareView';
@@ -116,7 +115,6 @@ function AppShell() {
           <Route path="/app/english-to-native" element={<RequireSetup><EnglishToNativeView /></RequireSetup>} />
           <Route path="/app/vision" element={<RequireSetup><VisionTranslate /></RequireSetup>} />
           <Route path="/app/history" element={<RequireSetup><History /></RequireSetup>} />
-          <Route path="/app/templates" element={<RequireSetup><Templates /></RequireSetup>} />
           <Route path="/app/dictionary" element={<RequireSetup><Dictionary /></RequireSetup>} />
           <Route path="/app/analytics" element={<RequireSetup><Analytics /></RequireSetup>} />
           <Route path="/app/settings" element={<RequireSetup><Settings /></RequireSetup>} />
