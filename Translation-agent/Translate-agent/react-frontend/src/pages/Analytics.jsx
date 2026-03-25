@@ -64,7 +64,7 @@ export default function Analytics() {
   const maxDay = Math.max(...dailyCounts.map(d => d.count), 1);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg)] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.analyticsTitle}</h1>

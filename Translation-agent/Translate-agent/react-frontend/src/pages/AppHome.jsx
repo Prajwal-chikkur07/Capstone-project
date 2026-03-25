@@ -21,7 +21,7 @@ export default function AppHome() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg)] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 md:px-10 py-4 md:py-5 flex items-center gap-3">
         <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-8 h-8 rounded-xl object-contain" />

@@ -63,7 +63,7 @@ export default function WidgetSetup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]" style={{ fontFamily: 'system-ui, sans-serif' }}>
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[var(--bg)]" style={{ fontFamily: 'system-ui, sans-serif' }}>
       <div className="w-full max-w-2xl px-6 py-10">
 
         {/* ── Step 1: Language selection ── */}

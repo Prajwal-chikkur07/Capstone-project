@@ -201,7 +201,7 @@ export default function EnglishToNativeView() {
   const dotColor = LANG_DOT_COLORS[state.selectedLanguage] || '#f97316';
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg)] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div>

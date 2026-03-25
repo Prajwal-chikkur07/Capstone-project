@@ -363,7 +363,7 @@ export default function ContinuousListening() {
   const bars = Array.from({ length: 20 }, (_, i) => isListening ? Math.max(4, Math.min(40, amplitude * (0.5 + Math.sin(i * 0.8) * 0.5))) : 4);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[var(--bg)]">
       <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">

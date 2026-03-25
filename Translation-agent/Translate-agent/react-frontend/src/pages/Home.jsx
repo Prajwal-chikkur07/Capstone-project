@@ -669,7 +669,7 @@ export default function Home() {
   const shareText = rewrittenText || state.nativeTranslation || editableTranscript;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[var(--bg)]">
       {/* Main scrollable area */}
       <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 overflow-y-auto pb-48 md:pb-36">
 

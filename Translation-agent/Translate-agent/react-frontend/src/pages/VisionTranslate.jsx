@@ -105,7 +105,7 @@ export default function VisionTranslate() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg)]">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
         <div>
