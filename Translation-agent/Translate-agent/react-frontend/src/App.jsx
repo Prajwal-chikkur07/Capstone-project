@@ -64,8 +64,8 @@ function AppShell() {
       if (online) { failCountRef.current = 0; setOnline(true); }
       else { failCountRef.current += 1; if (failCountRef.current >= 2) setOnline(false); }
     };
-    const initTimer = setTimeout(check, 3000);
-    pollRef.current = setInterval(check, 30000);
+    const initTimer = setTimeout(check, 8000);
+    pollRef.current = setInterval(check, 60000);
     return () => { clearTimeout(initTimer); clearInterval(pollRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -20,7 +20,10 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 function shouldRetry(error) {
   if (!error.response) return true; // network error — always retry
-  return !NO_RETRY_CODES.includes(error.response.status);
+  if (NO_RETRY_CODES.includes(error.response.status)) return false;
+  // Never retry health checks — they flood the console when backend is down
+  if (error.config?.url?.includes('/health')) return false;
+  return true;
 }
 
 function friendlyMessage(error) {
