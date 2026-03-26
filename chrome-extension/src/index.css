@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 380px;
+  min-height: 520px;
+  max-height: 620px;
+  margin: 0;
+  padding: 0;
+  background: #f8f8f8;
+  color: #1a1a1a;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-y: auto;
+  font-size: 13px;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 4px; }
+
+.card {
+  background: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+}
+
+.input-field {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #1a1a1a;
+  outline: none;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.input-field::placeholder { color: #9ca3af; }
+.input-field:focus { border-color: #9ca3af; }
+
+.select-field {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  color: #1a1a1a;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+.select-field:focus { border-color: #9ca3af; }
+
+.btn-primary {
+  background: #111827;
+  color: white;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-primary:hover { background: #374151; }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  color: #6b7280;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: #f3f4f6; color: #111827; }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); }
+  70% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+.pulse-recording { animation: pulse-ring 1.5s ease infinite; }
