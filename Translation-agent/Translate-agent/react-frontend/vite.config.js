@@ -8,7 +8,7 @@ export default defineConfig({
     historyApiFallback: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://127.0.0.1:8000',
+        target: process.env.VITE_API_URL || 'https://seedlingspeaks.onrender.com',
         changeOrigin: true,
       },
     },

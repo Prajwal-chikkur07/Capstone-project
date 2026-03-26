@@ -258,7 +258,8 @@ export const multiTranslate = async (text, languages) => {
 // Health check — resolves true if backend is reachable
 export const checkHealth = async () => {
   try {
-    await API.get('/health', { timeout: 5000 });
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://seedlingspeaks.onrender.com';
+    await axios.get(`${backendUrl}/api/health`, { timeout: 5000 });
     return true;
   } catch {
     return false;
