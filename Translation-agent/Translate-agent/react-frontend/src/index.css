@@ -10,23 +10,21 @@
 * { box-sizing: border-box; }
 
 :root {
-  --bg: #ffffff;
-  --surface: #f9f9f9;
-  --border: #e5e5e5;
+  --bg: #f8f8f8;
+  --surface: #ffffff;
+  --border: #ececec;
   --text: #1a1a1a;
-  --text-muted: #666666;
-  --sidebar-bg: #f5f5f5;
-  --accent: #000000;
+  --text-muted: #9ca3af;
+  --sidebar-bg: #ffffff;
 }
 
 .dark {
-  --bg: #0a0a0a;
-  --surface: #1a1a1a;
-  --border: #2a2a2a;
-  --text: #ffffff;
-  --text-muted: #999999;
-  --sidebar-bg: #0f0f0f;
-  --accent: #ffffff;
+  --bg: #111113;
+  --surface: #1c1c1f;
+  --border: #2a2a2e;
+  --text: #f0f0f0;
+  --text-muted: #6b7280;
+  --sidebar-bg: #161618;
 }
 
 /* ── Dark mode overrides ── */
@@ -155,18 +153,17 @@ body {
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   height: 100vh;
-  width: 200px;
+  width: 220px;
   position: fixed;
   left: 0; top: 0;
   z-index: 40;
   display: flex;
   flex-direction: column;
   transition: transform 0.25s ease;
-  padding: 24px 0;
 }
 
 .main-content {
-  margin-left: 200px;
+  margin-left: 220px;
   min-height: 100vh;
   background: var(--bg);
 }
