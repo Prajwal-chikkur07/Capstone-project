@@ -5,19 +5,26 @@ import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 
 export default function AuthPage() {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, getToken, signOut } = useAuth();
   const { user: clerkUser } = useUser();
   const navigate = useNavigate();
   const { login } = useApp();
   const syncedRef = useRef(false);
   const [consent, setConsent] = useState(false);
+  const [showConsentError, setShowConsentError] = useState(false);
   const consentRef = useRef(false);
 
-  // Keep ref in sync so syncUserToBackend always has latest value
   useEffect(() => { consentRef.current = consent; }, [consent]);
 
   useEffect(() => {
     if (isSignedIn && clerkUser && !syncedRef.current) {
+      // Block login if consent not given — sign them out and show error
+      if (!consentRef.current) {
+        syncedRef.current = false;
+        setShowConsentError(true);
+        signOut(); // kick them back out
+        return;
+      }
       syncedRef.current = true;
       syncUserToBackend();
     }
@@ -34,14 +41,14 @@ export default function AuthPage() {
         first_name: clerkUser.firstName,
         last_name: clerkUser.lastName,
         avatar_url: clerkUser.imageUrl,
-        consent_given: consentRef.current,
+        consent_given: true,
       });
       login({
         id: response.id,
         email: response.email,
         firstName: response.first_name,
         lastName: response.last_name,
-        consentGiven: response.consent_given,
+        consentGiven: true,
       });
       navigate('/app');
     } catch (error) {
@@ -51,7 +58,7 @@ export default function AuthPage() {
         email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress,
         firstName: clerkUser.firstName,
         lastName: clerkUser.lastName,
-        consentGiven: consentRef.current,
+        consentGiven: true,
       });
       navigate('/app');
     }
@@ -97,47 +104,65 @@ export default function AuthPage() {
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
           </div>
 
-          {/* Clerk Sign-In Component */}
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-none border-none bg-transparent",
-                headerTitle: "text-[20px] md:text-[26px] font-extrabold text-[#1a0f00]",
-                headerSubtitle: "text-[14px] text-gray-400 mb-8",
-                formButtonPrimary: "bg-[#1a0f00] hover:bg-[#2d1a00] text-white rounded-xl py-3 font-bold",
-                formFieldInput: "rounded-xl border-gray-200 focus:border-[#c9a84c]",
-                footerActionLink: "text-[#8a5c2e] hover:underline",
-              },
-              variables: {
-                colorPrimary: "#1a0f00",
-                colorInputBackground: "#ffffff",
-              },
-            }}
-            redirectUrl="/app"
-            signUpUrl="/auth?mode=signup"
-          />
-
-          {/* GDPR Consent */}
-          <div className="mt-4 flex items-start gap-3 px-1">
-            <input
-              id="gdpr-consent"
-              type="checkbox"
-              checked={consent}
-              onChange={e => setConsent(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
-            />
-            <label htmlFor="gdpr-consent" className="text-[12px] text-gray-500 leading-relaxed cursor-pointer">
-              I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
-              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
-                className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
-                Privacy Policy
-              </a>
-            </label>
+          {/* GDPR Consent — shown ABOVE the sign-in form so user sees it first */}
+          <div className={`mb-4 p-4 rounded-2xl border transition-all ${
+            showConsentError
+              ? 'border-red-200 bg-red-50'
+              : consent
+              ? 'border-green-200 bg-green-50'
+              : 'border-gray-200 bg-white'
+          }`}>
+            <div className="flex items-start gap-3">
+              <input
+                id="gdpr-consent"
+                type="checkbox"
+                checked={consent}
+                onChange={e => { setConsent(e.target.checked); setShowConsentError(false); }}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
+              />
+              <label htmlFor="gdpr-consent" className="text-[12px] text-gray-600 leading-relaxed cursor-pointer">
+                I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+                  className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+            {showConsentError && (
+              <p className="text-[12px] text-red-600 font-semibold mt-2 ml-7">
+                ⚠ You must agree to the privacy policy to continue.
+              </p>
+            )}
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 px-1">
-            Consent is optional — you can use the app without it.
-          </p>
+
+          {/* Clerk Sign-In — visually dimmed if consent not given */}
+          <div className={`transition-opacity ${consent ? 'opacity-100' : 'opacity-40 pointer-events-none select-none'}`}>
+            <SignIn
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-none bg-transparent",
+                  headerTitle: "text-[20px] md:text-[26px] font-extrabold text-[#1a0f00]",
+                  headerSubtitle: "text-[14px] text-gray-400 mb-8",
+                  formButtonPrimary: "bg-[#1a0f00] hover:bg-[#2d1a00] text-white rounded-xl py-3 font-bold",
+                  formFieldInput: "rounded-xl border-gray-200 focus:border-[#c9a84c]",
+                  footerActionLink: "text-[#8a5c2e] hover:underline",
+                },
+                variables: {
+                  colorPrimary: "#1a0f00",
+                  colorInputBackground: "#ffffff",
+                },
+              }}
+              redirectUrl="/app"
+              signUpUrl="/auth?mode=signup"
+            />
+          </div>
+
+          {!consent && (
+            <p className="text-[11px] text-gray-400 text-center mt-3">
+              Please accept the privacy policy above to sign in.
+            </p>
+          )}
         </div>
       </div>
     </div>
