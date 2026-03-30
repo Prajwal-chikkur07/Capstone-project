@@ -93,24 +93,39 @@ def detect_emotions_for_segments(segments: list[dict], gemini_key: str = None) -
 
 def assign_speaker_voices(segments: list[dict]) -> list[dict]:
     """
-    Assign a consistent Sarvam TTS speaker to each unique speaker.
-    Alternates male/female for natural conversation feel.
+    Assign Sarvam TTS voices to each speaker.
+    If gender was detected by audio analysis, use it.
+    Otherwise alternate male/female.
     """
-    SPEAKER_VOICES = [
-        {"sarvam": "abhilash", "gtts_gender": "male"},
-        {"sarvam": "anushka",  "gtts_gender": "female"},
-        {"sarvam": "karun",    "gtts_gender": "male"},
-        {"sarvam": "vidya",    "gtts_gender": "female"},
-    ]
+    MALE_VOICES   = ["abhilash", "karun", "arvind", "amol"]
+    FEMALE_VOICES = ["anushka",  "vidya", "pavithra", "meera"]
 
-    speaker_map = {}
-    voice_idx = 0
+    speaker_map      = {}
+    male_voice_idx   = 0
+    female_voice_idx = 0
 
     for seg in segments:
-        sp = seg["speaker"]
+        sp     = seg["speaker"]
+        gender = seg.get("gender", "")  # set by audio diarization if available
+
         if sp not in speaker_map:
-            speaker_map[sp] = SPEAKER_VOICES[voice_idx % len(SPEAKER_VOICES)]
-            voice_idx += 1
-        seg["voice"] = speaker_map[sp]
+            if not gender:
+                # Alternate male/female if no audio gender info
+                gender = "male" if len(speaker_map) % 2 == 0 else "female"
+
+            if gender == "female":
+                voice = FEMALE_VOICES[female_voice_idx % len(FEMALE_VOICES)]
+                female_voice_idx += 1
+            else:
+                voice = MALE_VOICES[male_voice_idx % len(MALE_VOICES)]
+                male_voice_idx += 1
+
+            speaker_map[sp] = {"sarvam": voice, "gtts_gender": gender}
+
+        # Only set voice if not already set by audio diarization
+        if not seg.get("voice") or not seg["voice"].get("sarvam"):
+            seg["voice"]   = speaker_map[sp]
+        if not seg.get("gender"):
+            seg["gender"]  = speaker_map[sp]["gtts_gender"]
 
     return segments

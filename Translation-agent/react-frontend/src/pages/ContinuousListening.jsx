@@ -360,6 +360,11 @@ export default function ContinuousListening() {
                     ✨ AI detected
                   </span>
                 )}
+                {diarizeMethod === 'audio' && (
+                  <span className="text-[11px] text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
+                    🎙 Voice detected
+                  </span>
+                )}
               </div>
               {isDiarizing && (
                 <div className="flex items-center gap-1.5 text-[12px] text-gray-400">
@@ -410,7 +415,12 @@ export default function ContinuousListening() {
                         </div>
                         {/* Bubble */}
                         <div className={`max-w-[75%] flex flex-col gap-1 ${isRight ? 'items-end' : 'items-start'}`}>
-                          <span className={`text-[10px] font-semibold px-1 ${style.name}`}>{seg.speaker}</span>
+                          <span className={`text-[10px] font-semibold px-1 ${style.name}`}>
+                            {seg.speaker}
+                            {seg.gender && (
+                              <span className="ml-1 opacity-60">{seg.gender === 'female' ? '♀' : '♂'}</span>
+                            )}
+                          </span>
                           <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${style.bubble} ${isRight ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}>
                             <p className="text-[13px] leading-relaxed">{seg.text}</p>
                           </div>
