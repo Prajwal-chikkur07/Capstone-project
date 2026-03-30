@@ -680,94 +680,134 @@ export default function ContinuousListening() {
       {/* Speaker Diarization Panel */}
       {transcript && (
         <div className="px-4 md:px-10 pb-10 max-w-3xl w-full mx-auto">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-400" />
-                <p className="text-[14px] font-bold text-gray-900">Speaker Detection</p>
+                <p className="text-[14px] font-bold text-gray-900">Conversation</p>
+                {segments.length > 0 && (
+                  <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    {new Set(segments.map(s => s.speaker)).size} speakers
+                  </span>
+                )}
               </div>
               <button onClick={handleDiarize} disabled={isDiarizing || !recordedBlobRef.current}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                {isDiarizing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting…</> : <><Users className="w-3.5 h-3.5" />Detect Speakers</>}
+                {isDiarizing
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting…</>
+                  : <><Users className="w-3.5 h-3.5" />Detect Speakers</>}
               </button>
             </div>
 
             {diarizeError && (
-              <p className="text-[12px] text-red-500 mb-3">{diarizeError}</p>
+              <div className="px-5 py-3 bg-red-50 border-b border-red-100">
+                <p className="text-[12px] text-red-500">{diarizeError}</p>
+              </div>
             )}
 
-            {segments.length > 0 && (
+            {/* Conversation bubbles */}
+            {segments.length > 0 ? (
               <>
-                {/* Speaker segments */}
-                <div className="space-y-2 mb-4">
+                <div className="px-4 py-4 space-y-3 max-h-80 overflow-y-auto bg-[#f8f8f8]">
                   {segments.map((seg, i) => {
-                    const colors = ['bg-blue-50 border-blue-100 text-blue-700', 'bg-purple-50 border-purple-100 text-purple-700', 'bg-green-50 border-green-100 text-green-700', 'bg-amber-50 border-amber-100 text-amber-700'];
-                    const color = colors[i % colors.length];
+                    // Alternate sides: even = left (Person 1), odd = right (Person 2+)
+                    const speakers = [...new Set(segments.map(s => s.speaker))];
+                    const speakerIdx = speakers.indexOf(seg.speaker);
+                    const isRight = speakerIdx % 2 !== 0;
+
+                    const bubbleColors = [
+                      'bg-white border border-gray-200 text-gray-800',
+                      'bg-gray-900 text-white',
+                      'bg-blue-50 border border-blue-100 text-blue-900',
+                      'bg-purple-50 border border-purple-100 text-purple-900',
+                    ];
+                    const bubbleColor = bubbleColors[speakerIdx % bubbleColors.length];
+                    const nameColors = ['text-gray-500', 'text-gray-300', 'text-blue-500', 'text-purple-500'];
+                    const nameColor = nameColors[speakerIdx % nameColors.length];
+
+                    const synthSeg = synthSegments[i];
+                    const isPlaying = playingIdx === i;
+
                     return (
-                      <div key={i} className={`rounded-xl border px-4 py-3 ${color.split(' ').slice(0,2).join(' ')}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[11px] font-bold uppercase tracking-widest ${color.split(' ')[2]}`}>{seg.speaker}</span>
-                          <span className="text-[10px] text-gray-400 capitalize">{seg.emotion}</span>
+                      <div key={i} className={`flex gap-2 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {/* Avatar */}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-1 ${speakerIdx % 2 === 0 ? 'bg-gray-200 text-gray-600' : 'bg-gray-700 text-white'}`}>
+                          {seg.speaker.replace('Person ', 'P')}
                         </div>
-                        <p className="text-[13px] text-gray-700 leading-relaxed">{seg.text}</p>
+
+                        {/* Bubble */}
+                        <div className={`max-w-[75%] ${isRight ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                          <span className={`text-[10px] font-semibold ${nameColor} px-1`}>{seg.speaker}</span>
+                          <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${bubbleColor} ${isRight ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}>
+                            <p className="text-[13px] leading-relaxed">{seg.text}</p>
+                          </div>
+                          <div className={`flex items-center gap-2 px-1 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <span className="text-[10px] text-gray-400 capitalize">{seg.emotion}</span>
+                            {synthSeg?.audio && (
+                              <button onClick={() => isPlaying ? stopPlayback() : playSegment(i)}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                                  isPlaying ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}>
+                                {isPlaying
+                                  ? <><Square className="w-2.5 h-2.5 fill-red-500" />Stop</>
+                                  : <><Play className="w-2.5 h-2.5 fill-gray-500" />Play</>}
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
                 {/* Playback controls */}
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Play in target language</p>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="relative flex-1">
+                <div className="px-5 py-4 border-t border-gray-100 bg-white">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative">
                       <select value={playLang} onChange={e => setPlayLang(e.target.value)}
-                        className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none pr-8">
+                        className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none pr-8">
                         {Object.entries({ Hindi: 'hi-IN', Kannada: 'kn-IN', Tamil: 'ta-IN', Telugu: 'te-IN', Malayalam: 'ml-IN', Bengali: 'bn-IN', English: 'en-IN' }).map(([n, c]) => (
                           <option key={c} value={c}>{n}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                     </div>
+
                     <button onClick={handleSynthesize} disabled={isSynthesizing}
                       className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                      {isSynthesizing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating…</> : <><Volume2 className="w-3.5 h-3.5" />Generate voices</>}
+                      {isSynthesizing
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating voices…</>
+                        : <><Volume2 className="w-3.5 h-3.5" />Generate voices</>}
                     </button>
+
+                    {synthSegments.length > 0 && (
+                      <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all ${
+                          playingIdx !== null
+                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}>
+                        {playingIdx !== null
+                          ? <><Square className="w-3.5 h-3.5 fill-white" />Stop</>
+                          : <><Play className="w-3.5 h-3.5 fill-white" />Play conversation</>}
+                      </button>
+                    )}
                   </div>
 
                   {synthSegments.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 mb-2">
-                        <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 transition-all">
-                          {playingIdx !== null ? <><Square className="w-3.5 h-3.5 fill-white" />Stop</> : <><Play className="w-3.5 h-3.5 fill-white" />Play all</>}
-                        </button>
-                        <span className="text-[11px] text-gray-400">{synthSegments.length} speaker segments</span>
-                      </div>
-                      {synthSegments.map((seg, i) => (
-                        <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${playingIdx === i ? 'bg-gray-900 border-gray-900' : 'bg-gray-50 border-gray-100'}`}>
-                          <button onClick={() => playingIdx === i ? stopPlayback() : playSegment(i)}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${playingIdx === i ? 'bg-white/20' : 'bg-white border border-gray-200 hover:bg-gray-100'}`}>
-                            {playingIdx === i
-                              ? <Pause className="w-3 h-3 text-white fill-white" />
-                              : <Play className="w-3 h-3 text-gray-600 fill-gray-600 ml-0.5" />}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${playingIdx === i ? 'text-white/60' : 'text-gray-400'}`}>{seg.speaker}</p>
-                            <p className={`text-[12px] truncate ${playingIdx === i ? 'text-white' : 'text-gray-600'}`}>
-                              {segments[i]?.text?.slice(0, 60)}{segments[i]?.text?.length > 60 ? '…' : ''}
-                            </p>
-                          </div>
-                          <span className={`text-[10px] capitalize shrink-0 ${playingIdx === i ? 'text-white/50' : 'text-gray-400'}`}>{seg.emotion}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2">
+                      Each speaker plays in a different voice · auto-advances through the conversation
+                    </p>
                   )}
                 </div>
               </>
-            )}
-
-            {!segments.length && !isDiarizing && (
-              <p className="text-[12px] text-gray-400">Record a conversation, then click "Detect Speakers" to identify who said what.</p>
+            ) : (
+              !isDiarizing && (
+                <div className="px-5 py-8 text-center">
+                  <p className="text-[13px] text-gray-400">Record a conversation, then click "Detect Speakers" to see who said what.</p>
+                </div>
+              )
             )}
           </div>
         </div>
