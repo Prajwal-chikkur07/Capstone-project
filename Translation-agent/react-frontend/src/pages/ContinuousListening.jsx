@@ -3,11 +3,11 @@ import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 import {
   Ear, Square, Loader2, Copy, Check, Download,
-  Users, Play, Volume2, X, ChevronDown, Hash
+  Users, Play, Volume2, ChevronDown, Hash
 } from 'lucide-react';
 
 const SILENCE_THRESHOLD = 10;
-const SILENCE_DURATION  = 2000;
+const SILENCE_DURATION  = 5000; // 5s — gives time between speakers
 
 // Up to 5 speaker colour schemes
 const SPEAKER_STYLES = [
@@ -29,7 +29,7 @@ function CopyBtn({ text }) {
 }
 
 export default function ContinuousListening() {
-  const { state, showError, showSuccess, addHistory, incrementUsage } = useApp();
+  const { state, showError, addHistory, incrementUsage } = useApp();
 
   // ── Recording state ───────────────────────────────────────────────────────
   const [isListening,  setIsListening]  = useState(false);
@@ -124,18 +124,41 @@ export default function ContinuousListening() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         recordedBlobRef.current = blob;
         if (blob.size < 1000) return;
+
+        // Step 1: Transcribe
         setIsProcessing(true);
+        let finalTranscript = '';
         try {
           const result = await api.translateAudioFromBlob(blob, 'recording.webm');
-          if (result.transcript) {
-            setTranscript(result.transcript);
+          finalTranscript = result.transcript || '';
+          if (finalTranscript) {
+            setTranscript(finalTranscript);
             incrementUsage('sarvamCalls');
-            addHistory({ text: result.transcript, lang: state.selectedLanguage, timestamp: new Date().toISOString(), confidence: result.confidence || null });
+            addHistory({ text: finalTranscript, lang: state.selectedLanguage, timestamp: new Date().toISOString(), confidence: result.confidence || null });
           }
         } catch (e) {
           showError(e.response?.data?.detail || 'Transcription failed');
+          setIsProcessing(false);
+          return;
         } finally {
           setIsProcessing(false);
+        }
+
+        // Step 2: Auto-diarize immediately after transcription
+        if (!finalTranscript) return;
+        setIsDiarizing(true);
+        setDiarizeError('');
+        setSegments([]);
+        setSynthSegments([]);
+        try {
+          const dResult = await api.diarizeAudio(blob);
+          const segs = (dResult.segments || []).slice(0, 100);
+          setSegments(segs);
+          setDiarizeMethod(dResult.method || 'fallback');
+        } catch (e) {
+          setDiarizeError(e.response?.data?.detail || 'Speaker detection failed');
+        } finally {
+          setIsDiarizing(false);
         }
       };
       mr.start();
@@ -144,22 +167,6 @@ export default function ContinuousListening() {
       showError('Microphone access denied');
     }
   }, [state.selectedLanguage, showError, incrementUsage, addHistory]);
-
-  // ── Detect speakers ───────────────────────────────────────────────────────
-  const handleDiarize = async () => {
-    if (!recordedBlobRef.current) return;
-    setIsDiarizing(true); setDiarizeError(''); setSegments([]); setSynthSegments([]);
-    try {
-      const result = await api.diarizeAudio(recordedBlobRef.current);
-      const segs = (result.segments || []).slice(0, 5 * 20); // cap at 5 speakers
-      setSegments(segs);
-      setDiarizeMethod(result.method || 'fallback');
-    } catch (e) {
-      setDiarizeError(e.response?.data?.detail || 'Speaker detection failed');
-    } finally {
-      setIsDiarizing(false);
-    }
-  };
 
   // ── Voice synthesis ───────────────────────────────────────────────────────
   const handleSynthesize = async () => {
@@ -272,6 +279,11 @@ export default function ContinuousListening() {
               <Loader2 className="w-3.5 h-3.5 animate-spin" />Transcribing…
             </div>
           )}
+          {isDiarizing && (
+            <div className="flex items-center gap-2 text-[13px] text-gray-400">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting speakers…
+            </div>
+          )}
           {isListening && (
             <p className="text-[12px] text-gray-400 animate-pulse">
               Listening… auto-stops after {SILENCE_DURATION / 1000}s of silence
@@ -322,7 +334,7 @@ export default function ContinuousListening() {
                 <p className="text-[14px] font-bold text-gray-900">Conversation</p>
                 {uniqueSpeakers.length > 0 && (
                   <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {uniqueSpeakers.length} / 5 speakers
+                    {uniqueSpeakers.length} speaker{uniqueSpeakers.length > 1 ? 's' : ''}
                   </span>
                 )}
                 {diarizeMethod === 'gemini' && (
@@ -331,12 +343,11 @@ export default function ContinuousListening() {
                   </span>
                 )}
               </div>
-              <button onClick={handleDiarize} disabled={isDiarizing || !recordedBlobRef.current}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                {isDiarizing
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting…</>
-                  : <><Users className="w-3.5 h-3.5" />Detect Speakers</>}
-              </button>
+              {isDiarizing && (
+                <div className="flex items-center gap-1.5 text-[12px] text-gray-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting speakers…
+                </div>
+              )}
             </div>
 
             {diarizeError && (
@@ -449,7 +460,7 @@ export default function ContinuousListening() {
             ) : (
               !isDiarizing && (
                 <div className="px-5 py-8 text-center">
-                  <p className="text-[13px] text-gray-400">Record a conversation, then click "Detect Speakers" to see who said what.</p>
+                  <p className="text-[13px] text-gray-400">Record a conversation — speakers will be detected automatically.</p>
                   <p className="text-[12px] text-gray-300 mt-1">Supports up to 5 speakers</p>
                 </div>
               )
