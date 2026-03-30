@@ -186,62 +186,70 @@ async def handle_audio_translation(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/api/diarize-audio")
-async def handle_diarize_audio(file: UploadFile = File(...), speaker_count: int = Form(0)):
+async def handle_diarize_audio(
+    file: UploadFile = File(None),
+    speaker_count: int = Form(0),
+    transcript: str = Form(""),
+):
     """
-    Transcribe audio with speaker diarization.
-    speaker_count: hint from user (0 = auto-detect, 2-5 = exact count)
+    Diarize audio into speaker segments.
+    - If 'transcript' form field is provided, skip STT and use it directly.
+    - If 'file' is provided, transcribe it first.
     """
     logger = logging.getLogger(__name__)
-    original_filename = file.filename or "recording.webm"
-    content_type = file.content_type or "audio/webm"
 
-    os.makedirs("temp_audio", exist_ok=True)
-    temp_path = f"temp_audio/diarize_{original_filename}"
+    full_transcript = transcript.strip()
 
-    try:
-        async with aiofiles.open(temp_path, "wb") as f:
-            while chunk := await file.read(1024 * 1024):
-                await f.write(chunk)
-
-        # Step 1: Get full transcript via Sarvam (most accurate for Indian languages)
-        from services.sarvam_client import translate_speech_to_text
+    # Only process audio file if no transcript was provided
+    if not full_transcript and file is not None:
+        original_filename = file.filename or "recording.webm"
+        content_type = file.content_type or "audio/webm"
+        os.makedirs("temp_audio", exist_ok=True)
+        temp_path = f"temp_audio/diarize_{original_filename}"
         try:
-            stt = translate_speech_to_text(temp_path, content_type=content_type)
-            full_transcript = stt.get("transcript", "").strip()
-        except Exception as sarvam_err:
-            logger.warning(f"[diarize] Sarvam failed: {sarvam_err}, trying HuggingFace Whisper")
-            # Fallback: HuggingFace Whisper
-            HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
-            if not HF_KEY:
-                raise HTTPException(status_code=500, detail="Both Sarvam and HuggingFace unavailable")
-            import requests as req
-            with open(temp_path, "rb") as f:
-                audio_bytes = f.read()
-            resp = req.post(
-                "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
-                headers={"Authorization": f"Bearer {HF_KEY}"},
-                data=audio_bytes,
-                timeout=60,
-            )
-            if resp.status_code == 503:
-                import time; time.sleep(10)
+            async with aiofiles.open(temp_path, "wb") as f:
+                while chunk := await file.read(1024 * 1024):
+                    await f.write(chunk)
+
+            from services.sarvam_client import translate_speech_to_text
+            try:
+                stt = translate_speech_to_text(temp_path, content_type=content_type)
+                full_transcript = stt.get("transcript", "").strip()
+            except Exception as sarvam_err:
+                logger.warning(f"[diarize] Sarvam failed: {sarvam_err}, trying Whisper")
+                HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
+                if not HF_KEY:
+                    raise HTTPException(status_code=500, detail="Transcription unavailable")
+                import requests as req
+                with open(temp_path, "rb") as f:
+                    audio_bytes = f.read()
                 resp = req.post(
                     "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
                     headers={"Authorization": f"Bearer {HF_KEY}"},
-                    data=audio_bytes,
-                    timeout=60,
+                    data=audio_bytes, timeout=60,
                 )
-            if resp.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Whisper failed: {resp.text[:200]}")
-            full_transcript = resp.json().get("text", "").strip()
+                if resp.status_code == 503:
+                    import time; time.sleep(10)
+                    resp = req.post(
+                        "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                        headers={"Authorization": f"Bearer {HF_KEY}"},
+                        data=audio_bytes, timeout=60,
+                    )
+                if resp.status_code == 200:
+                    full_transcript = resp.json().get("text", "").strip()
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
-        if not full_transcript:
-            raise HTTPException(status_code=422, detail="Could not transcribe audio")
+    if not full_transcript:
+        raise HTTPException(status_code=422, detail="Could not transcribe audio — speak clearly and try again")
 
-        # Step 2: Real audio-based speaker diarization
+    try:
+        # Audio-based diarization only works if we have a temp file
+        temp_path_for_diarize = locals().get('temp_path', '')
         from services.audio_diarization import diarize_audio_file
-        segments_raw = diarize_audio_file(temp_path, full_transcript)
-        method = "audio"
+        segments_raw = diarize_audio_file(temp_path_for_diarize, full_transcript) if temp_path_for_diarize and os.path.exists(temp_path_for_diarize) else []
+        method = "audio" if segments_raw else "gemini"
 
         # Fallback to Gemini text-based if audio diarization failed
         if not segments_raw:
@@ -352,9 +360,6 @@ Transcript:
     except Exception as e:
         logger.error(f"diarize-audio error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
 
 
 @app.post("/api/synthesize-conversation")

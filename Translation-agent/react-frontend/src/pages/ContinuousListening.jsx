@@ -156,19 +156,23 @@ export default function ContinuousListening() {
   const handleEnd = useCallback(async () => {
     stopMic();
     setSessionState('ended');
-    // Run diarization on full session audio
-    if (allChunksRef.current.length === 0) return;
+    // Build combined transcript from all live lines
+    const combinedTranscript = lines
+      .filter(l => !l.processing && l.text)
+      .map(l => l.text)
+      .join(' ');
+    if (!combinedTranscript.trim()) return;
     setIsDiarizing(true);
     try {
-      const fullBlob = new Blob(allChunksRef.current, { type: 'audio/webm' });
-      const result   = await api.diarizeAudio(fullBlob, 'session.webm', 0);
+      // Pass transcript directly — no need to re-transcribe broken multi-chunk blob
+      const result = await api.diarizeAudio(null, 'session.webm', 0, combinedTranscript);
       setSegments(result.segments || []);
     } catch (e) {
       showError(e.response?.data?.detail || 'Speaker detection failed');
     } finally {
       setIsDiarizing(false);
     }
-  }, [stopMic, showError]);
+  }, [stopMic, lines, showError]);
 
   const handleClear = () => {
     stopMic();

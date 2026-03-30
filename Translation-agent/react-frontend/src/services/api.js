@@ -324,15 +324,16 @@ export const getVideoStatus = async (videoId) => {
 };
 
 // ── Diarization ───────────────────────────────────────────────────────────────
-export const diarizeAudio = async (blob, filename = 'recording.webm', speakerCount = 0) => {
+export const diarizeAudio = async (blob, filename = 'recording.webm', speakerCount = 0, transcript = '') => {
   const formData = new FormData();
-  formData.append('file', blob, filename);
+  if (blob) formData.append('file', blob, filename);
   formData.append('speaker_count', String(speakerCount));
+  if (transcript) formData.append('transcript', transcript);
   const { data } = await API.post('/diarize-audio', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000,
   });
-  return data; // { transcript, segments: [{speaker, text, emotion, voice}], speaker_count }
+  return data;
 };
 
 export const synthesizeConversation = async ({ segments, target_language }) => {
