@@ -49,6 +49,7 @@ export default function ContinuousListening() {
   const [isDiarizing, setIsDiarizing] = useState(false);
   const [diarizeError, setDiarizeError] = useState('');
   const [diarizeMethod, setDiarizeMethod] = useState('');
+  const [speakerCount, setSpeakerCount] = useState(0); // 0 = auto
 
   // ── Voice synthesis ───────────────────────────────────────────────────────
   const [playLang,      setPlayLang]      = useState('hi-IN');
@@ -151,7 +152,7 @@ export default function ContinuousListening() {
         setSegments([]);
         setSynthSegments([]);
         try {
-          const dResult = await api.diarizeAudio(blob);
+          const dResult = await api.diarizeAudio(blob, 'recording.webm', speakerCount);
           const segs = (dResult.segments || []).slice(0, 100);
           setSegments(segs);
           setDiarizeMethod(dResult.method || 'fallback');
@@ -267,6 +268,23 @@ export default function ContinuousListening() {
               <div key={i} className={`w-1.5 rounded-full transition-all duration-75 ${isListening ? 'bg-gray-900' : 'bg-gray-200'}`} style={{ height: `${h}px` }} />
             ))}
           </div>
+
+          {/* Speaker count selector — only show when not recording */}
+          {!isListening && !isProcessing && !isDiarizing && (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-gray-400 font-medium">Speakers:</span>
+              {[0, 2, 3, 4, 5].map(n => (
+                <button key={n} onClick={() => setSpeakerCount(n)}
+                  className={`w-8 h-8 rounded-full text-[12px] font-bold border transition-all ${
+                    speakerCount === n
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}>
+                  {n === 0 ? 'A' : n}
+                </button>
+              ))}
+              <span className="text-[11px] text-gray-300">{speakerCount === 0 ? 'auto-detect' : `exactly ${speakerCount}`}</span>
+            </div>
+          )}
           <button onClick={isListening ? stopListening : startListening}
             className={`flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all shadow-sm active:scale-95 ${
               isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-900 hover:bg-gray-700 text-white'}`}>

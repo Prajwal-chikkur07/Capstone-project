@@ -324,9 +324,10 @@ export const getVideoStatus = async (videoId) => {
 };
 
 // ── Diarization ───────────────────────────────────────────────────────────────
-export const diarizeAudio = async (blob, filename = 'recording.webm') => {
+export const diarizeAudio = async (blob, filename = 'recording.webm', speakerCount = 0) => {
   const formData = new FormData();
   formData.append('file', blob, filename);
+  formData.append('speaker_count', String(speakerCount));
   const { data } = await API.post('/diarize-audio', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000,

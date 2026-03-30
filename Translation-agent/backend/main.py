@@ -186,11 +186,10 @@ async def handle_audio_translation(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/api/diarize-audio")
-async def handle_diarize_audio(file: UploadFile = File(...)):
+async def handle_diarize_audio(file: UploadFile = File(...), speaker_count: int = Form(0)):
     """
     Transcribe audio with speaker diarization.
-    Uses Sarvam for transcription + HuggingFace Whisper as fallback.
-    Speaker splitting is done by analyzing silence gaps in the audio.
+    speaker_count: hint from user (0 = auto-detect, 2-5 = exact count)
     """
     logger = logging.getLogger(__name__)
     original_filename = file.filename or "recording.webm"
@@ -248,19 +247,41 @@ async def handle_diarize_audio(file: UploadFile = File(...)):
                 import google.generativeai as genai
                 genai.configure(api_key=GEMINI_KEY)
                 model = genai.GenerativeModel("gemini-2.0-flash")
-                prompt = f"""You are a conversation analyst. Given this transcript, split it into speaker turns for up to 5 different people.
+
+                # Build speaker count instruction
+                if speaker_count >= 2:
+                    speaker_instruction = (
+                        f"IMPORTANT: There are EXACTLY {speaker_count} speakers in this conversation. "
+                        f"You MUST assign turns to exactly {speaker_count} different people labeled "
+                        f"{', '.join([f'Person {i+1}' for i in range(speaker_count)])}. "
+                        f"Do NOT use fewer or more than {speaker_count} speakers."
+                    )
+                else:
+                    speaker_instruction = (
+                        "Identify how many distinct speakers there are (between 2 and 5). "
+                        "Look for topic shifts, question-answer patterns, and conversational turns."
+                    )
+
+                prompt = f"""You are an expert conversation analyst specializing in speaker diarization.
+
+{speaker_instruction}
+
+Given this transcript, split it into individual speaker turns.
 
 Rules:
-- Identify natural speaker changes based on context, topic shifts, question-answer patterns
-- Label speakers as: Person 1, Person 2, Person 3, Person 4, Person 5
-- Each segment should be a complete thought or sentence
-- Detect the emotion for each segment: happy, neutral, serious, sad, angry, excited
-- Return ONLY valid JSON array, no markdown, no explanation
+- Every sentence or thought belongs to exactly one speaker
+- Speakers take turns — look for natural conversation flow
+- Short responses like "yes", "okay", "right" are often a different speaker responding
+- Questions are usually answered by a different speaker
+- Label speakers as: Person 1, Person 2, Person 3, etc.
+- Detect emotion per segment: happy, neutral, serious, sad, angry, excited
+- Return ONLY a valid JSON array, no markdown, no explanation
 
 Format:
 [
   {{"speaker": "Person 1", "text": "...", "emotion": "neutral"}},
-  {{"speaker": "Person 2", "text": "...", "emotion": "happy"}}
+  {{"speaker": "Person 2", "text": "...", "emotion": "happy"}},
+  {{"speaker": "Person 3", "text": "...", "emotion": "neutral"}}
 ]
 
 Transcript:
@@ -291,9 +312,10 @@ Transcript:
             except Exception as e:
                 logger.warning(f"[diarize] Gemini speaker split failed: {e}, falling back to sentence split")
 
-        # Fallback: sentence-based split alternating between 2 speakers
+        # Fallback: sentence-based split cycling through N speakers
         if not segments_raw:
             import re
+            n_speakers = max(2, min(5, speaker_count if speaker_count >= 2 else 2))
             sentences = re.split(r'(?<=[.!?])\s+', full_transcript)
             sentences = [s.strip() for s in sentences if s.strip()]
             speaker_idx = 0
@@ -301,7 +323,7 @@ Transcript:
             while i < len(sentences):
                 chunk = " ".join(sentences[i:i+2])
                 segments_raw.append({
-                    "speaker": f"Person {(speaker_idx % 2) + 1}",
+                    "speaker": f"Person {(speaker_idx % n_speakers) + 1}",
                     "text": chunk,
                     "emotion": "neutral",
                 })
