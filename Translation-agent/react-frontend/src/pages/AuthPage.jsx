@@ -104,39 +104,8 @@ export default function AuthPage() {
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
           </div>
 
-          {/* GDPR Consent — shown ABOVE the sign-in form so user sees it first */}
-          <div className={`mb-4 p-4 rounded-2xl border transition-all ${
-            showConsentError
-              ? 'border-red-200 bg-red-50'
-              : consent
-              ? 'border-green-200 bg-green-50'
-              : 'border-gray-200 bg-white'
-          }`}>
-            <div className="flex items-start gap-3">
-              <input
-                id="gdpr-consent"
-                type="checkbox"
-                checked={consent}
-                onChange={e => { setConsent(e.target.checked); setShowConsentError(false); }}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
-              />
-              <label htmlFor="gdpr-consent" className="text-[12px] text-gray-600 leading-relaxed cursor-pointer">
-                I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
-                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
-                  className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
-                  Privacy Policy
-                </a>
-              </label>
-            </div>
-            {showConsentError && (
-              <p className="text-[12px] text-red-600 font-semibold mt-2 ml-7">
-                ⚠ You must agree to the privacy policy to continue.
-              </p>
-            )}
-          </div>
-
-          {/* Clerk Sign-In — visually dimmed if consent not given */}
-          <div className={`transition-opacity ${consent ? 'opacity-100' : 'opacity-40 pointer-events-none select-none'}`}>
+          {/* Clerk Sign-In — always visible */}
+          <div>
             <SignIn
               appearance={{
                 elements: {
@@ -158,9 +127,36 @@ export default function AuthPage() {
             />
           </div>
 
+          {/* GDPR Consent — below the form */}
+          <div className={`mt-3 p-4 rounded-2xl border transition-all ${
+            showConsentError ? 'border-red-200 bg-red-50' : consent ? 'border-green-100 bg-green-50' : 'border-gray-200 bg-white'
+          }`}>
+            <div className="flex items-start gap-3">
+              <input
+                id="gdpr-consent"
+                type="checkbox"
+                checked={consent}
+                onChange={e => { setConsent(e.target.checked); setShowConsentError(false); }}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
+              />
+              <label htmlFor="gdpr-consent" className="text-[12px] text-gray-600 leading-relaxed cursor-pointer">
+                I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+                  className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+            {showConsentError && (
+              <p className="text-[12px] text-red-600 font-semibold mt-2 ml-7">
+                ⚠ You must agree to continue.
+              </p>
+            )}
+          </div>
+
           {!consent && (
-            <p className="text-[11px] text-gray-400 text-center mt-3">
-              Please accept the privacy policy above to sign in.
+            <p className="text-[11px] text-gray-400 text-center mt-2">
+              Please accept the privacy policy to sign in.
             </p>
           )}
         </div>
