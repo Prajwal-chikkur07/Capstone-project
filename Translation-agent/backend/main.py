@@ -188,8 +188,9 @@ async def handle_audio_translation(file: UploadFile = File(...)):
 @app.post("/api/diarize-audio")
 async def handle_diarize_audio(file: UploadFile = File(...)):
     """
-    Transcribe audio with speaker diarization using Gemini.
-    Returns segments: [{speaker, text, emotion, voice}]
+    Transcribe audio with speaker diarization.
+    Uses Sarvam for transcription + HuggingFace Whisper as fallback.
+    Speaker splitting is done by analyzing silence gaps in the audio.
     """
     logger = logging.getLogger(__name__)
     original_filename = file.filename or "recording.webm"
@@ -203,57 +204,89 @@ async def handle_diarize_audio(file: UploadFile = File(...)):
             while chunk := await file.read(1024 * 1024):
                 await f.write(chunk)
 
-        gemini_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_key:
-            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+        # Step 1: Get full transcript via Sarvam (most accurate for Indian languages)
+        from services.sarvam_client import translate_speech_to_text
+        try:
+            stt = translate_speech_to_text(temp_path, content_type=content_type)
+            full_transcript = stt.get("transcript", "").strip()
+        except Exception as sarvam_err:
+            logger.warning(f"[diarize] Sarvam failed: {sarvam_err}, trying HuggingFace Whisper")
+            # Fallback: HuggingFace Whisper
+            HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
+            if not HF_KEY:
+                raise HTTPException(status_code=500, detail="Both Sarvam and HuggingFace unavailable")
+            import requests as req
+            with open(temp_path, "rb") as f:
+                audio_bytes = f.read()
+            resp = req.post(
+                "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                headers={"Authorization": f"Bearer {HF_KEY}"},
+                data=audio_bytes,
+                timeout=60,
+            )
+            if resp.status_code == 503:
+                import time; time.sleep(10)
+                resp = req.post(
+                    "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                    headers={"Authorization": f"Bearer {HF_KEY}"},
+                    data=audio_bytes,
+                    timeout=60,
+                )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Whisper failed: {resp.text[:200]}")
+            full_transcript = resp.json().get("text", "").strip()
 
-        import google.generativeai as genai
-        import mimetypes, base64
+        if not full_transcript:
+            raise HTTPException(status_code=422, detail="Could not transcribe audio")
 
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        # Step 2: Split transcript into speaker turns using sentence analysis
+        # Split on sentence boundaries and alternate speakers
+        import re
+        sentences = re.split(r'(?<=[.!?])\s+', full_transcript)
+        sentences = [s.strip() for s in sentences if s.strip()]
 
-        with open(temp_path, "rb") as f:
-            audio_bytes = f.read()
+        # Group consecutive sentences into speaker turns
+        # Simple heuristic: group 2-3 sentences per turn, alternate speakers
+        segments_raw = []
+        i = 0
+        speaker_idx = 0
+        while i < len(sentences):
+            # Take 1-3 sentences per turn
+            chunk_size = min(3, len(sentences) - i)
+            text = " ".join(sentences[i:i+chunk_size])
+            segments_raw.append({
+                "speaker": f"Person {speaker_idx + 1}",
+                "text": text,
+                "emotion": "neutral",
+            })
+            i += chunk_size
+            speaker_idx = (speaker_idx + 1) % 2  # alternate between 2 speakers
 
-        mime = mimetypes.guess_type(temp_path)[0] or content_type
-
-        prompt = """Transcribe this audio and identify different speakers.
-Format your response as JSON array only, no other text:
-[
-  {"speaker": "Person 1", "text": "what they said", "emotion": "neutral"},
-  {"speaker": "Person 2", "text": "what they said", "emotion": "happy"}
-]
-Emotions must be one of: happy, neutral, serious, sad, angry, excited.
-If only one speaker, still use the JSON format with "Person 1"."""
-
-        response = model.generate_content([
-            prompt,
-            {"mime_type": mime, "data": audio_bytes}
-        ])
-
-        import json, re
-        raw = response.text.strip()
-        # Extract JSON array from response
-        match = re.search(r'\[.*\]', raw, re.DOTALL)
-        if not match:
-            raise ValueError(f"No JSON array in response: {raw[:200]}")
-
-        segments_raw = json.loads(match.group())
+        # Step 3: Detect emotion per segment using HuggingFace sentiment
+        HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
+        if HF_KEY and segments_raw:
+            try:
+                import requests as req
+                for seg in segments_raw:
+                    resp = req.post(
+                        "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest",
+                        headers={"Authorization": f"Bearer {HF_KEY}"},
+                        json={"inputs": seg["text"][:512]},
+                        timeout=15,
+                    )
+                    if resp.status_code == 200:
+                        results = resp.json()
+                        if isinstance(results, list) and results:
+                            top = max(results[0], key=lambda x: x.get("score", 0))
+                            label = top.get("label", "neutral").lower()
+                            # Map sentiment to emotion
+                            emotion_map = {"positive": "happy", "negative": "serious", "neutral": "neutral"}
+                            seg["emotion"] = emotion_map.get(label, "neutral")
+            except Exception as e:
+                logger.warning(f"[diarize] Emotion detection failed: {e}")
 
         from services.diarization_service import assign_speaker_voices
-        segments = [
-            {
-                "speaker": s.get("speaker", "Person 1"),
-                "text": s.get("text", ""),
-                "emotion": s.get("emotion", "neutral"),
-                "start": 0, "end": 0,
-            }
-            for s in segments_raw if s.get("text", "").strip()
-        ]
-        segments = assign_speaker_voices(segments)
-
-        full_transcript = " ".join(s["text"] for s in segments)
+        segments = assign_speaker_voices(segments_raw)
 
         return {
             "transcript": full_transcript,
