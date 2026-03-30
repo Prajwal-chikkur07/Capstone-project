@@ -1,5 +1,6 @@
 import os
 import logging
+from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +8,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import shutil
 import aiofiles
+from dotenv import load_dotenv
+
+# Load .env from the backend directory
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 from services.sarvam_client import translate_speech_to_text, translate_text
 from services.gemini_client import rewrite_text_tone, analyze_sentiment, suggest_tone, summarize_transcript, generate_meeting_notes, answer_question, back_translate_check, get_readability_score, get_tone_confidence, vision_translate_image
@@ -16,6 +21,7 @@ from services.slack_service import send_to_slack, format_slack_message, handle_n
 from services.linkedin_service import share_to_linkedin, format_linkedin_post, mock_linkedin_share
 from services.translation_cache import get_stats, clear_cache
 from routers.auth_router import router as auth_router
+from routers.video_router import router as video_router
 from database import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +30,7 @@ app = FastAPI(title="Voice Translation Backend")
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
 app.include_router(auth_router)
+app.include_router(video_router)
 
 # ── Create PostgreSQL tables on startup ───────────────────────────────────────
 @app.on_event("startup")

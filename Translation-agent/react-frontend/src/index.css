@@ -244,3 +244,8 @@ body {
   display: flex; align-items: flex-start; justify-content: center;
   padding-top: 15vh;
 }
+
+@keyframes pulse-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40%            { transform: scale(1);   opacity: 1;   }
+}

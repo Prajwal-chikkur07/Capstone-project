@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings, X, Menu } from 'lucide-react';
+import { Globe, User, LogOut, Mic2, Clock, BookmarkPlus, BookOpen, BarChart2, Moon, Sun, ScanText, Ear, Settings, X, Menu, Film } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext';
 import { getLabels } from '../services/uiLabels';
@@ -88,6 +88,7 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
           <NavBtn icon={Ear}      label={L.continuousListening} active={is('/app/continuous')}       onClick={nav('/app/continuous')} />
           <NavBtn icon={Globe}    label={L.englishToNative}     active={is('/app/english-to-native')} onClick={nav('/app/english-to-native')} />
           <NavBtn icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}           onClick={nav('/app/vision')} />
+          <NavBtn icon={Film}     label="Video Translate"        active={is('/app/video')}            onClick={nav('/app/video')} />
 
           <SectionLabel label={L.library} />
           <NavBtn icon={Clock}        label={L.history}    active={is('/app/history')}    onClick={nav('/app/history')} />

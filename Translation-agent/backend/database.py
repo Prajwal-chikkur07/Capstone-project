@@ -68,19 +68,11 @@ def get_session():
 def init_db():
     """Create all tables defined in models. Safe to call on every startup."""
     try:
+        # Import models so Base knows about them before create_all
         import models  # noqa: F401
         Base.metadata.create_all(bind=engine)
-        # Run migrations for new columns (safe — uses IF NOT EXISTS)
+        # Quick connectivity check
         with engine.connect() as conn:
-            conn.execute(text("""
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS consent_given BOOLEAN NOT NULL DEFAULT FALSE
-            """))
-            conn.execute(text("""
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS consent_timestamp TIMESTAMPTZ NULL
-            """))
-            conn.commit()
             conn.execute(text("SELECT 1"))
         logger.info("PostgreSQL connected and tables verified.")
     except Exception as e:

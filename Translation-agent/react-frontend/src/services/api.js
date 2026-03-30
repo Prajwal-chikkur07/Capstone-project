@@ -301,3 +301,24 @@ export const visionTranslate = async (imageFile, targetLanguage) => {
   });
   return data; // { regions: [{original, translated, x, y, w, h, font_size, bg_color, text_color}], count }
 };
+
+// ── Video translation ─────────────────────────────────────────────────────────
+export const uploadVideo = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await API.post('/video/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  });
+  return data; // { video_id, filename, size_kb }
+};
+
+export const translateVideo = async ({ video_id, target_language, voice_type, tone }) => {
+  const { data } = await API.post('/video/translate', { video_id, target_language, voice_type, tone });
+  return data;
+};
+
+export const getVideoStatus = async (videoId) => {
+  const { data } = await API.get(`/video/status/${videoId}`);
+  return data;
+};

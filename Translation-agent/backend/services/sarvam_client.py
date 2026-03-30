@@ -1,11 +1,14 @@
 import os
 import requests
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from services.audio_utils import get_audio_duration, split_audio_into_chunks, cleanup_chunks
 from services.translation_cache import get_cached, store_translation
 
-load_dotenv()
+# Load .env from the backend directory explicitly
+_env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
 logger = logging.getLogger(__name__)
 
@@ -15,45 +18,64 @@ MAX_AUDIO_DURATION = 25  # Sarvam supports up to 30 seconds, use 25 for safety
 def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wav") -> dict:
     """
     Calls Sarvam AI's speech-to-text-translate API.
-    Automatically splits long audio files into chunks if duration > 25 seconds.
-    Returns dict: { "transcript": str, "confidence": float | None }
+    Falls back to Gemini if Sarvam fails.
     """
     if not SARVAM_API_KEY:
-        raise Exception("SARVAM_API_KEY is not set")
-    
+        logger.warning("SARVAM_API_KEY not set, trying Gemini fallback")
+        return _transcribe_with_gemini(audio_file_path)
+
     try:
-        # Check audio duration
         duration = get_audio_duration(audio_file_path)
         logger.info(f"Audio duration: {duration:.2f} seconds")
-        
-        # If audio is short enough, process directly
+
         if duration <= MAX_AUDIO_DURATION:
             return _process_single_audio(audio_file_path, content_type)
-        
-        # For long audio, split into chunks and process each in parallel
+
         chunk_paths = split_audio_into_chunks(audio_file_path, chunk_duration_seconds=MAX_AUDIO_DURATION)
-        logger.info(f"Audio is longer than {MAX_AUDIO_DURATION}s, splitting into {len(chunk_paths)} chunks...")
-        
+        logger.info(f"Splitting into {len(chunk_paths)} chunks...")
+
         from concurrent.futures import ThreadPoolExecutor
-        
         try:
             with ThreadPoolExecutor(max_workers=min(len(chunk_paths), 10)) as executor:
                 futures = [executor.submit(_process_single_audio, path, "audio/wav") for path in chunk_paths]
                 results = [f.result() for f in futures]
-            
             full_transcript = " ".join([r["transcript"] for r in results if r.get("transcript")])
-            # Average confidence across chunks (ignore None)
             conf_scores = [r["confidence"] for r in results if r.get("confidence") is not None]
             avg_confidence = round(sum(conf_scores) / len(conf_scores), 3) if conf_scores else None
-            logger.info(f"Combined transcript from {len(chunk_paths)} chunks (Parallel)")
             return {"transcript": full_transcript, "confidence": avg_confidence}
-            
         finally:
             cleanup_chunks(chunk_paths)
-            
+
     except Exception as e:
-        logger.error(f"Error in translate_speech_to_text: {e}")
-        raise
+        logger.warning(f"Sarvam STT failed: {e}, trying Gemini fallback")
+        return _transcribe_with_gemini(audio_file_path)
+
+
+def _transcribe_with_gemini(audio_file_path: str) -> dict:
+    """Fallback: use HuggingFace Whisper to transcribe audio."""
+    try:
+        HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+        if not HF_API_KEY:
+            raise Exception("HUGGINGFACE_API_KEY not set")
+        import requests as req
+        with open(audio_file_path, "rb") as f:
+            audio_bytes = f.read()
+        headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+        # Use Whisper large-v3 for best multilingual transcription
+        url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
+        resp = req.post(url, headers=headers, data=audio_bytes, timeout=60)
+        if resp.status_code == 503:
+            import time; time.sleep(10)
+            resp = req.post(url, headers=headers, data=audio_bytes, timeout=60)
+        if resp.status_code == 200:
+            data = resp.json()
+            transcript = data.get("text", "").strip()
+            logger.info(f"Whisper transcription: {transcript[:100]}")
+            return {"transcript": transcript, "confidence": None, "source_language": "en-IN"}
+        raise Exception(f"Whisper API {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        logger.error(f"Whisper transcription failed: {e}")
+        raise Exception(f"Transcription failed: {e}")
 
 
 def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
@@ -82,17 +104,16 @@ def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
     if response.status_code == 200:
         body = response.json()
         transcript = body.get("transcript", "")
-        # Sarvam may return confidence at top level or inside word-level data
         confidence = body.get("confidence", None)
         if confidence is None:
-            # Try to derive from word-level confidences if present
             words = body.get("words", [])
             if words:
                 scores = [w.get("confidence", 1.0) for w in words if "confidence" in w]
                 confidence = round(sum(scores) / len(scores), 3) if scores else None
         return {"transcript": transcript, "confidence": confidence}
     else:
-        raise Exception(f"Sarvam API Error: {response.status_code} - {response.text}")
+        logger.error(f"Sarvam STT error {response.status_code}: {response.text}")
+        raise Exception(f"Sarvam STT {response.status_code}: {response.text[:200]}")
 
 def translate_text(text: str, source_language: str, target_language: str) -> str:
     """
@@ -140,9 +161,9 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
                 store_translation(text, target_language, result)
                 return result
             else:
-                logger.warning(f"Sarvam failed ({response.status_code}), falling back to HuggingFace")
+                logger.warning(f"Sarvam failed ({response.status_code}: {response.text[:200]}), falling back to Gemini")
         except Exception as e:
-            logger.warning(f"Sarvam error: {e}, falling back to HuggingFace")
+            logger.warning(f"Sarvam error: {e}, falling back to Gemini")
 
     # ── Fallback: HuggingFace ─────────────────────────────────────────────
     try:
@@ -153,4 +174,4 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
         return result
     except Exception as e:
         logger.error(f"HuggingFace fallback also failed: {e}")
-        raise Exception(f"Translation failed: both Sarvam and HuggingFace unavailable. {e}")
+        raise Exception(f"Translation failed: {e}")

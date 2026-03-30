@@ -23,6 +23,8 @@ import Dictionary from './pages/Dictionary';
 import Analytics from './pages/Analytics';
 import ShareView from './pages/ShareView';
 import VisionTranslate from './pages/VisionTranslate';
+import VideoTranslate from './pages/VideoTranslate';
+import VideoHistory from './pages/VideoHistory';
 import AppHome from './pages/AppHome';
 import WidgetSetup from './pages/WidgetSetup';
 import { useApp } from './context/AppContext';
@@ -136,6 +138,8 @@ function AppShell() {
           <Route path="/app/continuous" element={<RequireSetup><ContinuousListening /></RequireSetup>} />
           <Route path="/app/english-to-native" element={<RequireSetup><EnglishToNativeView /></RequireSetup>} />
           <Route path="/app/vision" element={<RequireSetup><VisionTranslate /></RequireSetup>} />
+          <Route path="/app/video" element={<RequireSetup><VideoTranslate /></RequireSetup>} />
+          <Route path="/app/video-history" element={<RequireSetup><VideoHistory /></RequireSetup>} />
           <Route path="/app/history" element={<RequireSetup><History /></RequireSetup>} />
           <Route path="/app/templates" element={<RequireSetup><Templates /></RequireSetup>} />
           <Route path="/app/dictionary" element={<RequireSetup><Dictionary /></RequireSetup>} />

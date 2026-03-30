@@ -1,9 +1,10 @@
 import os
 import requests
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 logger = logging.getLogger(__name__)
 
 HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
