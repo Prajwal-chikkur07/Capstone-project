@@ -6,66 +6,65 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: transparent;
       overflow: hidden;
       padding: 10px;
-      width: 520px;
+      width: 400px;
     }
 
-    .overlay {
+    .card {
       background: #ffffff;
-      border: 1px solid rgba(0,0,0,0.08);
-      border-radius: 20px;
-      padding: 14px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.16), 0 4px 16px rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.06);
+      overflow: hidden;
     }
 
-    /* ── Top bar ── */
-    .topbar {
+    /* ── Header ── */
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid #f3f4f6;
       -webkit-app-region: drag;
       cursor: grab;
+      background: #fafafa;
     }
-    .topbar:active { cursor: grabbing; }
-    .topbar-right { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
+    .header:active { cursor: grabbing; }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-right { display: flex; align-items: center; gap: 6px; -webkit-app-region: no-drag; }
 
-    .brand {
+    .logo-dot {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: #111827;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-dot.rec { background: #ef4444; animation: recGlow 1s ease-in-out infinite; }
+    @keyframes recGlow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+
+    .header-title { font-size: 13px; font-weight: 700; color: #111827; }
+    .header-sub   { font-size: 10px; color: #9ca3af; font-weight: 500; margin-top: 1px; }
+
+    /* ── Selectors row ── */
+    .sel-row {
       display: flex;
       align-items: center;
-      gap: 7px;
-    }
-    .brand-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #111827;
-    }
-    .brand-dot.recording {
-      background: #ef4444;
-      box-shadow: 0 0 6px rgba(239,68,68,0.6);
-      animation: recPulse 1s ease-in-out infinite;
-    }
-    .brand-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #111827;
-      letter-spacing: -0.01em;
-    }
-    .brand-sub {
-      font-size: 10px;
-      color: #9ca3af;
-      font-weight: 500;
+      gap: 6px;
+      -webkit-app-region: no-drag;
     }
 
-    .lang-select {
-      background: #f9fafb;
+    select.pill {
+      appearance: none;
+      background: #f3f4f6;
       border: 1px solid #e5e7eb;
-      border-radius: 10px;
+      border-radius: 8px;
       color: #374151;
       font-size: 11px;
       font-weight: 600;
@@ -73,160 +72,114 @@
       outline: none;
       cursor: pointer;
       font-family: inherit;
-      appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 6px center;
       transition: border-color 0.15s;
     }
-    .lang-select:focus { border-color: #111827; }
+    select.pill:focus { border-color: #111827; background-color: #fff; }
 
     .close-btn {
       width: 26px; height: 26px;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border-radius: 7px;
       background: #f9fafb;
       color: #9ca3af;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       transition: all 0.12s;
     }
     .close-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
 
-    /* ── Mic section ── */
-    .mic-section {
+    /* ── Body ── */
+    .body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Mic area ── */
+    .mic-area {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      padding: 8px 0 4px;
     }
 
     .mic-btn {
-      width: 56px; height: 56px;
+      width: 60px; height: 60px;
       border-radius: 50%;
       border: none;
       background: #111827;
       color: #fff;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
+      box-shadow: 0 4px 16px rgba(17,24,39,0.3);
       transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 4px 14px rgba(17,24,39,0.25);
     }
-    .mic-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(17,24,39,0.35); }
-    .mic-btn.recording {
+    .mic-btn:hover { transform: scale(1.07); box-shadow: 0 6px 22px rgba(17,24,39,0.4); }
+    .mic-btn.rec {
       background: #ef4444;
-      box-shadow: 0 4px 18px rgba(239,68,68,0.45);
-      animation: micPulse 1s ease-in-out infinite;
+      box-shadow: 0 4px 16px rgba(239,68,68,0.4);
+      animation: micPulse 1.2s ease-in-out infinite;
     }
     @keyframes micPulse {
-      0%,100% { box-shadow: 0 4px 18px rgba(239,68,68,0.45); }
-      50% { box-shadow: 0 4px 28px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.1); }
-    }
-    @keyframes recPulse {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      0%,100% { box-shadow: 0 4px 16px rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 4px 24px rgba(239,68,68,0.7), 0 0 0 8px rgba(239,68,68,0.08); }
     }
 
-    .mic-hint {
-      font-size: 11px;
-      font-weight: 500;
-      color: #9ca3af;
-      text-align: center;
-    }
+    .mic-label { font-size: 11px; color: #9ca3af; font-weight: 500; }
 
     /* ── Recording bar ── */
     .rec-bar {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 10px 12px;
       width: 100%;
     }
     .rec-dot {
-      width: 8px; height: 8px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       background: #ef4444;
-      box-shadow: 0 0 6px rgba(239,68,68,0.6);
       flex-shrink: 0;
-      animation: recPulse 1s ease-in-out infinite;
+      animation: blink 1s ease-in-out infinite;
     }
-    .rec-timer {
-      font-size: 12px;
-      font-family: monospace;
-      font-weight: 700;
-      color: #374151;
-      flex-shrink: 0;
-    }
-    .wave-wrap {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      flex: 1;
-      height: 28px;
-    }
-    .wave-bar {
-      width: 2px;
-      height: 3px;
-      border-radius: 2px;
-      background: #111827;
-      transition: height 0.07s;
-    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .rec-timer { font-size: 12px; font-family: monospace; font-weight: 700; color: #dc2626; flex-shrink: 0; }
+    .wave-wrap { display: flex; align-items: center; gap: 2px; flex: 1; height: 24px; }
+    .wave-bar { width: 2px; height: 3px; border-radius: 2px; background: #ef4444; opacity: 0.6; transition: height 0.07s; }
     .stop-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: #ef4444;
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 7px 14px;
-      cursor: pointer;
-      flex-shrink: 0;
-      font-family: inherit;
+      background: #ef4444; border: none; border-radius: 8px;
+      color: #fff; font-size: 11px; font-weight: 700;
+      padding: 6px 12px; cursor: pointer; flex-shrink: 0;
+      font-family: inherit; display: flex; align-items: center; gap: 5px;
     }
     .stop-btn:hover { background: #dc2626; }
 
-    /* ── Output block ── */
-    .output-block {
+    /* ── Output ── */
+    .output-box {
       background: #f9fafb;
       border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 12px;
+      border-radius: 12px;
+      padding: 11px 12px;
+      min-height: 90px;
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-
-    .output-header {
+    .output-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-
-    .output-label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .output-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-    .output-title {
-      font-size: 10px;
-      font-weight: 700;
+    .output-tag {
+      font-size: 9px;
+      font-weight: 800;
       color: #9ca3af;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
+    .output-tag.toned { color: #7c3aed; }
 
     .copy-btn {
       border: 1px solid #e5e7eb;
@@ -234,143 +187,100 @@
       color: #6b7280;
       font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 8px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: all 0.12s;
       font-family: inherit;
+      transition: all 0.12s;
     }
     .copy-btn:hover { background: #f3f4f6; color: #111827; }
-    .copy-btn.copied { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
+    .copy-btn.ok { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
 
-    textarea.output-ta {
+    textarea.out-ta {
       background: transparent;
       border: none;
       outline: none;
       color: #111827;
       font-family: inherit;
       font-size: 13px;
-      line-height: 1.65;
+      line-height: 1.6;
       resize: none;
-      min-height: 80px;
+      min-height: 60px;
       width: 100%;
     }
-    textarea.output-ta::placeholder { color: #d1d5db; }
+    textarea.out-ta::placeholder { color: #d1d5db; }
 
-    .output-placeholder {
-      font-size: 13px;
-      color: #d1d5db;
-      font-style: italic;
-      min-height: 80px;
-      display: flex;
-      align-items: center;
+    .out-placeholder { font-size: 13px; color: #d1d5db; font-style: italic; min-height: 60px; display: flex; align-items: center; }
+
+    /* ── Loading ── */
+    .loading-row {
+      display: flex; align-items: center; gap: 8px;
+      color: #9ca3af; font-size: 12px; min-height: 60px;
+    }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #111827;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Domain badge ── */
+    .domain-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      border-radius: 6px; padding: 3px 8px;
+      font-size: 10px; font-weight: 700; color: #059669;
     }
 
-    /* ── Tone chips ── */
-    .tone-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      padding-top: 8px;
-      border-top: 1px solid #f3f4f6;
-    }
-
-    .tone-chip {
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      border-radius: 20px;
-      color: #6b7280;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 11px;
-      cursor: pointer;
-      transition: all 0.12s;
-      font-family: inherit;
-    }
-    .tone-chip:hover { background: #f3f4f6; color: #111827; border-color: #d1d5db; }
-    .tone-chip.active {
+    /* ── Send button ── */
+    .send-btn {
+      width: 100%;
+      border: none;
+      border-radius: 11px;
       background: #111827;
-      border-color: #111827;
       color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 11px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      font-family: inherit;
+      transition: opacity 0.15s, transform 0.12s;
     }
+    .send-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .send-btn.green { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 14px rgba(16,185,129,0.25); }
 
-    .custom-input {
+    /* ── Custom tone input ── */
+    .custom-row { display: flex; gap: 6px; }
+    .custom-in {
+      flex: 1;
       background: #fff;
       border: 1px solid #e5e7eb;
-      border-radius: 10px;
+      border-radius: 9px;
       color: #111827;
       font-size: 12px;
       font-family: inherit;
       padding: 7px 10px;
       outline: none;
-      width: 100%;
       transition: border-color 0.15s;
     }
-    .custom-input:focus { border-color: #111827; }
-
-    /* ── Send button ── */
-    .send-btn {
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 10px 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      transition: opacity 0.15s, transform 0.15s;
-      font-family: inherit;
-      width: 100%;
-      background: #111827;
+    .custom-in:focus { border-color: #111827; }
+    .apply-btn {
+      background: #111827; border: none; border-radius: 9px;
+      color: #fff; font-size: 11px; font-weight: 700;
+      padding: 7px 14px; cursor: pointer; font-family: inherit;
+      white-space: nowrap;
     }
-    .send-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .send-btn.detected {
-      background: linear-gradient(135deg, #059669, #10b981);
-      box-shadow: 0 4px 14px rgba(16,185,129,0.25);
-    }
-
-    /* ── Domain badge ── */
-    .domain-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
-      border-radius: 8px;
-      padding: 3px 8px;
-      font-size: 10px;
-      font-weight: 700;
-      color: #059669;
-    }
-
-    .spinner {
-      width: 11px; height: 11px;
-      border: 2px solid rgba(17,24,39,0.15);
-      border-top-color: #111827;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    .spinner.white {
-      border-color: rgba(255,255,255,0.3);
-      border-top-color: #fff;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .drag-hint {
-      font-size: 9px;
-      color: #d1d5db;
-      letter-spacing: 0.05em;
-      -webkit-app-region: drag;
-    }
+    .apply-btn:hover { background: #1f2937; }
   </style>
 </head>
 <body>
-  <div class="overlay" id="overlay">
-    <!-- rendered by overlay.js -->
+  <div class="card">
+    <div id="root"></div>
   </div>
   <script src="overlay.js"></script>
 </body>
