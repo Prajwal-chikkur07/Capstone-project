@@ -111,8 +111,7 @@ class LinkedInRequest(BaseModel):
 async def handle_audio_translation(file: UploadFile = File(...)):
     """
     Receives audio in local language, translates to English using Sarvam.
-    Supports larger files and efficient chunked streaming.
-    Supported formats: webm, wav, mp3, ogg, flac, m4a
+    Also returns diarized_transcript if available (speaker segments).
     """
     logger = logging.getLogger(__name__)
     original_filename = file.filename or "recording.webm"
@@ -185,6 +184,108 @@ async def handle_audio_translation(file: UploadFile = File(...)):
         # Clean up temp file
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+@app.post("/api/diarize-audio")
+async def handle_diarize_audio(file: UploadFile = File(...)):
+    """
+    Transcribe audio with speaker diarization.
+    Returns segments: [{speaker, text, emotion, voice}]
+    """
+    logger = logging.getLogger(__name__)
+    original_filename = file.filename or "recording.webm"
+    content_type = file.content_type or "audio/webm"
+
+    os.makedirs("temp_audio", exist_ok=True)
+    temp_path = f"temp_audio/diarize_{original_filename}"
+
+    try:
+        async with aiofiles.open(temp_path, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                await f.write(chunk)
+
+        from services.sarvam_client import _process_single_audio, SARVAM_API_KEY
+        import requests as req
+
+        # Call Sarvam with diarization enabled
+        headers = {"api-subscription-key": SARVAM_API_KEY}
+        with open(temp_path, "rb") as f:
+            files = {"file": (original_filename, f, content_type)}
+            data = {"model": "saaras:v2.5", "with_diarization": "true"}
+            resp = req.post("https://api.sarvam.ai/speech-to-text-translate",
+                           headers=headers, files=files, data=data, timeout=60)
+
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=f"Sarvam error: {resp.text[:200]}")
+
+        sarvam_data = resp.json()
+
+        from services.diarization_service import parse_diarized_transcript, detect_emotions_for_segments, assign_speaker_voices
+        segments = parse_diarized_transcript(sarvam_data)
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        segments = detect_emotions_for_segments(segments, gemini_key)
+        segments = assign_speaker_voices(segments)
+
+        full_transcript = " ".join(s["text"] for s in segments)
+
+        return {
+            "transcript": full_transcript,
+            "segments": segments,
+            "speaker_count": len(set(s["speaker"] for s in segments)),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"diarize-audio error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@app.post("/api/synthesize-conversation")
+async def handle_synthesize_conversation(request: dict):
+    """
+    Generate TTS audio for each speaker segment in the target language.
+    Returns base64 audio per segment.
+    """
+    import base64
+    segments = request.get("segments", [])
+    target_language = request.get("target_language", "hi-IN")
+    results = []
+
+    from services.tts_service import text_to_speech_sarvam, text_to_speech_gtts, get_gtts_language_code
+
+    for seg in segments:
+        translated_text = seg.get("translated_text") or seg.get("text", "")
+        emotion = seg.get("emotion", "neutral")
+        voice_info = seg.get("voice", {})
+        speaker = voice_info.get("sarvam", "anushka")
+        gender = voice_info.get("gtts_gender", "female")
+
+        audio_path = None
+        try:
+            audio_path = text_to_speech_sarvam(translated_text, target_language, speaker)
+        except Exception:
+            try:
+                gtts_lang = get_gtts_language_code(target_language)
+                audio_path = text_to_speech_gtts(translated_text, gtts_lang, emotion=emotion, gender=gender)
+            except Exception as e:
+                results.append({"speaker": seg.get("speaker"), "error": str(e)})
+                continue
+
+        if audio_path and os.path.exists(audio_path):
+            with open(audio_path, "rb") as f:
+                audio_b64 = base64.b64encode(f.read()).decode()
+            os.remove(audio_path)
+            results.append({
+                "speaker": seg.get("speaker"),
+                "audio": audio_b64,
+                "emotion": emotion,
+            })
+
+    return {"segments": results}
+
 
 @app.post("/api/rewrite-tone")
 async def handle_tone_rewrite(request: RewriteRequest):

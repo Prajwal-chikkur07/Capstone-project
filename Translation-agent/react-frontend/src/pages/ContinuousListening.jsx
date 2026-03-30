@@ -10,7 +10,7 @@ import {
   Mail, Slack, Linkedin, MessageSquare, X, Send, ExternalLink,
   AlignLeft, ClipboardList, HelpCircle, Link, ChevronUp,
   ChevronDown as ChevronDownIcon, ArrowLeftRight, Globe2,
-  BarChart2, BookOpen, Smile, Frown, Minus
+  BarChart2, BookOpen, Smile, Frown, Minus, Users, Play, Pause
 } from 'lucide-react';
 
 const SILENCE_THRESHOLD = 10;
@@ -160,6 +160,17 @@ export default function ContinuousListening() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showMultiLang, setShowMultiLang] = useState(false);
 
+  // Speaker diarization state
+  const [segments, setSegments] = useState([]);
+  const [isDiarizing, setIsDiarizing] = useState(false);
+  const [diarizeError, setDiarizeError] = useState('');
+  const [playLang, setPlayLang] = useState(state.selectedLanguage || 'hi-IN');
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [synthSegments, setSynthSegments] = useState([]);
+  const [playingIdx, setPlayingIdx] = useState(null);
+  const audioRef = useRef(null);
+  const recordedBlobRef = useRef(null);
+
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
@@ -219,6 +230,7 @@ export default function ContinuousListening() {
         setAmplitude(0);
         setIsListening(false);
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        recordedBlobRef.current = blob; // save for diarization
         if (blob.size < 1000) return;
         setIsProcessing(true);
         try {
@@ -355,6 +367,64 @@ export default function ContinuousListening() {
     setSelectedTone(null); setSentiment(null); setSummary('');
     setMeetingNotes(null); setQaAnswer(''); setShareLink('');
     setBackTranslation(null); setReadability(null); setToneConfidence(null); setMultiResults({});
+    setSegments([]); setSynthSegments([]); setPlayingIdx(null); setDiarizeError('');
+    recordedBlobRef.current = null;
+  };
+
+  // ── Diarization handlers ──────────────────────────────────────────────────
+  const handleDiarize = async () => {
+    if (!recordedBlobRef.current) return;
+    setIsDiarizing(true); setDiarizeError(''); setSegments([]); setSynthSegments([]);
+    try {
+      const result = await api.diarizeAudio(recordedBlobRef.current);
+      setSegments(result.segments || []);
+    } catch (e) {
+      setDiarizeError(e.response?.data?.detail || 'Speaker detection failed');
+    } finally {
+      setIsDiarizing(false);
+    }
+  };
+
+  const handleSynthesize = async () => {
+    if (!segments.length) return;
+    setIsSynthesizing(true); setSynthSegments([]);
+    try {
+      // Translate each segment first
+      const translated = await Promise.all(segments.map(async (seg) => {
+        try {
+          const t = await api.translateText(seg.text, playLang);
+          return { ...seg, translated_text: t };
+        } catch {
+          return { ...seg, translated_text: seg.text };
+        }
+      }));
+      const result = await api.synthesizeConversation({ segments: translated, target_language: playLang });
+      setSynthSegments(result.segments || []);
+    } catch (e) {
+      setDiarizeError(e.response?.data?.detail || 'Voice synthesis failed');
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  const playSegment = (idx) => {
+    const seg = synthSegments[idx];
+    if (!seg?.audio) return;
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    const audio = new Audio(`data:audio/wav;base64,${seg.audio}`);
+    audioRef.current = audio;
+    setPlayingIdx(idx);
+    audio.onended = () => {
+      setPlayingIdx(null);
+      // Auto-play next segment
+      if (idx + 1 < synthSegments.length) playSegment(idx + 1);
+    };
+    audio.play();
+  };
+
+  const stopPlayback = () => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setPlayingIdx(null);
   };
 
   const wc = transcript && transcript.trim() ? transcript.trim().split(/\s+/).length : 0;
@@ -606,6 +676,102 @@ export default function ContinuousListening() {
       </div>
 
       {activeChannel && <ChannelModal channel={activeChannel} text={shareText} onClose={() => setActiveChannel(null)} />}
+
+      {/* Speaker Diarization Panel */}
+      {transcript && (
+        <div className="px-4 md:px-10 pb-10 max-w-3xl w-full mx-auto">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-400" />
+                <p className="text-[14px] font-bold text-gray-900">Speaker Detection</p>
+              </div>
+              <button onClick={handleDiarize} disabled={isDiarizing || !recordedBlobRef.current}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
+                {isDiarizing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Detecting…</> : <><Users className="w-3.5 h-3.5" />Detect Speakers</>}
+              </button>
+            </div>
+
+            {diarizeError && (
+              <p className="text-[12px] text-red-500 mb-3">{diarizeError}</p>
+            )}
+
+            {segments.length > 0 && (
+              <>
+                {/* Speaker segments */}
+                <div className="space-y-2 mb-4">
+                  {segments.map((seg, i) => {
+                    const colors = ['bg-blue-50 border-blue-100 text-blue-700', 'bg-purple-50 border-purple-100 text-purple-700', 'bg-green-50 border-green-100 text-green-700', 'bg-amber-50 border-amber-100 text-amber-700'];
+                    const color = colors[i % colors.length];
+                    return (
+                      <div key={i} className={`rounded-xl border px-4 py-3 ${color.split(' ').slice(0,2).join(' ')}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[11px] font-bold uppercase tracking-widest ${color.split(' ')[2]}`}>{seg.speaker}</span>
+                          <span className="text-[10px] text-gray-400 capitalize">{seg.emotion}</span>
+                        </div>
+                        <p className="text-[13px] text-gray-700 leading-relaxed">{seg.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Playback controls */}
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Play in target language</p>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative flex-1">
+                      <select value={playLang} onChange={e => setPlayLang(e.target.value)}
+                        className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none pr-8">
+                        {Object.entries({ Hindi: 'hi-IN', Kannada: 'kn-IN', Tamil: 'ta-IN', Telugu: 'te-IN', Malayalam: 'ml-IN', Bengali: 'bn-IN', English: 'en-IN' }).map(([n, c]) => (
+                          <option key={c} value={c}>{n}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                    <button onClick={handleSynthesize} disabled={isSynthesizing}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
+                      {isSynthesizing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating…</> : <><Volume2 className="w-3.5 h-3.5" />Generate voices</>}
+                    </button>
+                  </div>
+
+                  {synthSegments.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 transition-all">
+                          {playingIdx !== null ? <><Square className="w-3.5 h-3.5 fill-white" />Stop</> : <><Play className="w-3.5 h-3.5 fill-white" />Play all</>}
+                        </button>
+                        <span className="text-[11px] text-gray-400">{synthSegments.length} speaker segments</span>
+                      </div>
+                      {synthSegments.map((seg, i) => (
+                        <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${playingIdx === i ? 'bg-gray-900 border-gray-900' : 'bg-gray-50 border-gray-100'}`}>
+                          <button onClick={() => playingIdx === i ? stopPlayback() : playSegment(i)}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${playingIdx === i ? 'bg-white/20' : 'bg-white border border-gray-200 hover:bg-gray-100'}`}>
+                            {playingIdx === i
+                              ? <Pause className="w-3 h-3 text-white fill-white" />
+                              : <Play className="w-3 h-3 text-gray-600 fill-gray-600 ml-0.5" />}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${playingIdx === i ? 'text-white/60' : 'text-gray-400'}`}>{seg.speaker}</p>
+                            <p className={`text-[12px] truncate ${playingIdx === i ? 'text-white' : 'text-gray-600'}`}>
+                              {segments[i]?.text?.slice(0, 60)}{segments[i]?.text?.length > 60 ? '…' : ''}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] capitalize shrink-0 ${playingIdx === i ? 'text-white/50' : 'text-gray-400'}`}>{seg.emotion}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {!segments.length && !isDiarizing && (
+              <p className="text-[12px] text-gray-400">Record a conversation, then click "Detect Speakers" to identify who said what.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -322,3 +322,21 @@ export const getVideoStatus = async (videoId) => {
   const { data } = await API.get(`/video/status/${videoId}`);
   return data;
 };
+
+// ── Diarization ───────────────────────────────────────────────────────────────
+export const diarizeAudio = async (blob, filename = 'recording.webm') => {
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+  const { data } = await API.post('/diarize-audio', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  });
+  return data; // { transcript, segments: [{speaker, text, emotion, voice}], speaker_count }
+};
+
+export const synthesizeConversation = async ({ segments, target_language }) => {
+  const { data } = await API.post('/synthesize-conversation', { segments, target_language }, {
+    timeout: 180000,
+  });
+  return data; // { segments: [{speaker, audio (base64), emotion}] }
+};
