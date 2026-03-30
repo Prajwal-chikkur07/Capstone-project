@@ -188,7 +188,7 @@ async def handle_audio_translation(file: UploadFile = File(...)):
 @app.post("/api/diarize-audio")
 async def handle_diarize_audio(file: UploadFile = File(...)):
     """
-    Transcribe audio with speaker diarization.
+    Transcribe audio with speaker diarization using Gemini.
     Returns segments: [{speaker, text, emotion, voice}]
     """
     logger = logging.getLogger(__name__)
@@ -203,26 +203,54 @@ async def handle_diarize_audio(file: UploadFile = File(...)):
             while chunk := await file.read(1024 * 1024):
                 await f.write(chunk)
 
-        from services.sarvam_client import _process_single_audio, SARVAM_API_KEY
-        import requests as req
-
-        # Call Sarvam with diarization enabled
-        headers = {"api-subscription-key": SARVAM_API_KEY}
-        with open(temp_path, "rb") as f:
-            files = {"file": (original_filename, f, content_type)}
-            data = {"model": "saaras:v2.5", "with_diarization": "true"}
-            resp = req.post("https://api.sarvam.ai/speech-to-text-translate",
-                           headers=headers, files=files, data=data, timeout=60)
-
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail=f"Sarvam error: {resp.text[:200]}")
-
-        sarvam_data = resp.json()
-
-        from services.diarization_service import parse_diarized_transcript, detect_emotions_for_segments, assign_speaker_voices
-        segments = parse_diarized_transcript(sarvam_data)
         gemini_key = os.getenv("GEMINI_API_KEY")
-        segments = detect_emotions_for_segments(segments, gemini_key)
+        if not gemini_key:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+
+        import google.generativeai as genai
+        import mimetypes, base64
+
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-2.0-flash")
+
+        with open(temp_path, "rb") as f:
+            audio_bytes = f.read()
+
+        mime = mimetypes.guess_type(temp_path)[0] or content_type
+
+        prompt = """Transcribe this audio and identify different speakers.
+Format your response as JSON array only, no other text:
+[
+  {"speaker": "Person 1", "text": "what they said", "emotion": "neutral"},
+  {"speaker": "Person 2", "text": "what they said", "emotion": "happy"}
+]
+Emotions must be one of: happy, neutral, serious, sad, angry, excited.
+If only one speaker, still use the JSON format with "Person 1"."""
+
+        response = model.generate_content([
+            prompt,
+            {"mime_type": mime, "data": audio_bytes}
+        ])
+
+        import json, re
+        raw = response.text.strip()
+        # Extract JSON array from response
+        match = re.search(r'\[.*\]', raw, re.DOTALL)
+        if not match:
+            raise ValueError(f"No JSON array in response: {raw[:200]}")
+
+        segments_raw = json.loads(match.group())
+
+        from services.diarization_service import assign_speaker_voices
+        segments = [
+            {
+                "speaker": s.get("speaker", "Person 1"),
+                "text": s.get("text", ""),
+                "emotion": s.get("emotion", "neutral"),
+                "start": 0, "end": 0,
+            }
+            for s in segments_raw if s.get("text", "").strip()
+        ]
         segments = assign_speaker_voices(segments)
 
         full_transcript = " ".join(s["text"] for s in segments)
