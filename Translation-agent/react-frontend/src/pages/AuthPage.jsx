@@ -17,23 +17,23 @@ export default function AuthPage() {
   useEffect(() => { consentRef.current = consent; }, [consent]);
 
   useEffect(() => {
-    if (!isSignedIn || !clerkUser) return;
-    if (syncedRef.current) return;
-
-    if (!consentRef.current) {
-      setShowConsentError(true);
-      signOut();
-      return;
+    if (isSignedIn && clerkUser && !syncedRef.current) {
+      // Block login if consent not given — sign them out and show error
+      if (!consentRef.current) {
+        syncedRef.current = false;
+        setShowConsentError(true);
+        signOut(); // kick them back out
+        return;
+      }
+      syncedRef.current = true;
+      syncUserToBackend();
     }
-
-    syncedRef.current = true;
-    syncUserToBackend();
   }, [isSignedIn, clerkUser]);
 
   const syncUserToBackend = async () => {
     try {
       const token = await getToken();
-      if (!token) throw new Error('No token');
+      if (!token) throw new Error('Failed to get Clerk authentication token');
       api.setAuthToken(token);
       const response = await api.syncUser({
         id: clerkUser.id,
@@ -43,8 +43,16 @@ export default function AuthPage() {
         avatar_url: clerkUser.imageUrl,
         consent_given: true,
       });
-      login({ id: response.id, email: response.email, firstName: response.first_name, lastName: response.last_name, consentGiven: true });
-    } catch {
+      login({
+        id: response.id,
+        email: response.email,
+        firstName: response.first_name,
+        lastName: response.last_name,
+        consentGiven: true,
+      });
+      navigate('/app');
+    } catch (error) {
+      console.error('Failed to sync user:', error);
       login({
         id: clerkUser.id,
         email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress,
@@ -52,8 +60,8 @@ export default function AuthPage() {
         lastName: clerkUser.lastName,
         consentGiven: true,
       });
+      navigate('/app');
     }
-    navigate('/app');
   };
 
   return (
@@ -90,11 +98,13 @@ export default function AuthPage() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-4 md:px-6 py-12">
         <div className="w-full max-w-[400px]">
+          {/* Logo (mobile) */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
             <img src="/seedlinglabs-logo.png" alt="Seedlinglabs" className="w-8 h-8 rounded-full object-cover" />
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
           </div>
 
+          {/* Clerk Sign-In */}
           <SignIn
             appearance={{
               elements: {
@@ -106,11 +116,16 @@ export default function AuthPage() {
                 formFieldInput: "rounded-xl border-gray-200 focus:border-[#c9a84c]",
                 footerActionLink: "text-[#8a5c2e] hover:underline",
               },
-              variables: { colorPrimary: "#1a0f00", colorInputBackground: "#ffffff" },
+              variables: {
+                colorPrimary: "#1a0f00",
+                colorInputBackground: "#ffffff",
+              },
             }}
+            redirectUrl="/app"
+            signUpUrl="/auth?mode=signup"
           />
 
-          {/* GDPR Consent */}
+          {/* GDPR Consent — below the Continue button */}
           <div className={`mt-3 p-4 rounded-2xl border transition-all ${
             showConsentError ? 'border-red-200 bg-red-50' : consent ? 'border-green-100 bg-green-50' : 'border-gray-200 bg-white'
           }`}>
@@ -132,16 +147,10 @@ export default function AuthPage() {
             </div>
             {showConsentError && (
               <p className="text-[12px] text-red-600 font-semibold mt-2 ml-7">
-                ⚠ You must agree to continue. Please check the box and sign in again.
+                ⚠ You must agree to the privacy policy to continue.
               </p>
             )}
           </div>
-
-          {!consent && (
-            <p className="text-[11px] text-gray-400 text-center mt-2">
-              Please accept the privacy policy to sign in.
-            </p>
-          )}
         </div>
       </div>
     </div>
