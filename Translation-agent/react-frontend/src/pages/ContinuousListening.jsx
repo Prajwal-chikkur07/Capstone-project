@@ -358,12 +358,13 @@ export default function ContinuousListening() {
 
       {/* ── Bottom controls ── */}
       <div className="shrink-0 bg-white border-t border-gray-100 px-5 py-4">
-        <div className="flex items-end justify-center gap-[2px] h-7 mb-4">
-          {bars.map((h, i) => (
-            <div key={i} className={`w-[3px] rounded-full transition-all duration-75 ${isActive ? 'bg-gray-900' : 'bg-gray-200'}`} style={{ height: `${h}px` }} />
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-3">
+        {isActive && (
+          <div className="flex items-end justify-center gap-[2px] h-7 mb-4">
+            {bars.map((h, i) => (
+              <div key={i} className="w-[3px] rounded-full bg-gray-900 transition-all duration-75" style={{ height: `${h}px` }} />
+            ))}
+          </div>
+        )}
           {isIdle && (
             <button onClick={handleStart}
               className="flex items-center gap-2.5 bg-gray-900 hover:bg-gray-700 text-white px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all active:scale-95 shadow-sm">
