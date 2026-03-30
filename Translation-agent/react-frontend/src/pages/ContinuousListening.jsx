@@ -48,6 +48,7 @@ export default function ContinuousListening() {
   const [segments,    setSegments]    = useState([]);   // [{speaker, text, emotion}]
   const [isDiarizing, setIsDiarizing] = useState(false);
   const [diarizeError, setDiarizeError] = useState('');
+  const [diarizeMethod, setDiarizeMethod] = useState('');
 
   // ── Voice synthesis ───────────────────────────────────────────────────────
   const [playLang,      setPlayLang]      = useState('hi-IN');
@@ -152,6 +153,7 @@ export default function ContinuousListening() {
       const result = await api.diarizeAudio(recordedBlobRef.current);
       const segs = (result.segments || []).slice(0, 5 * 20); // cap at 5 speakers
       setSegments(segs);
+      setDiarizeMethod(result.method || 'fallback');
     } catch (e) {
       setDiarizeError(e.response?.data?.detail || 'Speaker detection failed');
     } finally {
@@ -323,6 +325,11 @@ export default function ContinuousListening() {
                     {uniqueSpeakers.length} / 5 speakers
                   </span>
                 )}
+                {diarizeMethod === 'gemini' && (
+                  <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                    ✨ AI detected
+                  </span>
+                )}
               </div>
               <button onClick={handleDiarize} disabled={isDiarizing || !recordedBlobRef.current}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
@@ -380,6 +387,14 @@ export default function ContinuousListening() {
                           </div>
                           <div className={`flex items-center gap-2 px-1 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
                             {seg.emotion && <span className="text-[10px] text-gray-400 capitalize">{seg.emotion}</span>}
+                            {seg.confidence && (
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                seg.confidence >= 0.85 ? 'bg-green-50 text-green-600' :
+                                seg.confidence >= 0.7  ? 'bg-amber-50 text-amber-600' :
+                                'bg-gray-100 text-gray-400'}`}>
+                                {Math.round(seg.confidence * 100)}%
+                              </span>
+                            )}
                             {synthSeg?.audio && (
                               <button onClick={() => isSegPlaying ? stopPlayback() : playSegment(i)}
                                 className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${

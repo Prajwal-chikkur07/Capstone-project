@@ -61,20 +61,27 @@ def _transcribe_with_gemini(audio_file_path: str) -> dict:
         with open(audio_file_path, "rb") as f:
             audio_bytes = f.read()
         headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-        # Use Whisper large-v3 for best multilingual transcription
-        url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
-        resp = req.post(url, headers=headers, data=audio_bytes, timeout=60)
+        resp = req.post(
+            "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+            headers=headers,
+            data=audio_bytes,
+            timeout=60,
+        )
         if resp.status_code == 503:
             import time; time.sleep(10)
-            resp = req.post(url, headers=headers, data=audio_bytes, timeout=60)
-        if resp.status_code == 200:
-            data = resp.json()
-            transcript = data.get("text", "").strip()
-            logger.info(f"Whisper transcription: {transcript[:100]}")
-            return {"transcript": transcript, "confidence": None, "source_language": "en-IN"}
-        raise Exception(f"Whisper API {resp.status_code}: {resp.text[:200]}")
+            resp = req.post(
+                "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                headers=headers,
+                data=audio_bytes,
+                timeout=60,
+            )
+        if resp.status_code != 200:
+            raise Exception(f"Whisper failed: {resp.text[:200]}")
+        transcript = resp.json().get("text", "").strip()
+        logger.info(f"Whisper transcription: {transcript[:100]}")
+        return {"transcript": transcript, "confidence": None, "source_language": "en-IN"}
     except Exception as e:
-        logger.error(f"Whisper transcription failed: {e}")
+        logger.error(f"Whisper transcription also failed: {e}")
         raise Exception(f"Transcription failed: {e}")
 
 

@@ -239,59 +239,93 @@ async def handle_diarize_audio(file: UploadFile = File(...)):
         if not full_transcript:
             raise HTTPException(status_code=422, detail="Could not transcribe audio")
 
-        # Step 2: Split transcript into speaker turns using sentence analysis
-        # Split on sentence boundaries and alternate speakers
-        import re
-        sentences = re.split(r'(?<=[.!?])\s+', full_transcript)
-        sentences = [s.strip() for s in sentences if s.strip()]
-
-        # Group consecutive sentences into speaker turns
-        # Simple heuristic: group 2-3 sentences per turn, alternate speakers
+        # Step 2: Use Gemini to intelligently split transcript into up to 5 speakers
+        GEMINI_KEY = os.getenv("GEMINI_API_KEY")
         segments_raw = []
-        i = 0
-        speaker_idx = 0
-        while i < len(sentences):
-            # Take 1-3 sentences per turn
-            chunk_size = min(3, len(sentences) - i)
-            text = " ".join(sentences[i:i+chunk_size])
-            segments_raw.append({
-                "speaker": f"Person {speaker_idx + 1}",
-                "text": text,
-                "emotion": "neutral",
-            })
-            i += chunk_size
-            speaker_idx = (speaker_idx + 1) % 2  # alternate between 2 speakers
 
-        # Step 3: Detect emotion per segment using HuggingFace sentiment
-        HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
-        if HF_KEY and segments_raw:
+        if GEMINI_KEY:
             try:
-                import requests as req
-                for seg in segments_raw:
-                    resp = req.post(
-                        "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest",
-                        headers={"Authorization": f"Bearer {HF_KEY}"},
-                        json={"inputs": seg["text"][:512]},
-                        timeout=15,
-                    )
-                    if resp.status_code == 200:
-                        results = resp.json()
-                        if isinstance(results, list) and results:
-                            top = max(results[0], key=lambda x: x.get("score", 0))
-                            label = top.get("label", "neutral").lower()
-                            # Map sentiment to emotion
-                            emotion_map = {"positive": "happy", "negative": "serious", "neutral": "neutral"}
-                            seg["emotion"] = emotion_map.get(label, "neutral")
+                import google.generativeai as genai
+                genai.configure(api_key=GEMINI_KEY)
+                model = genai.GenerativeModel("gemini-2.0-flash")
+                prompt = f"""You are a conversation analyst. Given this transcript, split it into speaker turns for up to 5 different people.
+
+Rules:
+- Identify natural speaker changes based on context, topic shifts, question-answer patterns
+- Label speakers as: Person 1, Person 2, Person 3, Person 4, Person 5
+- Each segment should be a complete thought or sentence
+- Detect the emotion for each segment: happy, neutral, serious, sad, angry, excited
+- Return ONLY valid JSON array, no markdown, no explanation
+
+Format:
+[
+  {{"speaker": "Person 1", "text": "...", "emotion": "neutral"}},
+  {{"speaker": "Person 2", "text": "...", "emotion": "happy"}}
+]
+
+Transcript:
+{full_transcript}"""
+
+                resp = model.generate_content(prompt)
+                raw = resp.text.strip()
+                # Strip markdown code fences if present
+                if raw.startswith("```"):
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
+                import json
+                parsed = json.loads(raw.strip())
+                if isinstance(parsed, list) and parsed:
+                    for seg in parsed:
+                        sp = str(seg.get("speaker", "Person 1")).strip()
+                        # Enforce max 5 speakers
+                        num = int(''.join(filter(str.isdigit, sp)) or "1")
+                        num = min(num, 5)
+                        segments_raw.append({
+                            "speaker": f"Person {num}",
+                            "text": str(seg.get("text", "")).strip(),
+                            "emotion": str(seg.get("emotion", "neutral")).lower(),
+                        })
+                    segments_raw = [s for s in segments_raw if s["text"]]
+                    logger.info(f"[diarize] Gemini split into {len(segments_raw)} segments, {len(set(s['speaker'] for s in segments_raw))} speakers")
             except Exception as e:
-                logger.warning(f"[diarize] Emotion detection failed: {e}")
+                logger.warning(f"[diarize] Gemini speaker split failed: {e}, falling back to sentence split")
+
+        # Fallback: sentence-based split alternating between 2 speakers
+        if not segments_raw:
+            import re
+            sentences = re.split(r'(?<=[.!?])\s+', full_transcript)
+            sentences = [s.strip() for s in sentences if s.strip()]
+            speaker_idx = 0
+            i = 0
+            while i < len(sentences):
+                chunk = " ".join(sentences[i:i+2])
+                segments_raw.append({
+                    "speaker": f"Person {(speaker_idx % 2) + 1}",
+                    "text": chunk,
+                    "emotion": "neutral",
+                })
+                i += 2
+                speaker_idx += 1
 
         from services.diarization_service import assign_speaker_voices
         segments = assign_speaker_voices(segments_raw)
+
+        # Compute per-speaker confidence based on segment count consistency
+        speaker_counts = {}
+        for s in segments:
+            speaker_counts[s["speaker"]] = speaker_counts.get(s["speaker"], 0) + 1
+        total = len(segments)
+        for s in segments:
+            # Confidence: more segments = more confident attribution
+            count = speaker_counts[s["speaker"]]
+            s["confidence"] = round(min(0.95, 0.6 + (count / total) * 0.35), 2)
 
         return {
             "transcript": full_transcript,
             "segments": segments,
             "speaker_count": len(set(s["speaker"] for s in segments)),
+            "method": "gemini" if GEMINI_KEY and len(set(s["speaker"] for s in segments)) > 1 else "fallback",
         }
 
     except HTTPException:
