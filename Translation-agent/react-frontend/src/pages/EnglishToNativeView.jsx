@@ -60,8 +60,14 @@ function SendModal({ channel, text, onClose }) {
     setStatus('sending');
     try {
       if (channel.id === 'email') {
-        const subject = encodeURIComponent(creds.emailSubject || 'Message from TransUI');
-        window.open(`mailto:${toEmail.trim()}?subject=${subject}&body=${encodeURIComponent(text)}`, '_blank');
+        let subject = creds.emailSubject || 'Message from SeedlingSpeaks';
+        let body = text;
+        const subjectMatch = text.match(/^Subject:\s*(.+?)[\r\n]/i);
+        if (subjectMatch) {
+          subject = subjectMatch[1].trim();
+          body = text.replace(/^Subject:\s*.+?[\r\n]+/i, '').trim();
+        }
+        window.open(`mailto:${toEmail.trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
         setStatus('ok'); return;
       } else if (channel.id === 'slack') {
         await api.sendToSlack({ text, webhookUrl: creds.slackWebhook });

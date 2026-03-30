@@ -74,7 +74,18 @@ function ChannelModal({ channel, text, onClose }) {
   const handleSend = async () => {
     setStatus('sending');
     try {
-      if (channel.id === 'email') { window.open('mailto:' + toEmail.trim() + '?subject=' + encodeURIComponent('Message from SeedlingSpeaks') + '&body=' + encodeURIComponent(text), '_blank'); setStatus('ok'); return; }
+      if (channel.id === 'email') {
+        // Extract subject line if text starts with "Subject: ..."
+        let subject = creds.emailSubject || 'Message from SeedlingSpeaks';
+        let body = text;
+        const subjectMatch = text.match(/^Subject:\s*(.+?)[\r\n]/i);
+        if (subjectMatch) {
+          subject = subjectMatch[1].trim();
+          body = text.replace(/^Subject:\s*.+?[\r\n]+/i, '').trim();
+        }
+        window.open('mailto:' + toEmail.trim() + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
+        setStatus('ok'); return;
+      }
       if (channel.id === 'slack') await api.sendToSlack({ text, webhookUrl: creds.slackWebhook });
       if (channel.id === 'linkedin') await api.shareToLinkedIn({ text });
       if (channel.id === 'whatsapp') { window.open('https://wa.me/' + creds.whatsappPhone.replace(/\D/g, '') + '?text=' + encodeURIComponent(text), '_blank'); setStatus('ok'); return; }
