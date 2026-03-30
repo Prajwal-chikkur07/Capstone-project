@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 import {
   Mic, Square, Loader2, Pause, Play,
-  Volume2, ChevronDown, StopCircle, Users, Download
+  Volume2, ChevronDown, StopCircle
 } from 'lucide-react';
 
 const CHUNK_MS = 5000;
@@ -365,6 +365,7 @@ export default function ContinuousListening() {
             ))}
           </div>
         )}
+        <div className="flex items-center justify-center gap-3">
           {isIdle && (
             <button onClick={handleStart}
               className="flex items-center gap-2.5 bg-gray-900 hover:bg-gray-700 text-white px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all active:scale-95 shadow-sm">
