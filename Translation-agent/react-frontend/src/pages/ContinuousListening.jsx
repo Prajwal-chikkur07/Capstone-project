@@ -2,8 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 import {
-  Ear, Square, Loader2, Copy, Check, Download,
-  Users, Play, Volume2, ChevronDown, Hash
+  Ear, Square, Loader2, Download,
+  Users, Play, Volume2, ChevronDown
 } from 'lucide-react';
 
 const SILENCE_THRESHOLD = 10;
@@ -225,7 +225,6 @@ export default function ContinuousListening() {
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const wc   = transcript?.trim() ? transcript.trim().split(/\s+/).length : 0;
   const bars = Array.from({ length: 20 }, (_, i) =>
     isListening ? Math.max(4, Math.min(40, amplitude * (0.5 + Math.sin(i * 0.8) * 0.5))) : 4
   );
@@ -293,36 +292,15 @@ export default function ContinuousListening() {
           )}
         </div>
 
-        {/* ── Transcript ── */}
-        {transcript ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Transcript</span>
-                <span className="flex items-center gap-1 text-[11px] text-gray-300">
-                  <Hash className="w-3 h-3" />{wc} words
-                </span>
-              </div>
-              <CopyBtn text={transcript} />
+        {/* Transcript hidden — conversation panel shows the split directly */}
+        {!isListening && !isProcessing && !isDiarizing && !transcript && (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+              <Ear className="w-6 h-6 text-gray-300" />
             </div>
-            <textarea
-              value={transcript}
-              onChange={e => setTranscript(e.target.value)}
-              rows={Math.max(3, transcript.split('\n').length + 1)}
-              className="w-full text-[15px] text-gray-800 leading-relaxed bg-transparent focus:outline-none resize-none"
-              spellCheck={false}
-            />
+            <p className="text-[15px] text-gray-300 font-medium">Press Start Listening</p>
+            <p className="text-[12px] text-gray-300">Speakers detected automatically</p>
           </div>
-        ) : (
-          !isListening && !isProcessing && (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
-                <Ear className="w-6 h-6 text-gray-300" />
-              </div>
-              <p className="text-[15px] text-gray-300 font-medium">Press Start Listening</p>
-              <p className="text-[12px] text-gray-300">Supports up to 5 speakers</p>
-            </div>
-          )
         )}
 
         {/* ── Conversation panel ── */}
