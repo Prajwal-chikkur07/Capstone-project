@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SignIn, useAuth, useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -9,55 +9,49 @@ export default function AuthPage() {
   const { user: clerkUser } = useUser();
   const navigate = useNavigate();
   const { login } = useApp();
-  const syncedRef = useRef(false); // Prevent syncing multiple times
+  const syncedRef = useRef(false);
+  const [consent, setConsent] = useState(false);
+  const consentRef = useRef(false);
+
+  // Keep ref in sync so syncUserToBackend always has latest value
+  useEffect(() => { consentRef.current = consent; }, [consent]);
 
   useEffect(() => {
-    // If user is signed in with Clerk and we haven't synced yet, sync once
     if (isSignedIn && clerkUser && !syncedRef.current) {
-      syncedRef.current = true; // Mark as synced
+      syncedRef.current = true;
       syncUserToBackend();
     }
   }, [isSignedIn, clerkUser]);
 
   const syncUserToBackend = async () => {
     try {
-      // Get Clerk JWT token
       const token = await getToken();
-      if (!token) {
-        throw new Error('Failed to get Clerk authentication token');
-      }
-
-      // Set token in API client
+      if (!token) throw new Error('Failed to get Clerk authentication token');
       api.setAuthToken(token);
-
-      // Sync Clerk user data to Neon database
       const response = await api.syncUser({
         id: clerkUser.id,
         email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress,
         first_name: clerkUser.firstName,
         last_name: clerkUser.lastName,
         avatar_url: clerkUser.imageUrl,
+        consent_given: consentRef.current,
       });
-
-      // Update App context with user info
       login({
         id: response.id,
         email: response.email,
         firstName: response.first_name,
         lastName: response.last_name,
+        consentGiven: response.consent_given,
       });
-
-      // Navigate to main app
       navigate('/app');
     } catch (error) {
       console.error('Failed to sync user:', error);
-      // User can still use the app, but they won't be in the database
-      // Fallback: just log them in based on Clerk auth
       login({
         id: clerkUser.id,
         email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress,
         firstName: clerkUser.firstName,
         lastName: clerkUser.lastName,
+        consentGiven: consentRef.current,
       });
       navigate('/app');
     }
@@ -91,9 +85,7 @@ export default function AuthPage() {
             </div>
           ))}
         </div>
-        <div>
-          <p className="text-[12px] text-white/20">Powered by Seedlinglabs · v2.5</p>
-        </div>
+        <p className="text-[12px] text-white/20">Powered by Seedlinglabs · v2.5</p>
       </div>
 
       {/* Right panel */}
@@ -125,6 +117,27 @@ export default function AuthPage() {
             redirectUrl="/app"
             signUpUrl="/auth?mode=signup"
           />
+
+          {/* GDPR Consent */}
+          <div className="mt-4 flex items-start gap-3 px-1">
+            <input
+              id="gdpr-consent"
+              type="checkbox"
+              checked={consent}
+              onChange={e => setConsent(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
+            />
+            <label htmlFor="gdpr-consent" className="text-[12px] text-gray-500 leading-relaxed cursor-pointer">
+              I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
+              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+                className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
+                Privacy Policy
+              </a>
+            </label>
+          </div>
+          <p className="text-[11px] text-gray-400 mt-2 px-1">
+            Consent is optional — you can use the app without it.
+          </p>
         </div>
       </div>
     </div>

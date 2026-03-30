@@ -88,15 +88,21 @@ API.interceptors.response.use(
 );
 
 // ── Clerk auth endpoints ──────────────────────────────────────────────────────
-export const syncUser = async ({ id, email, first_name, last_name, avatar_url }) => {
+export const syncUser = async ({ id, email, first_name, last_name, avatar_url, consent_given = false }) => {
   const { data } = await API.post('/auth/sync-user', {
     id,
     email,
     first_name,
     last_name,
     avatar_url,
+    consent_given,
   });
-  return data; // { id, email, first_name, last_name, avatar_url, created_at }
+  return data;
+};
+
+export const updateConsent = async (consentGiven) => {
+  const { data } = await API.patch('/auth/consent', { consent_given: consentGiven });
+  return data;
 };
 
 export const getMe = async () => {

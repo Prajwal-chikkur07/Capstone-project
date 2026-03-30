@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RefreshCw, Database, Trash2, Zap, BarChart2, Moon, Sun, Monitor, Globe, X } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Zap, BarChart2, Moon, Sun, Monitor, Globe, X, ShieldCheck } from 'lucide-react';
 import * as api from '../services/api';
 import { getLabels } from '../services/uiLabels';
 
@@ -39,14 +39,13 @@ export default function Settings() {
   const { state, toggleDark, setUiLanguage, setWidgetEnabled } = useApp();
   const L = getLabels(state.uiLanguage);
 
-  // Cache state
   const [cacheStats, setCacheStats] = useState(null);
   const [clearing, setClearing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-
-  // Widget state
   const [widgetLoading, setWidgetLoading] = useState(false);
   const [widgetRunning, setWidgetRunning] = useState(null);
+  const [consentGiven, setConsentGiven] = useState(state.authUser?.consentGiven ?? false);
+  const [consentSaving, setConsentSaving] = useState(false);
 
   const loadCache = async () => { try { setCacheStats(await api.getCacheStats()); } catch {} };
   useEffect(() => { loadCache(); }, []);
@@ -69,6 +68,19 @@ export default function Settings() {
     setClearing(true);
     try { await api.clearCache(); await loadCache(); setConfirmClear(false); }
     finally { setClearing(false); }
+  };
+
+  const handleConsentToggle = async () => {
+    const newVal = !consentGiven;
+    setConsentSaving(true);
+    try {
+      await api.updateConsent(newVal);
+      setConsentGiven(newVal);
+    } catch {
+      // silent — toggle back if failed
+    } finally {
+      setConsentSaving(false);
+    }
   };
 
   const isWidgetRunning = widgetRunning === true;
@@ -273,6 +285,30 @@ export default function Settings() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* GDPR Consent */}
+        <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-gray-900">Data consent</p>
+                <p className="text-[12px] text-gray-400 mt-0.5">
+                  {consentGiven ? 'You have given consent' : 'No consent given'}
+                  {' · '}
+                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline">Privacy Policy</a>
+                </p>
+              </div>
+            </div>
+            <Toggle on={consentGiven} onToggle={handleConsentToggle} disabled={consentSaving} />
+          </div>
+          <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">
+            Allow use of your data to improve translation quality and personalization. You can withdraw at any time.
+          </p>
         </div>
 
       </div>
