@@ -6,21 +6,19 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: transparent;
       overflow: hidden;
       padding: 10px;
-      width: 660px;
+      width: 520px;
     }
 
     .overlay {
-      background: rgba(10, 13, 22, 0.9);
-      backdrop-filter: blur(32px);
-      -webkit-backdrop-filter: blur(32px);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 22px;
-      padding: 14px 14px 12px;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 4px 16px rgba(0,0,0,0.3);
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -34,46 +32,41 @@
       -webkit-app-region: drag;
       cursor: grab;
     }
-
     .topbar:active { cursor: grabbing; }
+    .topbar-right { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
 
-    .topbar-right {
-      -webkit-app-region: no-drag;
-    }
-
-    .mode-pill {
+    .brand {
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      padding: 4px 10px 4px 7px;
+      gap: 7px;
     }
-
-    .mode-dot {
-      width: 6px; height: 6px;
+    .brand-dot {
+      width: 8px; height: 8px;
       border-radius: 50%;
+      background: #111827;
     }
-
-    .mode-text {
-      font-size: 11px;
+    .brand-dot.recording {
+      background: #ef4444;
+      box-shadow: 0 0 6px rgba(239,68,68,0.6);
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    .brand-name {
+      font-size: 12px;
       font-weight: 700;
-      color: rgba(255,255,255,0.6);
-      letter-spacing: 0.02em;
+      color: #111827;
+      letter-spacing: -0.01em;
     }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .brand-sub {
+      font-size: 10px;
+      color: #9ca3af;
+      font-weight: 500;
     }
 
     .lang-select {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 9px;
-      color: rgba(255,255,255,0.85);
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      color: #374151;
       font-size: 11px;
       font-weight: 600;
       padding: 5px 22px 5px 9px;
@@ -86,256 +79,293 @@
       background-position: right 6px center;
       transition: border-color 0.15s;
     }
-    .lang-select:focus { border-color: rgba(129,140,248,0.5); }
-    .lang-select option { background: #1a1f2e; }
+    .lang-select:focus { border-color: #111827; }
 
     .close-btn {
-      width: 24px; height: 24px;
-      border: none;
-      border-radius: 7px;
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.3);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.12s, color 0.12s;
-    }
-    .close-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
-
-    /* ── Two blocks ── */
-    .blocks {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .block {
-      background: #161b28;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 11px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      min-height: 140px;
-    }
-
-    .block-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .block-label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .block-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-
-    .block-title {
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.4);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .copy-btn {
-      border: none;
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.35);
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.12s, color 0.12s;
-      letter-spacing: 0.02em;
-    }
-    .copy-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
-    .copy-btn.copied { color: #6ee7b7; background: rgba(16,185,129,0.12); }
-
-    textarea {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: rgba(255,255,255,0.88);
-      font-family: inherit;
-      font-size: 12.5px;
-      line-height: 1.65;
-      resize: none;
-      min-height: 90px;
-    }
-    textarea::placeholder { color: rgba(255,255,255,0.16); }
-
-    .output-text {
-      flex: 1;
-      font-size: 12.5px;
-      line-height: 1.65;
-      color: rgba(255,255,255,0.82);
-      min-height: 90px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .output-placeholder { color: rgba(255,255,255,0.18); font-style: italic; }
-
-    /* ── Translate button ── */
-    .translate-row {
-      display: flex;
-      justify-content: center;
-    }
-
-    .translate-btn {
-      border: none;
-      border-radius: 11px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 9px 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      transition: opacity 0.15s, transform 0.15s;
-      letter-spacing: 0.02em;
-    }
-    .translate-btn.en { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 4px 14px rgba(99,102,241,0.3); }
-    .translate-btn.native { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 14px rgba(16,185,129,0.25); }
-    .translate-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-    .translate-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    /* ── 4 action icons ── */
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .action-btn {
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.03);
-      border-radius: 12px;
-      padding: 8px 4px 7px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      transition: background 0.15s, border-color 0.15s, transform 0.15s;
-    }
-    .action-btn:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(255,255,255,0.12);
-      transform: translateY(-1px);
-    }
-    .action-btn:active { transform: translateY(0); }
-    .action-btn.active {
-      border-color: rgba(99,102,241,0.4);
-      background: rgba(99,102,241,0.1);
-    }
-
-    .action-icon {
-      width: 28px; height: 28px;
+      width: 26px; height: 26px;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
+      background: #f9fafb;
+      color: #9ca3af;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.12s;
+    }
+    .close-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
+
+    /* ── Mic section ── */
+    .mic-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0 4px;
     }
 
-    .action-label {
-      font-size: 9.5px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.38);
-      text-align: center;
-      line-height: 1.2;
-    }
-    .action-btn:hover .action-label { color: rgba(255,255,255,0.75); }
-    .action-btn.active .action-label { color: #a5b4fc; }
-
-    .drag-hint {
-      font-size: 9px;
-      color: rgba(255,255,255,0.18);
-      letter-spacing: 0.05em;
-      -webkit-app-region: drag;
-    }
-    .spinner {
-      width: 11px; height: 11px;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Mic button ── */
     .mic-btn {
-      width: 52px; height: 52px;
+      width: 56px; height: 56px;
       border-radius: 50%;
       border: none;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      box-shadow: 0 4px 18px rgba(99,102,241,0.45);
+      background: #111827;
       color: #fff;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 14px rgba(17,24,39,0.25);
     }
-    .mic-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(99,102,241,0.6); }
+    .mic-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(17,24,39,0.35); }
     .mic-btn.recording {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      box-shadow: 0 4px 18px rgba(239,68,68,0.55);
+      background: #ef4444;
+      box-shadow: 0 4px 18px rgba(239,68,68,0.45);
       animation: micPulse 1s ease-in-out infinite;
     }
     @keyframes micPulse {
-      0%,100% { box-shadow: 0 4px 18px rgba(239,68,68,0.55); }
-      50% { box-shadow: 0 4px 28px rgba(239,68,68,0.85), 0 0 0 8px rgba(239,68,68,0.12); }
+      0%,100% { box-shadow: 0 4px 18px rgba(239,68,68,0.45); }
+      50% { box-shadow: 0 4px 28px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.1); }
     }
     @keyframes recPulse {
       0%,100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
 
-    /* ── Tone chips ── */
-    .tone-chip {
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.04);
-      border-radius: 20px;
-      color: rgba(255,255,255,0.5);
-      font-size: 10px;
-      font-weight: 600;
-      padding: 3px 10px;
-      cursor: pointer;
-      transition: background 0.12s, border-color 0.12s, color 0.12s;
-      font-family: inherit;
-    }
-    .tone-chip:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.8); }
-    .tone-chip.active {
-      background: rgba(99,102,241,0.18);
-      border-color: rgba(99,102,241,0.45);
-      color: #a5b4fc;
+    .mic-hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: #9ca3af;
+      text-align: center;
     }
 
-    /* ── Custom tone input ── */
-    .custom-tone-input {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 9px;
-      color: rgba(255,255,255,0.85);
-      font-size: 11px;
-      font-family: inherit;
-      padding: 6px 10px;
-      outline: none;
+    /* ── Recording bar ── */
+    .rec-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 10px 14px;
       width: 100%;
     }
-    .custom-tone-input:focus { border-color: rgba(129,140,248,0.5); }
+    .rec-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 6px rgba(239,68,68,0.6);
+      flex-shrink: 0;
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    .rec-timer {
+      font-size: 12px;
+      font-family: monospace;
+      font-weight: 700;
+      color: #374151;
+      flex-shrink: 0;
+    }
+    .wave-wrap {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      height: 28px;
+    }
+    .wave-bar {
+      width: 2px;
+      height: 3px;
+      border-radius: 2px;
+      background: #111827;
+      transition: height 0.07s;
+    }
+    .stop-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #ef4444;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .stop-btn:hover { background: #dc2626; }
+
+    /* ── Output block ── */
+    .output-block {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .output-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .output-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .output-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #9ca3af;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .copy-btn {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      color: #6b7280;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .copy-btn:hover { background: #f3f4f6; color: #111827; }
+    .copy-btn.copied { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
+
+    textarea.output-ta {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #111827;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.65;
+      resize: none;
+      min-height: 80px;
+      width: 100%;
+    }
+    textarea.output-ta::placeholder { color: #d1d5db; }
+
+    .output-placeholder {
+      font-size: 13px;
+      color: #d1d5db;
+      font-style: italic;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Tone chips ── */
+    .tone-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding-top: 8px;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    .tone-chip {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      border-radius: 20px;
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 11px;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .tone-chip:hover { background: #f3f4f6; color: #111827; border-color: #d1d5db; }
+    .tone-chip.active {
+      background: #111827;
+      border-color: #111827;
+      color: #fff;
+    }
+
+    .custom-input {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      color: #111827;
+      font-size: 12px;
+      font-family: inherit;
+      padding: 7px 10px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+    .custom-input:focus { border-color: #111827; }
+
+    /* ── Send button ── */
+    .send-btn {
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: opacity 0.15s, transform 0.15s;
+      font-family: inherit;
+      width: 100%;
+      background: #111827;
+    }
+    .send-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .send-btn.detected {
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 4px 14px rgba(16,185,129,0.25);
+    }
+
+    /* ── Domain badge ── */
+    .domain-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #059669;
+    }
+
+    .spinner {
+      width: 11px; height: 11px;
+      border: 2px solid rgba(17,24,39,0.15);
+      border-top-color: #111827;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner.white {
+      border-color: rgba(255,255,255,0.3);
+      border-top-color: #fff;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .drag-hint {
+      font-size: 9px;
+      color: #d1d5db;
+      letter-spacing: 0.05em;
+      -webkit-app-region: drag;
+    }
   </style>
 </head>
 <body>

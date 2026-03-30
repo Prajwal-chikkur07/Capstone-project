@@ -723,17 +723,87 @@ ipcMain.on('send-to-compose', (_, { subject, body, target }) => {
   }, 400);
 });
 
-// ── Send text to whatever textbox is focused in any app ───────────────────────
-ipcMain.on('send-to-textbox', (_, { text }) => {
+// ── Get active browser URL for domain detection ───────────────────────────────
+ipcMain.on('get-active-url', (event) => {
+  // Try to get URL from frontmost Chrome/Safari/Firefox window via AppleScript
+  const script = `
+    tell application "System Events"
+      set frontApp to name of first application process whose frontmost is true
+    end tell
+    if frontApp is "Google Chrome" then
+      tell application "Google Chrome" to return URL of active tab of front window
+    else if frontApp is "Safari" then
+      tell application "Safari" to return URL of current tab of front window
+    else if frontApp is "Firefox" then
+      tell application "Firefox" to return URL of active tab of front window
+    else
+      return ""
+    end if
+  `;
+  const r = spawnSync('osascript', ['-e', script], { encoding: 'utf8', timeout: 3000 });
+  const url = (r.stdout || '').trim();
+  event.reply('active-url', url || null);
+});
+
+// ── Send text to visible textbox on active page (WhatsApp, LinkedIn, etc.) ────
+ipcMain.on('send-to-active-textbox', (_, { text, target }) => {
   if (!text) return;
-
-  const { clipboard } = require('electron');
-  clipboard.writeText(text);
-
   hideOverlay();
   if (toastWin) toastWin.hide();
 
+  // Domain-specific selectors for common apps
+  const SELECTORS = {
+    whatsapp:  `document.querySelector('div[contenteditable="true"][data-tab="10"], footer div[contenteditable="true"]')`,
+    linkedin:  `document.querySelector('div.msg-form__contenteditable, div[contenteditable="true"].ql-editor, div[role="textbox"]')`,
+    twitter:   `document.querySelector('div[data-testid="tweetTextarea_0"], div[contenteditable="true"][role="textbox"]')`,
+    discord:   `document.querySelector('div[role="textbox"][contenteditable="true"]')`,
+    teams:     `document.querySelector('div[contenteditable="true"][role="textbox"]')`,
+    notion:    `document.querySelector('div[contenteditable="true"].notranslate, div[data-content-editable-leaf="true"]')`,
+    gdocs:     `document.querySelector('.kix-appview-editor div[contenteditable="true"]')`,
+    default:   `document.querySelector('textarea:not([readonly]):not([disabled]), input[type="text"]:not([readonly]):not([disabled]), div[contenteditable="true"]')`,
+  };
+
+  const selector = SELECTORS[target] || SELECTORS.default;
+
+  // Inject via AppleScript → Chrome execute script
+  const jsCode = `
+    (function() {
+      const el = ${selector};
+      if (!el) return 'NOT_FOUND';
+      el.focus();
+      if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value') ||
+                             Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+        if (nativeSetter) nativeSetter.set.call(el, ${JSON.stringify(text)});
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        // contenteditable
+        el.textContent = ${JSON.stringify(text)};
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, data: ${JSON.stringify(text)} }));
+      }
+      return 'OK';
+    })()
+  `;
+
+  const appleScript = `
+    tell application "Google Chrome"
+      set result to execute active tab of front window javascript "${jsCode.replace(/"/g, '\\"').replace(/\n/g, ' ')}"
+    end tell
+    return result
+  `;
+
   setTimeout(() => {
-    showToast({ type: 'success', message: '✓ Copied! Press ⌘V to paste' }, 4000);
-  }, 300);
+    const r = spawnSync('osascript', ['-e', appleScript], { encoding: 'utf8', timeout: 5000 });
+    const out = (r.stdout || '').trim();
+    if (out === 'NOT_FOUND' || r.error) {
+      // Fallback: clipboard paste
+      const { clipboard } = require('electron');
+      clipboard.writeText(text);
+      showToast({ type: 'success', message: '✓ Copied! Press ⌘V to paste' }, 4000);
+    } else {
+      const label = target ? target.charAt(0).toUpperCase() + target.slice(1) : 'Textbox';
+      showToast({ type: 'success', message: `✓ Sent to ${label}` }, 3000);
+    }
+  }, 400);
 });

@@ -86,7 +86,8 @@
 
     window.addEventListener('mouseup', () => {
       if (isDragging && !hasMoved) {
-        ipcRenderer.send('toggle-panel');
+        // Only one mode now — open directly
+        ipcRenderer.send('select-mode', 'nativeToEnglish');
       }
       isDragging = false;
     });
