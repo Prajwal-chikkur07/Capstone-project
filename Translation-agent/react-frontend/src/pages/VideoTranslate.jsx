@@ -338,7 +338,7 @@ export default function VideoTranslate() {
             <div className="flex flex-col lg:flex-row gap-4 items-stretch">
               {/* Left — video */}
               <div className="lg:w-1/2 bg-black rounded-2xl overflow-hidden shadow-lg flex flex-col">
-                <video src={`/api/video/download/${videoId}`} controls autoPlay
+                <video src={`/api/video/download/${videoId}`} controls
                   className="w-full flex-1 object-contain" style={{ minHeight: '240px', maxHeight: '360px' }} />
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-900 shrink-0">
                   <span className="text-[12px] text-gray-400 font-medium">Translated · {langName}</span>
