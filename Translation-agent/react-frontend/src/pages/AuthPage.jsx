@@ -104,42 +104,53 @@ export default function AuthPage() {
             <span className="text-[15px] font-bold text-[#1a0f00]">SeedlingSpeaks</span>
           </div>
 
-          {/* Clerk Sign-In */}
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-none border-none bg-transparent",
-                headerTitle: "text-[20px] md:text-[26px] font-extrabold text-[#1a0f00]",
-                headerSubtitle: "text-[14px] text-gray-400 mb-8",
-                formButtonPrimary: "bg-[#1a0f00] hover:bg-[#2d1a00] text-white rounded-xl py-3 font-bold",
-                formFieldInput: "rounded-xl border-gray-200 focus:border-[#c9a84c]",
-                footerActionLink: "text-[#8a5c2e] hover:underline",
-              },
-              variables: {
-                colorPrimary: "#1a0f00",
-                colorInputBackground: "#ffffff",
-              },
-            }}
-            redirectUrl="/app"
-            signUpUrl="/auth?mode=signup"
-          />
+          {/* Clerk Sign-In — blocked until consent is given */}
+          <div className={`transition-opacity duration-200 ${consent ? 'opacity-100' : 'opacity-50 pointer-events-none select-none'}`}>
+            <SignIn
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-none bg-transparent",
+                  headerTitle: "text-[20px] md:text-[26px] font-extrabold text-[#1a0f00]",
+                  headerSubtitle: "text-[14px] text-gray-400 mb-8",
+                  formButtonPrimary: "bg-[#1a0f00] hover:bg-[#2d1a00] text-white rounded-xl py-3 font-bold",
+                  formFieldInput: "rounded-xl border-gray-200 focus:border-[#c9a84c]",
+                  footerActionLink: "text-[#8a5c2e] hover:underline",
+                },
+                variables: {
+                  colorPrimary: "#1a0f00",
+                  colorInputBackground: "#ffffff",
+                },
+              }}
+              forceRedirectUrl="/app"
+              signUpUrl="/auth?mode=signup"
+            />
+          </div>
 
-          {/* GDPR Consent — below the Continue button */}
-          <div className={`mt-3 p-4 rounded-2xl border transition-all ${
-            showConsentError ? 'border-red-200 bg-red-50' : consent ? 'border-green-100 bg-green-50' : 'border-gray-200 bg-white'
-          }`}>
+          {/* GDPR Consent — below the form */}
+          <div
+            onClick={() => !consent && setShowConsentError(true)}
+            className={`mt-3 p-4 rounded-2xl border transition-all cursor-pointer ${
+              showConsentError
+                ? 'border-red-300 bg-red-50'
+                : consent
+                ? 'border-green-200 bg-green-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
             <div className="flex items-start gap-3">
               <input
                 id="gdpr-consent"
                 type="checkbox"
                 checked={consent}
                 onChange={e => { setConsent(e.target.checked); setShowConsentError(false); }}
+                onClick={e => e.stopPropagation()}
                 className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#1a0f00] cursor-pointer shrink-0"
               />
-              <label htmlFor="gdpr-consent" className="text-[12px] text-gray-600 leading-relaxed cursor-pointer">
+              <label htmlFor="gdpr-consent" className="text-[12px] text-gray-700 leading-relaxed cursor-pointer">
                 I agree to the use of my data to improve translation quality and personalization. I can withdraw my consent at any time.{' '}
                 <a href="/privacy-policy" target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
                   className="text-[#8a5c2e] underline underline-offset-2 hover:text-[#1a0f00] transition-colors">
                   Privacy Policy
                 </a>
@@ -147,7 +158,12 @@ export default function AuthPage() {
             </div>
             {showConsentError && (
               <p className="text-[12px] text-red-600 font-semibold mt-2 ml-7">
-                ⚠ You must agree to the privacy policy to continue.
+                You must agree before continuing.
+              </p>
+            )}
+            {!consent && !showConsentError && (
+              <p className="text-[11px] text-gray-400 mt-2 ml-7">
+                Required to use SeedlingSpeaks
               </p>
             )}
           </div>
