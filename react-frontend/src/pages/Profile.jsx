@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Mail, Check, Eye, EyeOff, Volume2, ChevronDown, Mic2, RefreshCw,
-  ChevronRight, ArrowLeft, Pencil, Globe, X, Save, MessageSquare,
+  ChevronRight, ArrowLeft, Pencil, Globe, X, Save,
 } from 'lucide-react';
 import { getLabels } from '../services/uiLabels';
 
@@ -286,8 +286,6 @@ export default function Profile() {
   if (subView === 'channels') return <ChannelsView onBack={() => setSubView(null)} />;
 
   const initials = (profile.name || 'U').trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  const creds = state.channelCredentials || {};
-  const connectedCount = CHANNEL_META.filter(ch => creds[ch.credKey]?.trim()).length;
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
@@ -316,11 +314,10 @@ export default function Profile() {
               {profile.role && <p className="text-[12px] text-gray-300 mt-0.5 truncate">{profile.role}</p>}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
             {[
               { label: 'Transcripts', value: state.transcriptHistory?.length || 0 },
               { label: 'Templates',   value: state.savedTemplates?.length || 0 },
-              { label: 'Channels',    value: connectedCount },
             ].map(({ label, value }) => (
               <div key={label} className="text-center bg-gray-50 rounded-xl py-3 border border-gray-100">
                 <p className="text-[22px] font-extrabold text-gray-900">{value}</p>
@@ -367,8 +364,7 @@ export default function Profile() {
 
         {/* Nav items */}
         {[
-          { key: 'voice',    icon: Volume2,       label: 'Voice & TTS',        desc: 'Text-to-speech voice preferences' },
-          { key: 'channels', icon: MessageSquare, label: 'Connected channels', desc: `Email, Slack, LinkedIn, WhatsApp · ${connectedCount} connected` },
+          { key: 'voice', icon: Volume2, label: 'Voice & TTS', desc: 'Text-to-speech voice preferences' },
         ].map(({ key, icon: Icon, label, desc }) => (
           <button key={key} onClick={() => setSubView(key)}
             className="w-full bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all group">

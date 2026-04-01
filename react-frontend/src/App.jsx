@@ -10,6 +10,7 @@ import Onboarding from './components/Onboarding';
 import NotificationCenter from './components/NotificationCenter';
 import SplashScreen from './components/SplashScreen';
 import ToastContainer from './components/Toast';
+import MobileWidget from './components/MobileWidget';
 import Home from './pages/Home';
 import LandingPage from './pages/LandingPage';
 import ContinuousListening from './pages/ContinuousListening';
@@ -159,6 +160,7 @@ function AppShell() {
       <NotificationCenter />
       <ToastContainer />
       {!state.onboardingDone && <Onboarding />}
+      {!isPublicPage && location.pathname !== '/widget-setup' && <MobileWidget />}
     </div>
   );
 }
