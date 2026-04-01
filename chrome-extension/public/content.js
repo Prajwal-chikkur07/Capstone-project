@@ -59,7 +59,7 @@ const TARGET_LANGUAGES = {
 if (isContextValid()) {
   createFloatingIcon();
 
-  chrome.storage.local.get(['vtActive', 'vtLanguage', 'vtTone', 'vtIconPos'], (result) => {
+  chrome.storage.local.get(['vtActive', 'vtLanguage', 'vtTone', 'vtIconPos', 'vtLanguages'], (result) => {
     if (!isContextValid()) return;
     targetLanguage = result.vtLanguage || 'kn-IN';
     selectedTone = result.vtTone || 'Email Formal';
@@ -481,9 +481,26 @@ function renderMicOutput() {
   const displayText = extToneText || extRawText;
   const toneLabel = extSelectedTone || 'Transcript';
 
+  // Single language dropdown
+  const langOpts = Object.entries(TARGET_LANGUAGES).map(([name, code]) =>
+    `<option value="${code}" ${code === targetLanguage ? 'selected' : ''}>${name}</option>`
+  ).join('');
+
+  const langRow = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;flex-shrink:0;">Language</span>
+      <div style="position:relative;flex:1;">
+        <select id="vt-mic-lang" style="width:100%;padding:7px 28px 7px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;color:#111827;font-size:12px;font-weight:500;outline:none;cursor:pointer;appearance:none;font-family:inherit;">
+          ${langOpts}
+        </select>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>`;
+
   if (!extRawText) {
     return `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;gap:10px;">
+      ${langRow}
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;gap:10px;">
         <div style="width:44px;height:44px;border-radius:12px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </div>
@@ -495,16 +512,16 @@ function renderMicOutput() {
   }
 
   return `
+    ${langRow}
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0;">
       <div style="width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
       <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">${toneLabel}</span>
       ${extToneLoading ? `<div class="vt-spinner" style="margin-left:auto;border-top-color:#1a1a1a;border-color:rgba(26,26,26,0.1);"></div>` : ''}
     </div>
-
     ${extToneLoading
       ? `<div style="flex:1;background:#fff;border:1px solid #ececec;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;color:#9ca3af;font-size:12px;"><div class="vt-spinner"></div>Rewriting…</div>`
       : `<div style="position:relative;flex:1;display:flex;flex-direction:column;">
-          <textarea id="vt-ext-output" style="flex:1;width:100%;padding:10px 12px 10px 12px;padding-right:60px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:400;line-height:1.8;outline:none;resize:none;box-shadow:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ececec'">${escapeHtml(displayText)}</textarea>
+          <textarea id="vt-ext-output" style="flex:1;width:100%;padding:10px 12px;padding-right:60px;background:#fff;border:1px solid #ececec;border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:400;line-height:1.8;outline:none;resize:none;box-shadow:none;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#ececec'">${escapeHtml(displayText)}</textarea>
           <div style="position:absolute;top:6px;right:6px;display:flex;gap:3px;">
             <button id="vt-ext-copy-out" title="Copy" style="width:24px;height:24px;background:rgba(255,255,255,0.9);border:1px solid #e5e7eb;border-radius:6px;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -849,6 +866,21 @@ function wireTabEvents() {
     navigator.clipboard.writeText(extToneText || extRawText).then(() => showToast('✓ Copied!'));
   };
 
+  // Language dropdown in mic section
+  const micLang = popupPanel.querySelector('#vt-mic-lang');
+  if (micLang) micLang.onchange = () => {
+    targetLanguage = micLang.value;
+    safeStorage({ vtLanguage: targetLanguage });
+  };
+
+  // Translate button in mic output section
+  const micTranslateBtn = popupPanel.querySelector('#vt-mic-translate-btn');
+  if (micTranslateBtn) micTranslateBtn.onclick = () => {
+    const text = extToneText || extRawText;
+    if (!text?.trim()) { showToast('No text to translate.'); return; }
+    doTranslate(text);
+  };
+
   const clearOutBtn = popupPanel.querySelector('#vt-ext-clear-out');
   if (clearOutBtn) clearOutBtn.onclick = () => {
     extRawText = '';
@@ -880,7 +912,7 @@ function wireTabEvents() {
     doTone(txt);
   };
 
-  // Translate section
+  // Translate section — single language dropdown
   const transLang = popupPanel.querySelector('#vt-trans-lang');
   if (transLang) transLang.onchange = () => {
     targetLanguage = transLang.value;

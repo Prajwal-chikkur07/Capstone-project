@@ -6,19 +6,20 @@ const path = require('path');
 const fs = require('fs');
 
 let bubbleWin = null;
-let modeMenuWin = null;
 let overlayWin = null;
 let toastWin = null;
 let screenOverlayWin = null;
 let regionSelectWin = null;
-let isModeMenuOpen = false;
 let isOverlayOpen = false;
-let isBubbleEnabled = true;
+let isBubbleEnabled = false; // starts hidden — enabled via the web app
 let toastTimer = null;
 let isClickModeActive = false;
 let clickModeLang = 'hi-IN';
 
-let widgetConfig = { mode: 'englishToNative', languages: ['hi-IN'] };
+// ── Recording state (managed in main process) ─────────────────────────────────
+let isRecording = false;
+
+let widgetConfig = { mode: 'nativeToEnglish', languages: ['hi-IN'] };
 let lastFrontApp = null; // track which app was active before overlay opened
 
 // ── Control server ────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ function startControlServer() {
         try {
           const inc = JSON.parse(body);
           widgetConfig = {
-            mode: inc.mode === 'nativeToEnglish' ? 'nativeToEnglish' : 'englishToNative',
+            mode: 'nativeToEnglish',
             languages: Array.isArray(inc.languages) && inc.languages.length > 0 ? inc.languages : ['hi-IN'],
           };
           if (overlayWin) overlayWin.webContents.send('set-config', widgetConfig);
@@ -54,12 +55,12 @@ function startControlServer() {
       res.writeHead(200); res.end(JSON.stringify({ enabled: true }));
     } else if (req.url === '/disable') {
       isBubbleEnabled = false; if (bubbleWin) bubbleWin.hide();
-      hideModeMenu(); hideOverlay();
+      hideOverlay();
       res.writeHead(200); res.end(JSON.stringify({ enabled: false }));
     } else if (req.url === '/toggle') {
       isBubbleEnabled = !isBubbleEnabled;
       if (isBubbleEnabled) { if (bubbleWin) bubbleWin.show(); }
-      else { if (bubbleWin) bubbleWin.hide(); hideModeMenu(); hideOverlay(); }
+      else { if (bubbleWin) bubbleWin.hide(); hideOverlay(); }
       res.writeHead(200); res.end(JSON.stringify({ enabled: isBubbleEnabled }));
     } else {
       res.writeHead(404); res.end(JSON.stringify({ error: 'not found' }));
@@ -137,16 +138,138 @@ function visionTranslate(imgPath, lang) {
   return JSON.parse(r.stdout);
 }
 
+// ── Bubble hint tooltip window ────────────────────────────────────────────────
+let hintWin = null;
+
+function createHintWin() {
+  hintWin = new BrowserWindow({
+    width: 260, height: 34,
+    frame: false, transparent: true, alwaysOnTop: true,
+    skipTaskbar: true, resizable: false, movable: false, hasShadow: false,
+    show: false,
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  });
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;height:34px;}
+    .tip{background:#111;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+      font-size:11px;font-weight:500;padding:5px 12px;border-radius:8px;white-space:nowrap;
+      box-shadow:0 2px 10px rgba(0,0,0,0.25);animation:fadein 0.12s ease;}
+    @keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+    kbd{background:rgba(255,255,255,0.18);border-radius:3px;padding:1px 5px;font-size:10px;font-family:inherit;color:#fff;border:none;}
+  </style></head><body>
+  <div class="tip" id="tip">hint</div>
+  <script>
+    const {ipcRenderer}=require('electron');
+    ipcRenderer.on('hint-text',(_, msg)=>{
+      document.getElementById('tip').textContent = msg;
+    });
+  <\/script></body></html>`;
+  const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  hintWin.loadURL(dataUrl);
+  hintWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  hintWin.setAlwaysOnTop(true, 'screen-saver');
+  hintWin.setIgnoreMouseEvents(true);
+  hintWin.on('closed', () => { hintWin = null; });
+}
+
+function showBubbleHint(message) {
+  if (!hintWin) createHintWin();
+  if (!bubbleWin) return;
+  const [bx, by] = bubbleWin.getPosition();
+  const [bw] = bubbleWin.getSize();
+  const hw = 260, hh = 34;
+  const x = Math.round(bx + bw / 2 - hw / 2);
+  const y = by - hh - 6;
+  hintWin.setPosition(x, y);
+  hintWin.webContents.send('hint-text', message);
+  hintWin.showInactive();
+}
+
+function hideBubbleHint() {
+  if (hintWin) hintWin.hide();
+}
+
+ipcMain.on('show-bubble-hint', (_, { message }) => showBubbleHint(message));
+ipcMain.on('hide-bubble-hint', () => hideBubbleHint());
+
+// ── Track last active browser URL (captured before overlay shows) ─────────────
+let lastActiveUrl = '';
+let lastActiveApp = '';
+
+function captureActiveContext() {
+  // Get frontmost app first
+  const appR = spawnSync('osascript', ['-e',
+    `tell application "System Events" to get name of first process whose frontmost is true`
+  ], { encoding: 'utf8', timeout: 1500 });
+  lastActiveApp = (appR.stdout || '').trim().toLowerCase();
+
+  // Only check browser URLs if a browser is actually the frontmost app.
+  // If the user is in Kiro/VSCode/etc, don't steal their browser tabs.
+  const browserNames = ['google chrome', 'brave browser', 'microsoft edge', 'safari', 'firefox'];
+  const isBrowserFront = browserNames.some(b => lastActiveApp.includes(b.split(' ')[0]));
+
+  lastActiveUrl = '';
+  if (isBrowserFront) {
+    const urlScripts = [
+      `tell application "Google Chrome" to get URL of active tab of front window`,
+      `tell application "Brave Browser" to get URL of active tab of front window`,
+      `tell application "Microsoft Edge" to get URL of active tab of front window`,
+      `tell application "Safari" to get URL of current tab of front window`,
+    ];
+    for (const script of urlScripts) {
+      const r = spawnSync('osascript', ['-e', script], { encoding: 'utf8', timeout: 1500 });
+      const out = (r.stdout || '').trim();
+      if (!r.error && r.status === 0 && out && !out.includes('error') && !out.includes('execution error')) {
+        lastActiveUrl = out;
+        break;
+      }
+    }
+  }
+  console.log('[context] frontmost:', lastActiveApp, 'isBrowser:', isBrowserFront, 'url:', lastActiveUrl);
+}
+function startRecording() {
+  if (!isBubbleEnabled || isRecording) return;
+  // Capture the active app/URL BEFORE we do anything — this is the user's target
+  captureActiveContext();
+  isRecording = true;
+  if (bubbleWin) bubbleWin.webContents.send('recording-state', true);
+  // Don't show overlay during recording — bubble handles the UI
+  if (!overlayWin) createOverlay();
+  overlayWin.webContents.send('start-recording');
+  overlayWin.webContents.send('set-config', widgetConfig);
+}
+
+function stopRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  if (bubbleWin) bubbleWin.webContents.send('recording-state', false);
+  if (overlayWin) overlayWin.webContents.send('stop-recording');
+}
+
+function cancelRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  if (bubbleWin) bubbleWin.webContents.send('recording-state', false);
+  if (overlayWin) overlayWin.webContents.send('cancel-recording');
+}
+
+function toggleRecording() {
+  if (isRecording) stopRecording();
+  else startRecording();
+}
+
 // ── Bubble ────────────────────────────────────────────────────────────────────
 function createBubble() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  const bw = 56, bh = 56;
+  const bw = 180, bh = 40;
   bubbleWin = new BrowserWindow({
     width: bw, height: bh,
     x: Math.round(width / 2 - bw / 2), y: height - bh - 20,
     frame: false, transparent: true, alwaysOnTop: true,
     skipTaskbar: true, resizable: false, movable: true, hasShadow: false,
-    show: true,
+    show: false, // hidden until enabled via web app
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   });
   bubbleWin.loadFile('bubble.html');
@@ -155,56 +278,12 @@ function createBubble() {
   bubbleWin.on('closed', () => { bubbleWin = null; });
 }
 
-// ── Mode menu ─────────────────────────────────────────────────────────────────
-function createModeMenu() {
-  modeMenuWin = new BrowserWindow({
-    width: 230, height: 116,
-    frame: false, transparent: true, alwaysOnTop: true,
-    skipTaskbar: true, resizable: false, movable: false, hasShadow: false,
-    show: false,
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
-  });
-  modeMenuWin.loadFile('mode-menu.html');
-  modeMenuWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  modeMenuWin.setAlwaysOnTop(true, 'screen-saver');
-  modeMenuWin.on('blur', () => { if (!isOverlayOpen) hideModeMenu(); });
-  modeMenuWin.on('closed', () => { modeMenuWin = null; isModeMenuOpen = false; });
-}
-
-function positionModeMenu() {
-  if (!modeMenuWin || !bubbleWin) return;
-  const [bx, by] = bubbleWin.getPosition();
-  const [bw] = bubbleWin.getSize();
-  const [mw, mh] = modeMenuWin.getSize();
-  const display = screen.getDisplayNearestPoint({ x: bx, y: by });
-  const wa = display.workArea;
-  let x = bx - Math.round((mw - bw) / 2);
-  let y = by - mh - 12;
-  x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - mw - 8));
-  y = Math.max(wa.y + 8, y);
-  modeMenuWin.setPosition(Math.round(x), Math.round(y));
-}
-
-function showModeMenu() {
-  if (!isBubbleEnabled) return;
-  if (!modeMenuWin) createModeMenu();
-  positionModeMenu();
-  modeMenuWin.show(); modeMenuWin.focus();
-  isModeMenuOpen = true;
-  if (bubbleWin) bubbleWin.webContents.send('panel-state', true);
-}
-
-function hideModeMenu() {
-  if (modeMenuWin && isModeMenuOpen) {
-    modeMenuWin.hide(); isModeMenuOpen = false;
-    if (!isOverlayOpen && bubbleWin) bubbleWin.webContents.send('panel-state', false);
-  }
-}
+// ── Mode menu removed ─────────────────────────────────────────────────────────
 
 // ── Overlay (translation panel) ───────────────────────────────────────────────
 function createOverlay() {
   overlayWin = new BrowserWindow({
-    width: 680, height: 500,
+    width: 380, height: 200,
     frame: false, transparent: true, alwaysOnTop: true,
     skipTaskbar: true, resizable: false, movable: true, hasShadow: false,
     show: false,
@@ -224,7 +303,7 @@ function positionOverlay() {
   const display = screen.getDisplayNearestPoint({ x: bx, y: by });
   const wa = display.workArea;
   let x = bx - Math.round((ow - bw) / 2);
-  let y = by - oh - 20;
+  let y = by - oh - 10;
   x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - ow - 8));
   y = Math.max(wa.y + 8, y);
   overlayWin.setPosition(Math.round(x), Math.round(y));
@@ -232,19 +311,22 @@ function positionOverlay() {
 
 function showOverlay(mode) {
   if (!overlayWin) createOverlay();
-  hideModeMenu();
   positionOverlay();
   overlayWin.show(); overlayWin.focus();
   isOverlayOpen = true;
-  widgetConfig.mode = mode;
-  overlayWin.webContents.send('set-mode', mode);
+  if (mode) {
+    widgetConfig.mode = mode;
+    overlayWin.webContents.send('set-mode', mode);
+  }
   overlayWin.webContents.send('set-config', widgetConfig);
   if (bubbleWin) bubbleWin.webContents.send('panel-state', true);
 }
 
 function hideOverlay() {
   if (overlayWin && isOverlayOpen) {
-    overlayWin.hide(); isOverlayOpen = false;
+    overlayWin.hide();
+    overlayWin.blur();
+    isOverlayOpen = false;
     if (bubbleWin) bubbleWin.webContents.send('panel-state', false);
   }
 }
@@ -381,34 +463,180 @@ function checkScreenPermission() {
 app.whenReady().then(() => {
   startControlServer();
   createBubble();
-  createModeMenu();
   createOverlay();
   createToast();
   createScreenOverlay();
 
-  // Main toggle shortcut
-  const toggleShortcut = process.platform === 'darwin' ? 'Command+Shift+Space' : 'Control+Shift+Space';
-  globalShortcut.register(toggleShortcut, () => {
-    if (!isBubbleEnabled) return;
-    if (isModeMenuOpen) hideModeMenu();
-    else if (isOverlayOpen) hideOverlay();
-    else showModeMenu();
-  });
+  // ── fn key push-to-talk via native IOHIDManager watcher ──────────────────
+  const { spawn } = require('child_process');
+  const fnWatcherPath = path.join(__dirname, 'fn_watcher');
+
+  // Check Input Monitoring permission — if missing, open System Settings directly
+  function checkAndRequestInputMonitoring() {
+    const test = spawnSync(fnWatcherPath, [], {
+      timeout: 1500, encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    // If it exits immediately with no output, permission is likely denied
+    const denied = test.status !== null && test.status !== 0 && !test.stdout?.trim();
+    if (denied || (test.stderr || '').toLowerCase().includes('not permitted')) {
+      // Open Input Monitoring pane directly
+      spawnSync('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent'], { encoding: 'utf8' });
+      showToast({
+        type: 'info',
+        message: '⚠ Enable Input Monitoring for Electron\nSystem Settings → Privacy → Input Monitoring',
+      }, 10000);
+      return false;
+    }
+    return true;
+  }
+
+  try {
+    const fnProc = spawn(fnWatcherPath, [], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let pressStart = 0;
+    const MIN_HOLD_MS = 300;
+    let buf = '';
+    let permissionChecked = false;
+
+    fnProc.stderr?.on('data', (chunk) => {
+      const msg = chunk.toString().toLowerCase();
+      if (!permissionChecked && (msg.includes('not permitted') || msg.includes('denied'))) {
+        permissionChecked = true;
+        spawnSync('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent'], { encoding: 'utf8' });
+        showToast({
+          type: 'info',
+          message: '⚠ Enable Input Monitoring for Electron\nSystem Settings → Privacy → Input Monitoring',
+        }, 10000);
+      }
+    });
+
+    fnProc.stdout.on('data', (chunk) => {
+      buf += chunk.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        const ev = line.trim();
+        if (ev === 'down') {
+          pressStart = Date.now();
+          if (isBubbleEnabled && !isRecording) startRecording();
+        } else if (ev === 'up') {
+          const held = Date.now() - pressStart;
+          if (!isRecording) return;
+          if (held >= MIN_HOLD_MS) stopRecording();
+          else cancelRecording();
+        }
+      }
+    });
+
+    fnProc.on('error', (e) => console.error('[fn_watcher] error:', e.message));
+    fnProc.on('exit', (code) => {
+      if (code !== 0) {
+        // Likely permission denied — open settings
+        spawnSync('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent'], { encoding: 'utf8' });
+        showToast({
+          type: 'info',
+          message: '⚠ Enable Input Monitoring for Electron\nSystem Settings → Privacy → Input Monitoring',
+        }, 10000);
+      }
+    });
+
+    app.on('will-quit', () => { try { fnProc.kill(); } catch {} });
+    console.log('[shortcut] fn key push-to-talk active via IOHIDManager');
+
+  } catch (e) {
+    console.error('[fn_watcher] failed to start:', e.message);
+  }
+
+  // ── Fallback: F13 via uiohook-napi if fn_watcher fails ───────────────────
+  try {
+    const { uIOhook, UiohookKey } = require('uiohook-napi');
+    const TRIGGER = UiohookKey.F13;
+    let keyDown = false;
+    let pressStart = 0;
+    const MIN_HOLD_MS = 300;
+
+    uIOhook.on('keydown', (e) => {
+      if (e.keycode !== TRIGGER || keyDown) return;
+      keyDown = true;
+      pressStart = Date.now();
+      if (isBubbleEnabled && !isRecording) startRecording();
+    });
+
+    uIOhook.on('keyup', (e) => {
+      if (e.keycode !== TRIGGER) return;
+      keyDown = false;
+      const held = Date.now() - pressStart;
+      if (!isRecording) return;
+      if (held >= MIN_HOLD_MS) stopRecording();
+      else cancelRecording();
+    });
+
+    uIOhook.start();
+    console.log('[shortcut] F13 fallback push-to-talk active');
+  } catch (e) {
+    console.error('[shortcut] uiohook-napi failed:', e.message);
+    // Fallback to toggle shortcut
+    const sc = process.platform === 'darwin' ? 'Command+Shift+R' : 'Control+Shift+R';
+    const ok = globalShortcut.register(sc, () => toggleRecording());
+    console.log(`[shortcut] Fallback ${sc}: ${ok ? 'registered' : 'failed'}`);
+  }
 });
 
 app.on('window-all-closed', e => e.preventDefault());
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  try { require('uiohook-napi').uIOhook.stop(); } catch {}
+});
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
 ipcMain.on('toggle-panel', () => {
   if (!isBubbleEnabled) return;
-  if (isModeMenuOpen) hideModeMenu();
-  else if (isOverlayOpen) hideOverlay();
-  else showModeMenu();
+  if (isOverlayOpen) hideOverlay();
+  else showOverlay('nativeToEnglish');
 });
 
 ipcMain.on('select-mode', (_, mode) => { showOverlay(mode); });
 ipcMain.on('hide-overlay', () => hideOverlay());
+
+ipcMain.on('bubble-clicked', () => toggleRecording());
+ipcMain.on('stop-recording-ipc', () => stopRecording());
+
+// ── Live transcript update → forward to overlay ───────────────────────────────
+ipcMain.on('live-transcript-update', (_, text) => {
+  if (overlayWin) overlayWin.webContents.send('live-transcript', text);
+});
+
+// ── Dynamic overlay resize ────────────────────────────────────────────────────
+ipcMain.on('resize-overlay', (_, { height }) => {
+  if (!overlayWin) return;
+  const [w] = overlayWin.getSize();
+  const newH = Math.max(120, Math.min(height, 800));
+  const [cx, cy] = overlayWin.getPosition();
+  const [, oldH] = overlayWin.getSize();
+  overlayWin.setSize(w, newH);
+  // Keep bottom edge anchored (card grows upward)
+  const dy = oldH - newH;
+  overlayWin.setPosition(cx, cy + dy);
+});
+
+// ── Cancel recording (X button during recording) ──────────────────────────────
+ipcMain.on('cancel-recording', () => {
+  isRecording = false;
+  if (bubbleWin) bubbleWin.webContents.send('recording-state', false);
+  hideOverlay();
+});
+
+ipcMain.on('recording-result', (_, { transcript }) => {
+  isRecording = false;
+  if (bubbleWin) bubbleWin.webContents.send('recording-state', false);
+  // Context was already captured at startRecording() — don't overwrite it here
+  if (!overlayWin) createOverlay();
+  positionOverlay();
+  overlayWin.show();
+  overlayWin.focus();
+  isOverlayOpen = true;
+  overlayWin.webContents.send('show-result', { transcript });
+});
 
 // Dev: Cmd+Shift+I opens DevTools on overlay
 ipcMain.on('open-devtools', () => { if (overlayWin) overlayWin.webContents.openDevTools({ mode: 'detach' }); });
@@ -426,7 +654,6 @@ ipcMain.on('hide-toast', () => {
 ipcMain.on('bubble-drag', (_, { x, y }) => {
   if (bubbleWin) {
     bubbleWin.setPosition(Math.round(x), Math.round(y));
-    if (isModeMenuOpen) positionModeMenu();
     if (isOverlayOpen) positionOverlay();
   }
 });
@@ -690,50 +917,92 @@ ipcMain.on('stop-screen-mode', () => {
   if (toastWin) toastWin.hide();
 });
 
-// ── Open Gmail compose with pre-filled subject + body ────────────────────────
-ipcMain.on('open-gmail-compose', (_, { subject, body }) => {
-  const su = encodeURIComponent(subject || '');
-  const bd = encodeURIComponent(body || '');
-  const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${su}&body=${bd}`;
+// ── Detect frontmost app + active browser URL ─────────────────────────────────
+ipcMain.on('get-active-url', (event) => {
+  // 1. Try to get URL from frontmost browser via AppleScript
+  const browsers = [
+    { name: 'Google Chrome',  script: `tell application "Google Chrome" to get URL of active tab of front window` },
+    { name: 'Safari',         script: `tell application "Safari" to get URL of current tab of front window` },
+    { name: 'Microsoft Edge', script: `tell application "Microsoft Edge" to get URL of active tab of front window` },
+    { name: 'Brave Browser',  script: `tell application "Brave Browser" to get URL of active tab of front window` },
+    { name: 'Firefox',        script: `tell application "Firefox" to get URL of active tab of front window` },
+  ];
 
-  // Open in the default browser
-  const { shell } = require('electron');
-  shell.openExternal(url);
+  let url = null;
+  let appName = null;
 
-  showToast({ type: 'success', message: '✓ Opened Gmail compose with subject & body' }, 3000);
-});
+  // Get frontmost app name first
+  const frontAppResult = spawnSync('osascript', ['-e', 'tell application "System Events" to get name of first process whose frontmost is true'], { encoding: 'utf8', timeout: 3000 });
+  appName = (frontAppResult.stdout || '').trim();
 
-// ── Send to compose — fills Gmail/Slack directly via external shell script ──
-ipcMain.on('send-to-compose', (_, { subject, body, target }) => {
-  hideOverlay();
-  if (toastWin) toastWin.hide();
-
-  setTimeout(() => {
-    const scriptPath = path.join(__dirname, 'fill_compose.sh');
-    const r = spawnSync('bash', [scriptPath, target || 'gmail', subject || '', body || ''], {
-      encoding: 'utf8', timeout: 12000,
-    });
-    console.log('[fill_compose] stdout:', r.stdout?.trim(), 'stderr:', r.stderr?.trim());
-    if (r.error) {
-      showToast({ type: 'error', message: '⚠ Could not fill compose box.' }, 4000);
-    } else {
-      const label = target === 'gmail' ? 'Gmail' : target === 'slack' ? 'Slack' : 'compose';
-      showToast({ type: 'success', message: `✓ ${label} compose filled` }, 3000);
+  // Try browser URL extraction
+  for (const b of browsers) {
+    if (appName && !appName.toLowerCase().includes(b.name.split(' ')[0].toLowerCase())) continue;
+    const r = spawnSync('osascript', ['-e', b.script], { encoding: 'utf8', timeout: 3000 });
+    if (!r.error && r.status === 0 && r.stdout?.trim()) {
+      url = r.stdout.trim();
+      break;
     }
-  }, 400);
+  }
+
+  event.reply('active-url', url);
+  event.reply('active-app', appName);
 });
 
-// ── Send text to whatever textbox is focused in any app ───────────────────────
-ipcMain.on('send-to-textbox', (_, { text }) => {
-  if (!text) return;
+// ── Smart send — detect target and route ──────────────────────────────────────
+ipcMain.on('smart-send', (_, { text, subject, body }) => {
+  const scriptPath = path.join(__dirname, 'fill_compose.sh');
 
-  const { clipboard } = require('electron');
-  clipboard.writeText(text);
+  const url = lastActiveUrl;
+  const appName = lastActiveApp;
+  console.log('[smart-send] stored url:', url, 'app:', appName);
+
+  let target = 'fallback';
+  if (url.includes('mail.google.com'))                                          target = 'gmail';
+  else if (url.includes('slack.com'))                                           target = 'slack';
+  else if (url.includes('web.whatsapp.com'))                                    target = 'whatsapp';
+  else if (url.includes('linkedin.com'))                                        target = 'linkedin';
+  else if (url.includes('outlook.live.com') || url.includes('outlook.office')) target = 'outlook';
+  else if (appName.includes('slack'))                                           target = 'slack';
+  else if (appName.includes('whatsapp'))                                        target = 'whatsapp';
+  else if (appName.includes('mail') && !appName.includes('gmail'))              target = 'applemail';
+
+  console.log('[smart-send] target:', target);
 
   hideOverlay();
-  if (toastWin) toastWin.hide();
+
+  if (target === 'fallback') {
+    const { clipboard } = require('electron');
+    clipboard.writeText(text);
+    showToast({ type: 'info', message: '📋 Message copied — paste it anywhere' }, 3000);
+    setTimeout(() => { app.show(); if (bubbleWin) bubbleWin.show(); }, 200);
+    return;
+  }
+
+  const pastTargets = ['gmail', 'linkedin', 'slack', 'whatsapp', 'outlook'];
+  const needsAppHide = pastTargets.includes(target);
+
+  if (needsAppHide) {
+    // Hide the entire Electron app so macOS gives focus back to Chrome/browser.
+    // This is the only reliable way to ensure Cmd+V goes to the right window.
+    app.hide();
+  }
+
+  // Give macOS time to fully switch focus to the target app
+  const delay = needsAppHide ? 600 : 400;
 
   setTimeout(() => {
-    showToast({ type: 'success', message: '✓ Copied! Press ⌘V to paste' }, 4000);
-  }, 300);
+    const result = spawnSync('bash', [scriptPath, target, subject || '', body || text], {
+      encoding: 'utf8', timeout: 15000,
+    });
+    console.log('[smart-send] fill_compose result:', result.stdout, result.stderr);
+
+    // Bring Electron back (bubble should reappear)
+    if (needsAppHide) {
+      setTimeout(() => {
+        app.show();
+        if (bubbleWin) bubbleWin.show();
+      }, 500);
+    }
+  }, delay);
 });

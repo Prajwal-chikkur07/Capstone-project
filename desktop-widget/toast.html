@@ -12,22 +12,20 @@
     }
 
     .toast {
-      background: rgba(10, 12, 20, 0.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: #fff;
+      border: 1px solid #e8e8e8;
       border-radius: 16px;
-      padding: 10px 12px 10px 14px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-      animation: slideUp 0.22s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      animation: slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1);
     }
 
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .dot {
@@ -36,11 +34,11 @@
       flex-shrink: 0;
     }
 
-    .dot.loading { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.6); animation: pulse 1s ease-in-out infinite; }
-    .dot.result  { background: #818cf8; box-shadow: 0 0 6px rgba(129,140,248,0.6); }
-    .dot.success { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.6); }
-    .dot.error   { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.6); }
-    .dot.info    { background: #60a5fa; box-shadow: 0 0 6px rgba(96,165,250,0.6); }
+    .dot.loading { background: #f59e0b; animation: pulse 1s ease-in-out infinite; }
+    .dot.result  { background: #6366f1; }
+    .dot.success { background: #10b981; }
+    .dot.error   { background: #ef4444; }
+    .dot.info    { background: #111; }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
@@ -49,7 +47,7 @@
     .label {
       font-size: 9px;
       font-weight: 700;
-      color: rgba(255,255,255,0.3);
+      color: #aaa;
       text-transform: uppercase;
       letter-spacing: 0.07em;
       margin-bottom: 2px;
@@ -58,7 +56,7 @@
     .message {
       font-size: 12px;
       line-height: 1.5;
-      color: rgba(255,255,255,0.85);
+      color: #111;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -77,36 +75,36 @@
       font-weight: 700;
       padding: 4px 9px;
       cursor: pointer;
-      transition: background 0.12s, color 0.12s;
+      transition: background 0.12s;
       white-space: nowrap;
     }
 
     .copy-btn {
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.4);
+      background: #f0f0f0;
+      color: #555;
       display: none;
     }
     .copy-btn.visible { display: inline-block; }
-    .copy-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
-    .copy-btn.copied { color: #6ee7b7; background: rgba(16,185,129,0.12); }
+    .copy-btn:hover { background: #e0e0e0; }
+    .copy-btn.copied { color: #10b981; background: rgba(16,185,129,0.1); }
 
     .stop-btn {
-      background: rgba(239,68,68,0.12);
-      color: #f87171;
-      border: 1px solid rgba(239,68,68,0.2);
+      background: rgba(239,68,68,0.08);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.15);
       display: none;
       align-items: center;
       gap: 5px;
     }
     .stop-btn.visible { display: inline-flex; }
-    .stop-btn:hover { background: rgba(239,68,68,0.22); color: #fca5a5; }
+    .stop-btn:hover { background: rgba(239,68,68,0.15); }
 
     .dismiss-btn {
       width: 22px; height: 22px;
       border: none;
       border-radius: 6px;
-      background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.25);
+      background: #f5f5f5;
+      color: #bbb;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -114,7 +112,7 @@
       flex-shrink: 0;
       transition: background 0.12s, color 0.12s;
     }
-    .dismiss-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .dismiss-btn:hover { background: #eee; color: #555; }
   </style>
 </head>
 <body>
@@ -128,7 +126,6 @@
       <button class="action-btn copy-btn" id="copyBtn">Copy</button>
       <button class="action-btn stop-btn" id="stopBtn">
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        Stop
       </button>
       <button class="dismiss-btn" id="dismissBtn">
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -146,7 +143,7 @@
     const stopBtn = document.getElementById('stopBtn');
     const dismissBtn = document.getElementById('dismissBtn');
 
-    const LABELS = { loading: 'Translating', result: 'Translation', success: 'Done', error: 'Error', info: 'Active' };
+    const LABELS = { loading: 'Working', result: 'Translation', success: 'Done', error: 'Error', info: '' };
 
     ipcRenderer.on('toast-data', (_, data) => {
       dot.className = 'dot ' + data.type;

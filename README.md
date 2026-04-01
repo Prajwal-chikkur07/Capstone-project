@@ -1,9 +1,29 @@
+# Run commands:
+> Backend :
+cd backend
+source venv/bin/activate
+uvicorn main:app --reload --port 8000
+
+> frontend :
+cd react-frontend
+npm run dev
+
+> Chrome Extension
+cd chrome-extension
+npm run build
+
+After the extension builds:
+1. Open Chrome → chrome://extensions
+2. Enable "Developer mode" (top right)
+3. Click "Load unpacked"
+4. Select the chrome-extension/dist folder
+5. The extension is now loaded
+
 # 🌍 Voice Translation App
 
-A full-stack multilingual voice translation application that converts speech from Indian regional languages to English, applies tone styling, and translates back to native languages. Built with Flutter (frontend) and FastAPI (backend), powered by Sarvam AI and Google Gemini.
+A full-stack multilingual voice translation application that converts speech from Indian regional languages to English, applies tone styling, and translates back to native languages. Built with React (frontend) and FastAPI (backend), powered by Sarvam AI and Google Gemini.
 
 ## 📋 Table of Contents
-
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
@@ -39,7 +59,7 @@ Perfect for professionals who need to communicate across language barriers while
 - 🗣️ **Speech-to-Text Translation**: Automatic transcription and translation to English
 - 🎨 **Tone Styling**: Apply predefined or custom tone styles to text
 - 🌐 **Multi-Language Support**: Translate to 10+ Indian regional languages
-- 📱 **Cross-Platform**: Works on Web, Android, and iOS
+- 📱 **Mobile Responsive**: Works on all screen sizes with native-like feel
 
 ### Tone Styles
 - **Email Formal**: Professional language with proper salutations
@@ -57,11 +77,10 @@ Hindi, Bengali, Tamil, Telugu, Malayalam, Marathi, Gujarati, Kannada, Punjabi, O
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Flutter Frontend                         │
-│  (Web/Android/iOS - Material Design UI)                     │
+│                     React Frontend                           │
+│  (Web/Mobile - Tailwind CSS UI)                             │
 └─────────────────┬───────────────────────────────────────────┘
                   │ HTTP/REST API
-                  │
 ┌─────────────────▼───────────────────────────────────────────┐
 │                   FastAPI Backend                            │
 │  ┌──────────────────────────────────────────────────────┐  │
@@ -87,14 +106,11 @@ Hindi, Bengali, Tamil, Telugu, Malayalam, Marathi, Gujarati, Kannada, Punjabi, O
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **Framework**: Flutter 3.11+
-- **Language**: Dart
-- **Key Packages**:
-  - `http`: REST API communication
-  - `record`: Audio recording
-  - `permission_handler`: Microphone permissions
-  - `path_provider`: File system access
-  - `audioplayers`: Audio playback
+- **Framework**: React + Vite
+- **Styling**: Tailwind CSS
+- **Routing**: React Router
+- **HTTP**: Axios with retry logic
+- **Icons**: Lucide React
 
 ### Backend
 - **Framework**: FastAPI (Python)
@@ -102,40 +118,51 @@ Hindi, Bengali, Tamil, Telugu, Malayalam, Marathi, Gujarati, Kannada, Punjabi, O
 - **Key Libraries**:
   - `fastapi`: Web framework
   - `pydantic`: Data validation
-  - `requests`: HTTP client for external APIs
-  - `python-dotenv`: Environment variable management
+  - `sqlalchemy`: PostgreSQL ORM
+  - `python-jose`: JWT authentication
   - `google-generativeai`: Gemini AI integration
   - `python-multipart`: File upload handling
 
 ### External APIs
 - **Sarvam AI**: Speech-to-text translation and text translation
-- **Google Gemini 2.5 Flash**: AI-powered tone rewriting
+- **Google Gemini**: AI-powered tone rewriting and vision translation
 
 ---
 
 ## 📁 Project Structure
 
 ```
-language-translation-app/
-├── backend/
-│   ├── main.py                      # FastAPI application entry point
-│   ├── requirements.txt             # Python dependencies
-│   ├── .env                         # API keys (not in git)
-│   └── services/
-│       ├── sarvam_client.py        # Sarvam AI integration
-│       └── gemini_client.py        # Google Gemini integration
-│
-├── frontend/
-│   ├── lib/
-│   │   ├── main.dart               # Flutter app entry point
-│   │   ├── screens/
-│   │   │   └── home_screen.dart    # Main UI screen
-│   │   └── services/
-│   │       └── api_service.dart    # Backend API client
-│   ├── pubspec.yaml                # Flutter dependencies
-│   └── android/ios/web/            # Platform-specific configs
-│
-└── README.md                        # This file
+Capstone-project/
+├── Translation-agent/
+│   ├── Translate-agent/
+│   │   ├── backend/
+│   │   │   ├── main.py
+│   │   │   ├── requirements.txt
+│   │   │   ├── .env
+│   │   │   ├── database.py
+│   │   │   ├── models.py
+│   │   │   ├── routers/
+│   │   │   │   └── auth_router.py
+│   │   │   └── services/
+│   │   │       ├── sarvam_client.py
+│   │   │       ├── gemini_client.py
+│   │   │       ├── auth.py
+│   │   │       └── tts_service.py
+│   │   └── react-frontend/
+│   │       ├── src/
+│   │       │   ├── pages/
+│   │       │   ├── components/
+│   │       │   ├── context/
+│   │       │   ├── hooks/
+│   │       │   └── services/
+│   │       └── package.json
+├── chrome-extension/
+│   ├── public/
+│   │   ├── manifest.json
+│   │   ├── content.js
+│   │   └── background.js
+│   └── src/
+└── README.md
 ```
 
 ---
@@ -144,146 +171,88 @@ language-translation-app/
 
 ### Prerequisites
 - Python 3.8+
-- Flutter 3.11+
+- Node.js 18+
 - Sarvam AI API Key ([Get it here](https://www.sarvam.ai/))
 - Google Gemini API Key ([Get it here](https://ai.google.dev/))
 
 ### Backend Setup
 
 1. **Navigate to backend directory**:
-   ```bash
-   cd language-translation-app/backend
-   ```
+```bash
+cd Translation-agent/Translate-agent/backend
+```
 
 2. **Create virtual environment**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
 3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-4. **Configure environment variables**:
-   Create a `.env` file in the `backend/` directory:
-   ```env
-   SARVAM_API_KEY=your_sarvam_api_key_here
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+4. **Configure environment variables** — create `.env`:
+```env
+SARVAM_API_KEY=your_sarvam_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+HUGGINGFACE_API_KEY=your_hf_key_here
+DATABASE_URL=postgresql://user:password@localhost:5432/seedlingspeaks
+SECRET_KEY=your_jwt_secret
+```
 
 5. **Run the server**:
-   ```bash
-   python main.py
-   ```
-   Server will start at `http://localhost:8000`
+```bash
+uvicorn main:app --reload --port 8000
+```
 
 ### Frontend Setup
 
 1. **Navigate to frontend directory**:
-   ```bash
-   cd language-translation-app/frontend
-   ```
+```bash
+cd Translation-agent/Translate-agent/react-frontend
+```
 
-2. **Install Flutter dependencies**:
-   ```bash
-   flutter pub get
-   ```
+2. **Install dependencies**:
+```bash
+npm install
+```
 
-3. **Update API endpoint** (if needed):
-   Edit `lib/services/api_service.dart`:
-   ```dart
-   static const String baseUrl = 'http://YOUR_IP:8000/api';
-   ```
-   - Use `127.0.0.1` for web
-   - Use your machine's IP for physical devices
+3. **Run dev server**:
+```bash
+npm run dev
+```
 
-4. **Run the app**:
-   ```bash
-   # For web
-   flutter run -d chrome
+App runs at `http://localhost:5173`
 
-   # For Android
-   flutter run -d android
+### Chrome Extension
 
-   # For iOS
-   flutter run -d ios
-   ```
+```bash
+cd chrome-extension
+npm install
+npm run build
+```
+
+Load `chrome-extension/dist` as unpacked extension in `chrome://extensions`.
 
 ---
 
 ## 🔌 API Endpoints
 
-### 1. Translate Audio
-**Endpoint**: `POST /api/translate-audio`
+### Translate Audio
+`POST /api/translate-audio` — Audio → English transcript
 
-**Description**: Converts audio from Indian regional languages to English text
+### Rewrite Tone
+`POST /api/rewrite-tone` — Apply tone styling via Gemini
 
-**Request**:
-- Content-Type: `multipart/form-data`
-- Body: Audio file (webm, wav, mp3, ogg, flac, m4a)
+### Translate Text
+`POST /api/translate-text` — English → Native language
 
-**Response**:
-```json
-{
-  "transcript": "Hello, how are you?"
-}
-```
-
-**Supported Audio Formats**: webm, wav, mp3, ogg, flac, m4a
-
----
-
-### 2. Rewrite Tone
-**Endpoint**: `POST /api/rewrite-tone`
-
-**Description**: Applies tone styling to English text using Google Gemini
-
-**Request**:
-```json
-{
-  "text": "Hello, how are you?",
-  "tone": "Email Formal",
-  "user_override": null
-}
-```
-
-**Response**:
-```json
-{
-  "rewritten_text": "Dear Sir/Madam,\n\nI hope this message finds you well..."
-}
-```
-
-**Available Tones**:
-- `Email Formal`
-- `Email Casual`
-- `Slack`
-- `LinkedIn`
-- `User Override` (with custom description)
-
----
-
-### 3. Translate Text
-**Endpoint**: `POST /api/translate-text`
-
-**Description**: Translates English text to Indian regional languages
-
-**Request**:
-```json
-{
-  "text": "Hello, how are you?",
-  "target_language": "hi-IN"
-}
-```
-
-**Response**:
-```json
-{
-  "translated_text": "नमस्ते, आप कैसे हैं?"
-}
-```
+### Auth
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
 ---
 
@@ -304,238 +273,35 @@ language-translation-app/
 
 ---
 
-## 🔄 How It Works
-
-### Workflow Diagram
-
-```
-┌──────────────┐
-│ User Records │
-│ Audio (Hindi)│
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ Sarvam AI                │
-│ Speech-to-Text-Translate │
-│ (Hindi → English)        │
-└──────┬───────────────────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ English Text:            │
-│ "Hello, how are you?"    │
-└──────┬───────────────────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ Google Gemini            │
-│ Tone Styling             │
-│ (Apply Email Formal)     │
-└──────┬───────────────────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ Styled Text:             │
-│ "Dear Sir/Madam,..."     │
-└──────┬───────────────────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ Sarvam AI Translation    │
-│ (English → Tamil)        │
-└──────┬───────────────────┘
-       │
-       ▼
-┌──────────────────────────┐
-│ Final Output (Tamil)     │
-└──────────────────────────┘
-```
-
-### Step-by-Step Process
-
-1. **Audio Recording**:
-   - User clicks microphone button
-   - Browser/app requests microphone permission
-   - Audio is recorded in webm (web) or m4a (mobile) format
-
-2. **Speech-to-Text Translation**:
-   - Audio file is sent to backend
-   - Backend forwards to Sarvam AI's `speech-to-text-translate` API
-   - Sarvam AI detects source language and translates to English
-   - English transcript is returned to frontend
-
-3. **Tone Styling**:
-   - User selects desired tone (or provides custom description)
-   - English text is sent to backend with tone preference
-   - Backend uses Google Gemini to rewrite text in specified tone
-   - Styled text is displayed to user
-
-4. **Native Language Translation**:
-   - User selects target language (e.g., Tamil)
-   - Styled English text is sent to backend
-   - Backend uses Sarvam AI's `translate` API
-   - Translated text is displayed in native script
-
----
-
-## 📖 Usage Guide
-
-### Recording Audio
-
-1. Click the microphone button
-2. Allow microphone permissions when prompted
-3. Speak in your native language
-4. Click the stop button when finished
-5. Wait for automatic translation to English
-
-### Applying Tone Styles
-
-1. After audio translation, select a tone from the dropdown:
-   - **Email Formal**: For professional correspondence
-   - **Email Casual**: For friendly emails
-   - **Slack**: For team messaging
-   - **LinkedIn**: For professional networking
-   - **User Override**: For custom tone descriptions
-
-2. For custom tones:
-   - Select "User Override"
-   - Enter your tone description (e.g., "Formal but with bullet points")
-   - Click "Apply Custom Tone"
-
-### Translating to Native Language
-
-1. Review the styled English text
-2. Select your target language from the dropdown
-3. Click "Translate to Native"
-4. Copy the translated text for use
-
----
-
 ## 🔐 Environment Variables
 
-Create a `.env` file in the `backend/` directory:
-
 ```env
-# Sarvam AI API Key
-# Get from: https://www.sarvam.ai/
 SARVAM_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxx
-
-# Google Gemini API Key
-# Get from: https://ai.google.dev/
 GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxx
+HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxxx
+DATABASE_URL=postgresql://...
+SECRET_KEY=your_jwt_secret_key
 ```
-
-**Security Notes**:
-- Never commit `.env` files to version control
-- Add `.env` to `.gitignore`
-- Regenerate keys if accidentally exposed
-- Use environment-specific keys for production
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Backend Issues
+**Backend not starting** — check venv is activated and `.env` exists
 
-**Problem**: `SARVAM_API_KEY is not set`
-- **Solution**: Ensure `.env` file exists in `backend/` directory with valid API key
+**ECONNREFUSED on frontend** — backend isn't running, start it first
 
-**Problem**: `Sarvam API Error: 401`
-- **Solution**: Check if your Sarvam API key is valid and has sufficient credits
+**Sarvam 401** — invalid or expired API key
 
-**Problem**: `Gemini API Error`
-- **Solution**: Verify Gemini API key and check if the API is enabled in Google Cloud Console
+**Microphone denied** — grant permissions in browser settings
 
-**Problem**: CORS errors
-- **Solution**: Backend already has CORS enabled for all origins. Check if backend is running.
-
-### Frontend Issues
-
-**Problem**: "Failed to translate audio"
-- **Solution**: 
-  - Ensure backend is running at `http://localhost:8000`
-  - Check network connectivity
-  - Verify audio format is supported
-
-**Problem**: Microphone permission denied
-- **Solution**: 
-  - Grant microphone permissions in browser/device settings
-  - On web: Check browser console for permission errors
-  - On mobile: Check app permissions in device settings
-
-**Problem**: "Could not read recorded audio from browser"
-- **Solution**: 
-  - Try a different browser (Chrome recommended)
-  - Clear browser cache
-  - Check if microphone is working in other apps
-
-**Problem**: Connection refused on physical device
-- **Solution**: 
-  - Update `baseUrl` in `api_service.dart` to your machine's IP
-  - Ensure device and computer are on same network
-  - Check firewall settings
-
-### Audio Format Issues
-
-**Problem**: "Unsupported audio format"
-- **Solution**: 
-  - Web: Browser should record in webm (opus codec)
-  - Mobile: App records in m4a (aac codec)
-  - Both formats are supported by Sarvam AI
-
----
-
-## 🎨 UI Features
-
-- **Material Design 3**: Modern, clean interface
-- **Responsive Layout**: Works on all screen sizes
-- **Real-time Feedback**: Loading indicators and error messages
-- **Selectable Text**: Easy copying of translations
-- **Color-coded Sections**: Clear visual separation of workflow steps
-
----
-
-## 🔮 Future Enhancements
-
-- [ ] Audio playback of translated text (Text-to-Speech)
-- [ ] Translation history and favorites
-- [ ] Offline mode with cached translations
-- [ ] Multiple audio file upload
-- [ ] Real-time streaming translation
-- [ ] User authentication and profiles
-- [ ] Custom tone presets
-- [ ] Export translations to various formats
+**Chrome extension not working** — rebuild with `npm run build` and reload in `chrome://extensions`
 
 ---
 
 ## 📄 License
 
 This project is for educational and demonstration purposes.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check the [Troubleshooting](#troubleshooting) section
-2. Review [Sarvam AI Documentation](https://docs.sarvam.ai/)
-3. Review [Google Gemini Documentation](https://ai.google.dev/docs)
-
----
-
-## 🙏 Acknowledgments
-
-- **Sarvam AI**: For providing excellent Indian language AI services
-- **Google Gemini**: For powerful text generation capabilities
-- **Flutter Team**: For the amazing cross-platform framework
-- **FastAPI**: For the modern, fast web framework
 
 ---
 
