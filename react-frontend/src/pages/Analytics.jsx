@@ -64,83 +64,95 @@ export default function Analytics() {
   const maxDay = Math.max(...dailyCounts.map(d => d.count), 1);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.analyticsTitle}</h1>
-        <p className="text-[13px] text-gray-400 mt-0.5">{L.usageInsights}</p>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.analyticsTitle}</h1>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{L.usageInsights}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { icon: Mic2,       label: L.totalTranscripts, value: history.length,                          sub: 'all time',      color: 'text-gray-900' },
-          { icon: TrendingUp, label: L.thisWeek,          value: thisWeek.length,                         sub: 'transcripts',   color: 'text-gray-900' },
-          { icon: Zap,        label: L.avgConfidence,     value: avgConf != null ? `${avgConf}%` : '—',   sub: 'speech clarity', color: confColor       },
-          { icon: Star,       label: L.starred,           value: state.starredIds?.length || 0,           sub: 'saved items',   color: 'text-gray-900' },
+          { icon: Mic2,       label: L.totalTranscripts, value: history.length,                          sub: 'all time',      color: 'var(--text-primary)' },
+          { icon: TrendingUp, label: L.thisWeek,          value: thisWeek.length,                         sub: 'transcripts',   color: 'var(--text-primary)' },
+          { icon: Zap,        label: L.avgConfidence,     value: avgConf != null ? `${avgConf}%` : '—',   sub: 'speech clarity', color: avgConf == null ? 'var(--text-muted)' : avgConf >= 85 ? '#16A34A' : avgConf >= 60 ? '#D97706' : '#DC2626' },
+          { icon: Star,       label: L.starred,           value: state.starredIds?.length || 0,           sub: 'saved items',   color: 'var(--text-primary)' },
         ].map(({ icon: Icon, label, value, sub, color }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-100 px-4 py-4 shadow-sm">
-            <Icon className="w-4 h-4 text-gray-400 mb-2" />
-            <p className={`text-[24px] font-extrabold tracking-tight ${color}`}>{value}</p>
-            <p className="text-[12px] text-gray-500 font-medium mt-0.5">{label}</p>
-            <p className="text-[11px] text-gray-300 mt-0.5">{sub}</p>
+          <div key={label} style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 20, transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <Icon style={{ width: 18, height: 18, color: 'var(--accent)' }} />
+            </div>
+            <p style={{ fontSize: '2rem', fontWeight: 700, color, margin: 0, lineHeight: 1 }}>{value}</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', margin: '6px 0 2px' }}>{label}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{sub}</p>
           </div>
         ))}
       </div>
 
       {/* API calls */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{L.apiCalls}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.apiCalls}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
-            { label: 'Sarvam',     value: usage.sarvamCalls || 0, color: 'text-blue-600'  },
-            { label: 'Gemini',     value: usage.geminiCalls || 0, color: 'text-amber-500' },
-            { label: 'Cache hits', value: usage.cacheHits   || 0, color: 'text-green-600' },
+            { label: 'Sarvam',     value: usage.sarvamCalls || 0, color: '#2563EB'  },
+            { label: 'Gemini',     value: usage.geminiCalls || 0, color: 'var(--accent)' },
+            { label: 'Cache hits', value: usage.cacheHits   || 0, color: '#16A34A' },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 text-center">
-              <p className={`text-[22px] font-extrabold ${color}`}>{value}</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{label}</p>
+            <div key={label} style={{ background: 'var(--page-bg)', borderRadius: 'var(--radius-inner)', padding: '16px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: '1.5rem', fontWeight: 700, color, margin: 0 }}>{value}</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Daily activity */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{L.dailyActivity}</p>
-        <div className="flex items-end gap-2" style={{ height: 68 }}>
-          {dailyCounts.map(({ label, count }) => (
-            <div key={label} className="flex-1 flex flex-col items-center gap-1.5">
-              <div className="w-full bg-gray-100 rounded-lg overflow-hidden flex items-end" style={{ height: 48 }}>
-                <div className="w-full bg-gray-800 rounded-lg transition-all duration-500"
-                  style={{ height: `${Math.round((count / maxDay) * 100)}%`, minHeight: count > 0 ? 4 : 0 }} />
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.dailyActivity}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 68 }}>
+          {dailyCounts.map(({ label, count }, i) => (
+            <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: '100%', background: 'rgba(0,0,0,0.06)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'flex-end', height: 48 }}>
+                <div style={{ width: '100%', background: i === dailyCounts.length - 1 ? 'var(--surface-dark)' : 'var(--text-muted)', borderRadius: 8, height: `${Math.round((count / maxDay) * 100)}%`, minHeight: count > 0 ? 4 : 0, transition: 'height 0.5s' }} />
               </div>
-              <span className="text-[10px] text-gray-400">{label}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Confidence trend */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{L.confidenceTrend}</p>
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.confidenceTrend}</p>
         <ConfidenceTrend history={history} />
       </div>
 
       {/* Language breakdown */}
       {langCounts.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm">
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">{L.languageUsage}</p>
-          <div className="space-y-3">
-            {langCounts.map(([lang, count]) => (
-              <div key={lang} className="flex items-center gap-3">
-                <span className="text-[13px] text-gray-600 w-24 shrink-0 truncate">{LANG_NAMES[lang] || lang}</span>
-                <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                  <div className="h-full bg-gray-800 rounded-full transition-all duration-500" style={{ width: `${Math.round((count / maxLang) * 100)}%` }} />
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.languageUsage}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {langCounts.map(([lang, count], i) => {
+              const gradients = [
+                'linear-gradient(90deg, #2563EB, #60A5FA)',
+                'linear-gradient(90deg, #F97316, #FDB07C)',
+                'linear-gradient(90deg, #16A34A, #4ADE80)',
+                'linear-gradient(90deg, #7C3AED, #A78BFA)',
+                'linear-gradient(90deg, #DB2777, #F472B6)',
+              ];
+              return (
+                <div key={lang} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', width: 80, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{LANG_NAMES[lang] || lang}</span>
+                  <div style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 'var(--radius-pill)', height: 8, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: gradients[i % gradients.length], borderRadius: 'var(--radius-pill)', width: `${Math.round((count / maxLang) * 100)}%`, transition: 'width 0.5s' }} />
+                  </div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', width: 20, textAlign: 'right', flexShrink: 0 }}>{count}</span>
                 </div>
-                <span className="text-[12px] text-gray-400 w-5 text-right shrink-0">{count}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

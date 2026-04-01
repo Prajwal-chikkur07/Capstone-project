@@ -32,12 +32,12 @@ export default function Dictionary() {
   const handleClear = () => { saveDictionary([]); setConfirmClear(false); showSuccess('Dictionary cleared'); };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.customDictionary}</h1>
-          <p className="text-[13px] text-gray-400 mt-0.5">{L.termsPreserved} · {dict.length} terms</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.customDictionary}</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{L.termsPreserved} · {dict.length} terms</p>
         </div>
         {dict.length > 0 && (
           confirmClear ? (
@@ -56,17 +56,23 @@ export default function Dictionary() {
       </div>
 
       {/* Add term */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm mb-4">
-        <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.addTerm}</p>
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: '20px 24px', marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 12 }}>{L.addTerm}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} className="sm:flex-row">
           <input value={native} onChange={e => setNative(e.target.value)} placeholder="Original term"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
+            style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--radius-inner)', border: '1.5px solid transparent', background: 'var(--page-bg)', fontSize: '0.9rem', color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
+            onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = 'var(--page-bg)'; e.target.style.boxShadow = 'none'; }} />
           <input value={english} onChange={e => setEnglish(e.target.value)} placeholder="Keep as (English)"
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-[14px] focus:outline-none focus:border-gray-300 transition-all" />
+            style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--radius-inner)', border: '1.5px solid transparent', background: 'var(--page-bg)', fontSize: '0.9rem', color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
+            onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = 'var(--page-bg)'; e.target.style.boxShadow = 'none'; }} />
           <button onClick={handleAdd} disabled={!native.trim() || !english.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-30 transition-all">
-            <Plus className="w-4 h-4" />Add
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 20px', borderRadius: 'var(--radius-inner)', background: 'var(--accent)', color: '#fff', fontSize: '0.875rem', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-orange)', opacity: (!native.trim() || !english.trim()) ? 0.4 : 1, transition: 'background 0.15s' }}
+            onMouseEnter={e => { if (native.trim() && english.trim()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}>
+            <Plus style={{ width: 16, height: 16 }} />Add
           </button>
         </div>
       </div>

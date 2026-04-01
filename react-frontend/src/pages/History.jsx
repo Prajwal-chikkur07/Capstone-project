@@ -78,14 +78,14 @@ export default function History() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-[18px] md:text-[22px] font-extrabold text-gray-900 tracking-tight">{L.transcriptHistory}</h1>
-          <p className="text-[13px] text-gray-400 mt-0.5">{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.transcriptHistory}</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => setShowStarred(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all ${
               showStarred ? 'bg-amber-50 border-amber-200 text-amber-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
@@ -130,13 +130,15 @@ export default function History() {
 
       {/* Search */}
       {(state.transcriptHistory?.length > 0) && (
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-muted)' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search transcripts..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-[14px] focus:outline-none focus:border-gray-300 transition-all"
+            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 'var(--radius-pill)', border: '1px solid rgba(0,0,0,0.07)', background: 'var(--surface)', fontSize: '0.9rem', color: 'var(--text-primary)', outline: 'none', boxShadow: 'var(--shadow-card)', fontFamily: 'var(--font)', boxSizing: 'border-box' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.07)'; e.target.style.boxShadow = 'var(--shadow-card)'; }}
           />
         </div>
       )}
@@ -169,20 +171,40 @@ export default function History() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.map((entry) => (
             <div key={entry.id}
-              className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-all group">
+              style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: '20px 24px', border: '1px solid rgba(0,0,0,0.05)', transition: 'transform 0.15s ease, box-shadow 0.15s ease', cursor: 'default' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; }}
+              className="group">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full">
-                      {LANG_NAMES[entry.lang] || entry.lang || 'Unknown'}
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                    {(() => {
+                      const langColors = {
+                        'kn-IN': { bg: '#D4EDE7', color: '#0F6E56' },
+                        'gu-IN': { bg: '#FEF0E6', color: '#9A3412' },
+                        'hi-IN': { bg: '#EEE8F8', color: '#5B21B6' },
+                        'ta-IN': { bg: '#D6E8F7', color: '#1E40AF' },
+                        'te-IN': { bg: '#DFF0C0', color: '#166534' },
+                        'ml-IN': { bg: '#FAE5D3', color: '#9A3412' },
+                        'bn-IN': { bg: '#EEE8F8', color: '#6D28D9' },
+                        'mr-IN': { bg: '#D6E8F7', color: '#1D4ED8' },
+                        'pa-IN': { bg: '#DFF0C0', color: '#15803D' },
+                        'or-IN': { bg: '#FAE5D3', color: '#C2410C' },
+                      };
+                      const lc = langColors[entry.lang] || { bg: '#F0F4F8', color: '#5A6478' };
+                      return (
+                        <span style={{ borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 700, background: lc.bg, color: lc.color }}>
+                          {LANG_NAMES[entry.lang] || entry.lang || 'Unknown'}
+                        </span>
+                      );
+                    })()}
                     <ConfidencePill score={entry.confidence} />
-                    <span className="text-[11px] text-gray-300">{fmt(entry.timestamp)}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{fmt(entry.timestamp)}</span>
                   </div>
-                  <p className="text-[14px] text-gray-700 leading-relaxed line-clamp-3">
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {entry.text}
                   </p>
                   {/* Tags */}

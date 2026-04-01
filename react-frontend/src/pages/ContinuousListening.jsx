@@ -113,51 +113,47 @@ export default function ContinuousListening() {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8f8f8]">
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--page-bg)' }}>
 
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-100 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isActive ? 'bg-red-500 shadow-md shadow-red-200' : 'bg-gray-900'}`}>
-            <Mic className="w-4 h-4 text-white" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: isActive ? '#EF4444' : 'var(--surface-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: isActive ? '0 4px 12px rgba(239,68,68,0.3)' : 'none', transition: 'all 0.2s' }}>
+            <Mic style={{ width: 20, height: 20, color: '#fff' }} />
           </div>
           <div>
-            <p className="text-[15px] font-bold text-gray-900">Live Conversation</p>
-            <p className="text-[11px] text-gray-400">
-              {isActive ? 'Listening & translating…' : isPaused ? 'Paused — session still active' : isEnded ? 'Session ended' : 'Ready to start'}
+            <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Live Conversation</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+              {isActive ? 'Listening & translating…' : isPaused ? 'Paused' : isEnded ? 'Session ended' : 'Ready to start'}
             </p>
           </div>
-          {isActive && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
-          {isPaused && <span className="w-2 h-2 rounded-full bg-amber-400" />}
+          {isActive && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', animation: 'pulse-dot 1.4s ease-in-out infinite' }} />}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ position: 'relative' }}>
             <select value={targetLang} onChange={e => handleLangChange(e.target.value)} disabled={isActive}
-              className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-[12px] font-semibold text-gray-700 cursor-pointer focus:outline-none pr-7 disabled:opacity-50">
+              style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', padding: '8px 32px 8px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)', opacity: isActive ? 0.5 : 1 }}>
               {LANGS.map(([n,c]) => <option key={c} value={c}>{n}</option>)}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: 'var(--text-muted)', pointerEvents: 'none' }} />
           </div>
           {isEnded && displayItems.filter(d => !d.processing).length > 0 && (
             <>
               <button onClick={handleSynthesize} disabled={isSynthesizing}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                {isSynthesizing ? <><Loader2 className="w-3 h-3 animate-spin" />Generating…</> : <><Volume2 className="w-3 h-3" />Generate voices</>}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface-dark)', color: '#fff', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', opacity: isSynthesizing ? 0.5 : 1 }}>
+                {isSynthesizing ? <><Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />Generating…</> : <><Volume2 style={{ width: 12, height: 12 }} />Generate voices</>}
               </button>
               {synthSegments.length > 0 && (
                 <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${
-                    playingIdx !== null ? 'bg-red-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
-                  {playingIdx !== null ? <><Square className="w-3 h-3 fill-white" />Stop</> : <><Play className="w-3 h-3 fill-white" />Play all</>}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: playingIdx !== null ? '#EF4444' : '#16A34A', color: '#fff', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                  {playingIdx !== null ? <><Square style={{ width: 12, height: 12 }} />Stop</> : <><Play style={{ width: 12, height: 12 }} />Play all</>}
                 </button>
               )}
             </>
           )}
           {(isEnded || isPaused) && lines.length > 0 && (
-            <button onClick={handleClear} className="px-3 py-1.5 rounded-xl text-[12px] font-medium text-gray-400 hover:text-red-400 hover:bg-red-50 transition-all">
-              Clear
-            </button>
+            <button onClick={handleClear} style={{ padding: '8px 14px', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
           )}
         </div>
       </div>
@@ -179,8 +175,8 @@ export default function ContinuousListening() {
       )}
 
       {/* ── Conversation area ── */}
-      <div className="flex-1 px-4 py-4 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-sm p-4 space-y-3 min-h-0">
+      <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
         {displayItems.length === 0 && !isDiarizing && (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-20">
@@ -261,53 +257,50 @@ export default function ContinuousListening() {
       </div>{/* end conversation area */}
 
       {/* ── Bottom controls ── */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 py-4 left-0 md:left-[220px]">
+      <div style={{ background: 'var(--surface)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '16px 20px', flexShrink: 0 }}>
         {isActive && (
-          <div className="flex items-end justify-center gap-[2px] h-7 mb-4">
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 28, marginBottom: 16 }}>
             {bars.map((h, i) => (
-              <div key={i} className="w-[3px] rounded-full bg-gray-900 transition-all duration-75" style={{ height: `${h}px` }} />
+              <div key={i} style={{ width: 3, borderRadius: 999, background: 'var(--surface-dark)', height: `${h}px`, transition: 'height 75ms' }} />
             ))}
           </div>
         )}
-        <div className="flex items-center justify-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           {isIdle && (
             <button onClick={handleStart}
-              className="flex items-center gap-2.5 bg-gray-900 hover:bg-gray-700 text-white px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all active:scale-95 shadow-sm">
-              <Mic className="w-5 h-5" />Start Listening
+              style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-dark)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,36,64,0.4)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#243158'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-dark)'; e.currentTarget.style.transform = 'none'; }}>
+              <Mic style={{ width: 20, height: 20, color: 'var(--accent)' }} />Start Listening
             </button>
           )}
           {isActive && (
             <>
-              <button onClick={handlePause}
-                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl text-[14px] font-bold transition-all active:scale-95">
-                <Pause className="w-4 h-4 fill-white" />Pause
+              <button onClick={handlePause} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F59E0B', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <Pause style={{ width: 16, height: 16 }} />Pause
               </button>
-              <button onClick={handleEnd}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-2xl text-[14px] font-bold transition-all active:scale-95">
-                <StopCircle className="w-4 h-4" />End
+              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <StopCircle style={{ width: 16, height: 16 }} />End
               </button>
             </>
           )}
           {isPaused && (
             <>
-              <button onClick={handleResume}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl text-[14px] font-bold transition-all active:scale-95">
-                <Mic className="w-4 h-4" />Resume
+              <button onClick={handleResume} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#16A34A', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <Mic style={{ width: 16, height: 16 }} />Resume
               </button>
-              <button onClick={handleEnd}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-2xl text-[14px] font-bold transition-all active:scale-95">
-                <StopCircle className="w-4 h-4" />End
+              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <StopCircle style={{ width: 16, height: 16 }} />End
               </button>
             </>
           )}
           {isEnded && (
-            <button onClick={handleClear}
-              className="flex items-center gap-2.5 bg-gray-900 hover:bg-gray-700 text-white px-8 py-3.5 rounded-2xl text-[15px] font-bold transition-all active:scale-95">
-              <Mic className="w-5 h-5" />New Session
+            <button onClick={handleClear} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-dark)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,36,64,0.4)' }}>
+              <Mic style={{ width: 20, height: 20, color: 'var(--accent)' }} />New Session
             </button>
           )}
         </div>
-        {isActive && <p className="text-center text-[11px] text-gray-400 mt-2">Translating every {CHUNK_MS/1000}s · keeps running while you navigate</p>}
+        {isActive && <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>Translating every {CHUNK_MS/1000}s · keeps running while you navigate</p>}
       </div>
     </div>
   );

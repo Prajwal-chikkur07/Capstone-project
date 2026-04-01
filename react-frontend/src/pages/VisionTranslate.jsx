@@ -110,33 +110,28 @@ export default function VisionTranslate() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-gray-400" />
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ImageIcon style={{ width: 20, height: 20, color: 'var(--text-muted)' }} />
             {L.visionTranslateTitle}
           </h2>
-          <p className="text-[13px] text-gray-400 mt-0.5">
-            Upload an image — translated text appears directly on the image
-          </p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Upload an image — translated text appears directly on the image</p>
         </div>
-        <div className="relative">
-          <select
-            value={targetLang}
-            onChange={e => setTargetLang(e.target.value)}
-            className="appearance-none bg-white border border-gray-200 rounded-xl pl-3 pr-8 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none hover:border-gray-300 transition-all shadow-sm"
-          >
+        <div style={{ position: 'relative' }}>
+          <select value={targetLang} onChange={e => setTargetLang(e.target.value)}
+            style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', padding: '8px 32px 8px 16px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)' }}>
             {Object.entries(LANG_LABELS).map(([code, name]) => (
               <option key={code} value={code}>{name}</option>
             ))}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
         </div>
       </div>
 
-      <div className="px-4 md:px-8 py-6 max-w-5xl mx-auto">
+      <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto' }}>
         {/* Upload zone */}
         {!imageUrl && (
           <div
@@ -144,18 +139,19 @@ export default function VisionTranslate() {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); loadImage(e.dataTransfer.files[0]); }}
             onClick={() => inputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all py-24 ${
-              dragging ? 'border-gray-400 bg-gray-100' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={e => loadImage(e.target.files[0])} />
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <Upload className="w-7 h-7 text-gray-400" />
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--radius-card)', border: `2px dashed ${dragging ? 'var(--accent)' : 'rgba(249,115,22,0.3)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? 'var(--accent-light)' : 'var(--surface)', boxShadow: 'var(--shadow-card)', transition: 'all 0.2s' }}>
+            <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" style={{ display: 'none' }} onChange={e => loadImage(e.target.files[0])} />
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Upload style={{ width: 24, height: 24, color: 'var(--accent)' }} />
             </div>
-            <div className="text-center">
-              <p className="text-[16px] font-semibold text-gray-700">{L.dropImageHere}</p>
-              <p className="text-[13px] text-gray-400 mt-1">PNG, JPG, WEBP · up to 10MB</p>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{L.dropImageHere}</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>PNG, JPG, WEBP · up to 10MB</p>
             </div>
+            <button style={{ background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-orange)', cursor: 'pointer' }}
+              onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
+              or browse files
+            </button>
           </div>
         )}
 

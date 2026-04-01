@@ -507,18 +507,21 @@ export default function Home() {
 
   // ── File upload mode ──
   if (state.recordingMode === RECORDING_MODES.FILE_UPLOAD && !editableTranscript) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
-        <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 text-[13px]">
-          <button onClick={() => setField('recordingMode', null)} className="text-gray-400 hover:text-gray-700 transition-colors font-medium">{L.home}</button>
-          <span className="text-gray-200">/</span>
-          <span className="text-gray-900 font-semibold">{L.uploadAudio || "Upload Audio"}</span>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center px-10 max-w-2xl w-full mx-auto">
-          <FileUploadZone onTranscribed={handleFileTranscribed} />
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
+      {/* Header */}
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-muted)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
+          <span style={{ color: 'var(--text-muted)' }}>/</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{L.uploadAudio || "Upload Audio"}</span>
         </div>
       </div>
-    );
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', maxWidth: 600, margin: '0 auto' }}>
+        <FileUploadZone onTranscribed={handleFileTranscribed} />
+      </div>
+    </div>
+  );
   }
 
   // ── Confidence badge values ──
@@ -533,30 +536,24 @@ export default function Home() {
   const rcc = rewrittenText?.length || 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--page-bg)' }}>
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px]">
-          <button onClick={() => setField('recordingMode', null)} className="text-gray-400 hover:text-gray-700 transition-colors font-medium">Home</button>
-          <span className="text-gray-200">/</span>
-          <span className="text-gray-900 font-semibold">{L.speechToText || "Speech to Text"}</span>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-muted)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
+          <span style={{ color: 'var(--text-muted)' }}>/</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{L.speechToText || "Speech to Text"}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-gray-300 hidden sm:block">⌘↵ translate · ⌘R rewrite</span>
-          <button onClick={() => setShowShortcuts(v => !v)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all text-[12px]">
-            <Keyboard className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{L.shortcuts || "Shortcuts"}</span>
-          </button>
-          <div className="flex items-center gap-1.5 hidden sm:flex">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[12px] text-gray-400 font-medium">SeedlingSpeaks v2.5</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'none' }}>⌘↵ translate · ⌘R rewrite</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-light)', color: 'var(--accent)', borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
+            SeedlingSpeaks v2.5
+          </span>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col px-4 md:px-10 pt-6 md:pt-10 pb-36 md:pb-40 max-w-3xl w-full mx-auto">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', paddingBottom: 160, maxWidth: 720, width: '100%', margin: '0 auto' }}>
 
         {editableTranscript ? (
           <div className="animate-fade-in-blur">
@@ -590,7 +587,9 @@ export default function Home() {
               value={editableTranscript}
               onChange={e => setEditableTranscript(e.target.value)}
               rows={Math.max(4, editableTranscript.split('\n').length + 1)}
-              className="w-full text-[15px] md:text-[18px] text-gray-800 leading-[1.9] font-normal tracking-[-0.01em] bg-white rounded-xl px-4 py-3 border border-gray-100 focus:outline-none focus:border-gray-300 resize-none transition-all"
+              style={{ width: '100%', fontSize: 16, lineHeight: 1.8, color: 'var(--text-primary)', background: 'var(--surface)', borderRadius: 'var(--radius-card)', padding: '20px', border: '2px solid transparent', outline: 'none', resize: 'none', boxShadow: 'var(--shadow-card)', fontFamily: 'var(--font)', transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'transparent'}
               spellCheck={false}
               placeholder="Your transcript will appear here..."
             />
@@ -920,19 +919,19 @@ export default function Home() {
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
-              <Mic className="w-5 h-5 text-gray-400" strokeWidth={1.8} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '60px 0' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--surface)', boxShadow: 'var(--shadow-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mic style={{ width: 28, height: 28, color: 'var(--text-muted)' }} strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-gray-400 font-medium">Press <span className="text-gray-700 font-semibold">Start Speaking</span> to begin</p>
-            <p className="text-[12px] text-gray-300">Your transcript will appear here</p>
+            <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Press <span style={{ color: 'var(--accent)' }}>Start Speaking</span> to begin</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Your transcript will appear here</p>
           </div>
         )}
       </div>
 
       {/* Fixed bottom toolbar */}
-      <div className="fixed bottom-0 right-0 left-0 md:left-[220px] flex justify-center z-50 pb-[72px] md:pb-6 pt-16 bg-gradient-to-t from-[#f8f8f8] via-[#f8f8f8]/90 to-transparent pointer-events-none">
-        <div className="pointer-events-auto w-full px-4 md:px-0 md:w-auto flex justify-center">
+      <div style={{ position: 'fixed', bottom: 0, right: 0, left: 0, display: 'flex', justifyContent: 'center', zIndex: 50, paddingBottom: 72, paddingTop: 64, background: 'linear-gradient(to top, var(--page-bg) 60%, transparent)', pointerEvents: 'none' }}>
+        <div style={{ pointerEvents: 'auto', width: '100%', maxWidth: 480, padding: '0 16px', display: 'flex', justifyContent: 'center' }}>
           <RecordingControls />
         </div>
       </div>

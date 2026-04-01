@@ -230,29 +230,28 @@ export default function VideoTranslate() {
   return (
     <div className="min-h-screen bg-[#f8f8f8]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="text-[18px] md:text-[20px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Film className="w-5 h-5 text-gray-400" />
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Film style={{ width: 20, height: 20, color: 'var(--text-muted)' }} />
             Video Translation
           </h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Upload a video — get it back with translated voice</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Upload a video — get it back with translated voice</p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* History button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={() => navigate('/app/video-history')}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 text-[12px] font-medium transition-all">
-            <Clock className="w-3.5 h-3.5" />
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)' }}>
+            <Clock style={{ width: 14, height: 14 }} />
             History
             {historyCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-900 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <span style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 {historyCount > 9 ? '9+' : historyCount}
               </span>
             )}
           </button>
           {step > 0 && (
-            <button onClick={reset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 text-[12px] font-medium transition-all">
-              <X className="w-3.5 h-3.5" />New video
+            <button onClick={reset} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <X style={{ width: 14, height: 14 }} />New video
             </button>
           )}
         </div>
@@ -272,18 +271,19 @@ export default function VideoTranslate() {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); loadFile(e.dataTransfer.files[0]); }}
             onClick={() => fileInputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all py-20 ${
-              dragging ? 'border-gray-400 bg-gray-100' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <input ref={fileInputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.mkv,.webm" className="hidden" onChange={e => loadFile(e.target.files[0])} />
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <Upload className="w-7 h-7 text-gray-400" />
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--radius-card)', border: `2px dashed ${dragging ? '#7C3AED' : 'rgba(99,102,241,0.3)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? '#F5F3FF' : 'var(--surface)', boxShadow: 'var(--shadow-card)', transition: 'all 0.2s' }}>
+            <input ref={fileInputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.mkv,.webm" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: '#EEE8F8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Upload style={{ width: 24, height: 24, color: '#7C3AED' }} />
             </div>
-            <div className="text-center">
-              <p className="text-[16px] font-semibold text-gray-700">Drop your video here</p>
-              <p className="text-[13px] text-gray-400 mt-1">MP4, MOV, AVI, MKV, WEBM · up to 200MB</p>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>Drop your video here</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>MP4, MOV, AVI, MKV, WEBM · up to 200MB</p>
             </div>
+            <button style={{ background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-orange)', cursor: 'pointer' }}
+              onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+              or browse files
+            </button>
           </div>
         )}
 
