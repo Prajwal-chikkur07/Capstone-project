@@ -123,10 +123,10 @@ input:focus, textarea:focus, select:focus {
 
 /* ── Sidebar ───────────────────────────────────────────────────────────────── */
 .sidebar {
-  background: var(--surface);
-  border-radius: 0 var(--radius-card) var(--radius-card) 0;
-  box-shadow: var(--shadow-card);
-  border: none;
+  background: var(--page-bg);
+  border-radius: 0;
+  box-shadow: none;
+  border-right: 1px solid rgba(0,0,0,0.06);
   height: 100vh;
   width: 224px;
   position: fixed;
@@ -149,7 +149,7 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-radius: var(--radius-inner);
+  border-radius: var(--radius-pill);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
@@ -161,12 +161,13 @@ input:focus, textarea:focus, select:focus {
   text-align: left;
 }
 .nav-item:hover {
-  background: var(--accent-light);
+  background: rgba(249,115,22,0.1);
   color: var(--accent);
 }
 .nav-item.active {
   background: var(--accent);
   color: #FFFFFF;
+  font-weight: 600;
   box-shadow: 0 4px 12px rgba(249,115,22,0.35);
 }
 
@@ -328,6 +329,7 @@ input:focus, textarea:focus, select:focus {
     transform: translateX(-100%);
     border-radius: 0 var(--radius-card) var(--radius-card) 0;
     box-shadow: 8px 0 40px rgba(0,0,0,0.15);
+    background: var(--page-bg);
   }
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; padding-bottom: 64px; }
@@ -343,13 +345,13 @@ input:focus, textarea:focus, select:focus {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     z-index: 50;
-    background: var(--surface);
+    background: var(--page-bg);
     border-top: 1px solid rgba(0,0,0,0.06);
     height: 60px;
     align-items: center;
     justify-content: space-around;
     padding: 0 4px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
   }
 }
 

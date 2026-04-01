@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         </nav>
 
         {/* Bottom */}
-        <div style={{ borderTop: '1px solid #F0F0F0', paddingTop: 16, marginTop: 16 }}>
+        <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 16, marginTop: 16 }}>
           <button onClick={toggleDark} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-inner)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {state.darkMode ? <Sun className="w-4 h-4" style={{ color: 'var(--accent)' }} /> : <Moon className="w-4 h-4" />}
