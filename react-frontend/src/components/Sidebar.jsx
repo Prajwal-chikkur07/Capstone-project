@@ -6,32 +6,35 @@ import { getLabels } from '../services/uiLabels';
 import { useContinuousSession } from '../hooks/useContinuousSession';
 
 const SectionLabel = ({ label }) => (
-  <p className="px-3 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{label}</p>
+  <p className="section-label">{label}</p>
 );
 
 const NavBtn = ({ icon: Icon, label, badge, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] transition-all duration-150 ${
-      active ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-    }`}
-  >
-    <Icon className="w-[16px] h-[16px] shrink-0" strokeWidth={1.6} />
-    <span className="flex-1 text-left">{label}</span>
-    {badge && <span className="text-[10px] font-bold bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">{badge}</span>}
+  <button onClick={onClick} className={`nav-item ${active ? 'active' : ''}`}>
+    <Icon className="w-4 h-4 shrink-0" strokeWidth={1.6} />
+    <span className="flex-1 text-left text-[13px]">{label}</span>
+    {badge && (
+      <span style={{
+        fontSize: '9px', fontWeight: 700,
+        background: 'rgba(249,115,22,0.15)',
+        color: 'var(--accent-primary)',
+        border: '1px solid rgba(249,115,22,0.3)',
+        padding: '2px 6px', borderRadius: '999px',
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>{badge}</span>
+    )}
   </button>
 );
 
-// Bottom nav button for mobile
 const BottomNavBtn = ({ icon: Icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1 transition-all ${
-      active ? 'text-gray-900' : 'text-gray-400'
-    }`}
-  >
+  <button onClick={onClick} style={{
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: '2px', flex: 1, padding: '4px 0',
+    color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
+    background: 'none', border: 'none', cursor: 'pointer',
+  }}>
     <Icon className="w-5 h-5" strokeWidth={active ? 2 : 1.6} />
-    <span className="text-[9px] font-semibold">{label}</span>
+    <span style={{ fontSize: '9px', fontWeight: 600 }}>{label}</span>
   </button>
 );
 
@@ -51,15 +54,8 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
   };
 
   const handleLogout = async () => {
-    try {
-      // First, sign out from Clerk
-      await signOut();
-    } catch (error) {
-      console.error('Clerk signOut error:', error);
-    }
-    // Then logout from app context
+    try { await signOut(); } catch (error) { console.error('Clerk signOut error:', error); }
     logout();
-    // Navigate to auth page (login)
     navigate('/auth');
   };
 
@@ -68,31 +64,31 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
 
   return (
     <>
-      {/* Sidebar drawer */}
-      <aside className={`sidebar ${isOpen ? 'open' : ''} flex flex-col`}>
-        {/* Logo + close button */}
-        <div className="px-4 pt-6 pb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-7 h-7 rounded-lg object-contain" />
-            <span className="font-bold text-[15px] text-gray-900 tracking-tight">SeedlingSpeaks</span>
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+        {/* Logo */}
+        <div style={{ padding: '24px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'contain' }} />
+            <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>SeedlingSpeaks</span>
+            <span className="glow-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0, boxShadow: '0 0 8px var(--accent-primary)' }} />
           </div>
-          <button onClick={onClose} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-all">
+          <button onClick={onClose} className="md:hidden" style={{ padding: '6px', borderRadius: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 overflow-y-auto">
-          <div className="mt-3">
+        <nav style={{ flex: 1, padding: '0 8px', overflowY: 'auto' }}>
+          <div style={{ marginTop: '4px' }}>
             <NavBtn icon={Mic2} label={L.home} active={is('/app')} onClick={nav('/app')} />
           </div>
 
           <SectionLabel label={L.translation} />
-          <NavBtn icon={Mic2}     label={L.nativeToEnglish}     active={is('/app/home')}             onClick={nav('/app/home')} />
-          <NavBtn icon={Ear}      label={L.continuousListening} active={is('/app/continuous')}       onClick={nav('/app/continuous')} badge={isSessionLive ? (session.state === 'listening' ? '● LIVE' : '⏸') : null} />
+          <NavBtn icon={Mic2}     label={L.nativeToEnglish}     active={is('/app/home')}              onClick={nav('/app/home')} />
+          <NavBtn icon={Ear}      label={L.continuousListening} active={is('/app/continuous')}        onClick={nav('/app/continuous')} badge={isSessionLive ? (session.state === 'listening' ? '● LIVE' : '⏸') : null} />
           <NavBtn icon={Globe}    label={L.englishToNative}     active={is('/app/english-to-native')} onClick={nav('/app/english-to-native')} />
-          <NavBtn icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}           onClick={nav('/app/vision')} />
-          <NavBtn icon={Film}     label="Video Translate"        active={is('/app/video')}            onClick={nav('/app/video')} />
+          <NavBtn icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}            onClick={nav('/app/vision')} />
+          <NavBtn icon={Film}     label="Video Translate"        active={is('/app/video')}             onClick={nav('/app/video')} />
 
           <SectionLabel label={L.library} />
           <NavBtn icon={Clock}        label={L.history}    active={is('/app/history')}    onClick={nav('/app/history')} />
@@ -104,68 +100,60 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         </nav>
 
         {/* Bottom */}
-        <div className="px-2 pb-4 border-t border-gray-100 pt-3 space-y-0.5">
-          <button
-            onClick={toggleDark}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 transition-all group"
+        <div style={{ padding: '12px 8px 16px', borderTop: '1px solid var(--border)' }}>
+          {/* Dark mode toggle */}
+          <button onClick={toggleDark} style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 12px', borderRadius: '8px', background: 'none', border: 'none',
+            cursor: 'pointer', color: 'var(--text-secondary)',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {state.darkMode
-                ? <Sun className="w-4 h-4 text-amber-400" strokeWidth={1.6} />
-                : <Moon className="w-4 h-4 text-gray-400" strokeWidth={1.6} />}
-              <span className="text-[14px] text-gray-500 group-hover:text-gray-800 transition-colors">
-                {state.darkMode ? L.lightMode : L.darkMode}
-              </span>
+                ? <Sun className="w-4 h-4" style={{ color: '#F97316' }} strokeWidth={1.6} />
+                : <Moon className="w-4 h-4" style={{ color: 'var(--text-muted)' }} strokeWidth={1.6} />}
+              <span style={{ fontSize: '13px' }}>{state.darkMode ? L.lightMode : L.darkMode}</span>
             </div>
-            <div className={`w-8 rounded-full flex items-center px-0.5 transition-colors ${state.darkMode ? 'bg-gray-900' : 'bg-gray-200'}`} style={{ height: '18px' }}>
-              <div className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${state.darkMode ? 'translate-x-3' : 'translate-x-0'}`} />
+            <div className={state.darkMode ? 'toggle-on' : 'toggle-off'} style={{
+              width: 32, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center',
+              padding: '0 2px', transition: 'all 0.2s',
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                transform: state.darkMode ? 'translateX(14px)' : 'translateX(0)',
+                transition: 'transform 0.2s',
+              }} />
             </div>
           </button>
 
-          <button
-            onClick={() => { navigate('/app/profile'); onClose?.(); }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              is('/app/profile') ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-            }`}
-          >
-            <User className="w-4 h-4 shrink-0" strokeWidth={1.6} />
-            <span className="text-[14px]">{L.profile}</span>
-          </button>
-
-          <button
-            onClick={() => { navigate('/app/settings'); onClose?.(); }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              is('/app/settings') ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-            }`}
-          >
-            <Settings className="w-4 h-4 shrink-0" strokeWidth={1.6} />
-            <span className="text-[14px]">{L.settings}</span>
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all"
+          <NavBtn icon={User}     label={L.profile}  active={is('/app/profile')}  onClick={() => { navigate('/app/profile'); onClose?.(); }} />
+          <NavBtn icon={Settings} label={L.settings} active={is('/app/settings')} onClick={() => { navigate('/app/settings'); onClose?.(); }} />
+          <button onClick={handleLogout} className="nav-item" style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'none'; }}
           >
             <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.6} />
-            <span className="text-[14px]">{L.logout}</span>
+            <span className="text-[13px]">{L.logout}</span>
           </button>
         </div>
       </aside>
 
-      {/* Backdrop (mobile only) */}
       {isOpen && <div className="sidebar-backdrop" onClick={onClose} />}
 
       {/* Mobile bottom nav */}
       <nav className="mobile-nav">
-        <button onClick={onOpen} className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 text-gray-400">
+        <button onClick={onOpen} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', flex: 1, padding: '4px 0', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
           <Menu className="w-5 h-5" strokeWidth={1.6} />
-          <span className="text-[9px] font-semibold">Menu</span>
+          <span style={{ fontSize: '9px', fontWeight: 600 }}>Menu</span>
         </button>
-        <BottomNavBtn icon={Mic2}     label="Translate" active={is('/app/home') || is('/app')} onClick={nav('/app/home')} />
-        <BottomNavBtn icon={Ear}      label="Listen"    active={is('/app/continuous')}          onClick={nav('/app/continuous')} />
-        <BottomNavBtn icon={Globe}    label="Native"    active={is('/app/english-to-native')}   onClick={nav('/app/english-to-native')} />
-        <BottomNavBtn icon={Clock}    label="History"   active={is('/app/history')}             onClick={nav('/app/history')} />
-        <BottomNavBtn icon={BarChart2} label="Analytics" active={is('/app/analytics')}          onClick={nav('/app/analytics')} />
+        <BottomNavBtn icon={Mic2}      label="Translate" active={is('/app/home') || is('/app')} onClick={nav('/app/home')} />
+        <BottomNavBtn icon={Ear}       label="Listen"    active={is('/app/continuous')}          onClick={nav('/app/continuous')} />
+        <BottomNavBtn icon={Globe}     label="Native"    active={is('/app/english-to-native')}   onClick={nav('/app/english-to-native')} />
+        <BottomNavBtn icon={Clock}     label="History"   active={is('/app/history')}             onClick={nav('/app/history')} />
+        <BottomNavBtn icon={BarChart2} label="Analytics" active={is('/app/analytics')}           onClick={nav('/app/analytics')} />
       </nav>
     </>
   );

@@ -15,9 +15,7 @@ export default function AppHome() {
 
   useEffect(() => {
     fetch(`${WIDGET_URL}/status`, { signal: AbortSignal.timeout(800) })
-      .then(r => r.json())
-      .then(d => setWidgetOn(d.enabled))
-      .catch(() => {});
+      .then(r => r.json()).then(d => setWidgetOn(d.enabled)).catch(() => {});
   }, []);
 
   const toggleWidget = async () => {
@@ -26,99 +24,119 @@ export default function AppHome() {
       const res = await fetch(`${WIDGET_URL}/toggle`, { signal: AbortSignal.timeout(1500) });
       const d = await res.json();
       setWidgetOn(d.enabled);
-    } catch { /* widget not running */ }
+    } catch {}
     setWidgetLoading(false);
   };
 
   const FEATURES = [
-    { icon: Mic2,     color: 'bg-violet-50 text-violet-600 border-violet-100',   title: L.nativeToEnglish,     desc: L.nativeToEnglishDesc,     path: '/app/home' },
-    { icon: Ear,      color: 'bg-blue-50 text-blue-600 border-blue-100',         title: L.continuousListening, desc: L.continuousListeningDesc, path: '/app/continuous' },
-    { icon: Globe,    color: 'bg-emerald-50 text-emerald-600 border-emerald-100',title: L.englishToNative,     desc: L.englishToNativeDesc,     path: '/app/english-to-native' },
-    { icon: ScanText, color: 'bg-amber-50 text-amber-600 border-amber-100',      title: L.visionTranslate,     desc: L.visionTranslateDesc,     path: '/app/vision' },
+    { icon: Mic2,     title: L.nativeToEnglish,     desc: L.nativeToEnglishDesc,     path: '/app/home' },
+    { icon: Ear,      title: L.continuousListening, desc: L.continuousListeningDesc, path: '/app/continuous' },
+    { icon: Globe,    title: L.englishToNative,     desc: L.englishToNativeDesc,     path: '/app/english-to-native' },
+    { icon: ScanText, title: L.visionTranslate,     desc: L.visionTranslateDesc,     path: '/app/vision' },
   ];
 
   const go = (path) => { clearAll(); navigate(path); };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
+      {/* Hero glow */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 60% 40% at 40% 20%, rgba(249,115,22,0.08) 0%, transparent 70%)',
+      }} />
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 md:px-10 py-4 md:py-5 flex items-center gap-3">
-        <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" className="w-8 h-8 rounded-xl object-contain" />
+      <div className="app-header" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" style={{ width: 32, height: 32, borderRadius: 10, objectFit: 'contain' }} />
         <div>
-          <h1 className="text-[16px] font-bold text-gray-900 leading-tight">SeedlingSpeaks</h1>
-          <p className="text-[12px] text-gray-400">Multilingual AI Translation</p>
+          <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>SeedlingSpeaks</h1>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>Multilingual AI Translation</p>
         </div>
       </div>
 
-      {/* Hero */}
-      <div className="px-4 md:px-10 pt-10 md:pt-14 pb-8 md:pb-10 max-w-3xl w-full mx-auto">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span className="text-[12px] font-semibold text-amber-500 uppercase tracking-widest">Powered by Team ARTiculate</span>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
+        {/* Hero */}
+        <div style={{ marginBottom: 40 }}>
+          <div className="accent-badge" style={{ marginBottom: 16 }}>
+            <Sparkles className="w-3 h-3" />
+            Powered by Team ARTiculate
+          </div>
+          <h2 style={{
+            fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 600,
+            color: 'var(--text-primary)', lineHeight: 1.15, margin: '0 0 12px',
+            letterSpacing: '-0.02em',
+          }}>
+            Break language barriers<br />with AI-powered translation.
+          </h2>
+          <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: 480, margin: 0 }}>
+            Speak, type, or scan — translate between Indian regional languages and English with professional tone styling.
+          </p>
         </div>
-        <h2 className="text-[24px] md:text-[32px] font-bold text-gray-900 leading-tight tracking-tight mb-3">
-          Break language barriers<br />with AI-powered translation.
-        </h2>
-        <p className="text-[15px] text-gray-400 leading-relaxed max-w-lg">
-          Speak, type, or scan — translate between Indian regional languages and English with professional tone styling.
+
+        {/* Choose mode label */}
+        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 16, fontFamily: "'JetBrains Mono', monospace" }}>
+          {L.chooseMode}
         </p>
-      </div>
 
-      {/* Feature cards */}
-      <div className="px-4 md:px-10 max-w-3xl w-full mx-auto">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">{L.chooseMode}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-          {FEATURES.map(({ icon: Icon, color, title, desc, path }) => (
-            <button
-              key={path}
-              onClick={() => go(path)}
-              className="group bg-white border border-gray-100 rounded-2xl p-5 text-left hover:border-gray-300 hover:shadow-md transition-all active:scale-[0.98]"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${color}`}>
+        {/* Feature cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
+          {FEATURES.map(({ icon: Icon, title, desc, path }) => (
+            <button key={path} className="feature-card" onClick={() => go(path)} style={{ textAlign: 'left', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div className="card-icon">
                   <Icon className="w-5 h-5" strokeWidth={1.8} />
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all mt-1" />
+                <ArrowRight className="card-arrow w-4 h-4" style={{ marginTop: 4 }} />
               </div>
-              <p className="text-[14px] font-semibold text-gray-900 mb-1">{title}</p>
-              <p className="text-[12px] text-gray-400 leading-relaxed">{desc}</p>
+              <p style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', margin: '0 0 6px' }}>{title}</p>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{desc}</p>
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Widget toggle */}
-      <div className="px-4 md:px-10 pt-4 pb-4 max-w-3xl w-full mx-auto">
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${widgetOn ? 'bg-gray-900' : 'bg-gray-100'}`}>
-              <Radio className={`w-5 h-5 ${widgetOn ? 'text-white' : 'text-gray-400'}`} strokeWidth={1.8} />
+        {/* Desktop Widget toggle */}
+        <div style={{
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
+          borderRadius: 12, padding: '16px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: widgetOn ? 'rgba(249,115,22,0.15)' : 'var(--bg-elevated)',
+              border: `1px solid ${widgetOn ? 'rgba(249,115,22,0.3)' : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Radio className="w-5 h-5" style={{ color: widgetOn ? 'var(--accent-primary)' : 'var(--text-muted)' }} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-[14px] font-semibold text-gray-900">Desktop Widget</p>
-              <p className="text-[12px] text-gray-400">
+              <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>Desktop Widget</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
                 {widgetOn ? 'Active — floating bubble is visible' : 'Disabled — toggle to enable'}
               </p>
             </div>
           </div>
-          <button
-            onClick={toggleWidget}
-            disabled={widgetLoading}
-            className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${widgetOn ? 'bg-gray-900' : 'bg-gray-200'}`}
+          <button onClick={toggleWidget} disabled={widgetLoading}
+            className={widgetOn ? 'toggle-on' : 'toggle-off'}
+            style={{ width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', padding: '0 3px', display: 'flex', alignItems: 'center', transition: 'all 0.2s', opacity: widgetLoading ? 0.5 : 1 }}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${widgetOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            <div style={{
+              width: 18, height: 18, borderRadius: '50%', background: '#fff',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+              transform: widgetOn ? 'translateX(20px)' : 'translateX(0)',
+              transition: 'transform 0.2s',
+            }} />
           </button>
         </div>
-      </div>
 
-      {/* Supported languages */}
-      <div className="px-4 md:px-10 pt-4 pb-16 max-w-3xl w-full mx-auto">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{L.supportedLanguages}</p>
-        <div className="flex flex-wrap gap-2">
+        {/* Supported languages */}
+        <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, fontFamily: "'JetBrains Mono', monospace" }}>
+          {L.supportedLanguages}
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {['Hindi', 'Bengali', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Gujarati', 'Kannada', 'Punjabi', 'Odia'].map(lang => (
-            <span key={lang} className="px-3 py-1 rounded-full bg-white border border-gray-200 text-[12px] text-gray-500 font-medium">
-              {lang}
-            </span>
+            <span key={lang} className="lang-pill">{lang}</span>
           ))}
         </div>
       </div>
