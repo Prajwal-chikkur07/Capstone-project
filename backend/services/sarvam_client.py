@@ -1,6 +1,7 @@
 import os
 import requests
 import logging
+from http.client import IncompleteRead
 from pathlib import Path
 from dotenv import load_dotenv
 from services.audio_utils import get_audio_duration, split_audio_into_chunks, cleanup_chunks
@@ -49,7 +50,6 @@ def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wa
     except Exception as e:
         logger.warning(f"Sarvam STT failed: {e}, trying Gemini fallback")
         return _transcribe_with_gemini(audio_file_path)
-
 
 def _transcribe_with_gemini(audio_file_path: str) -> dict:
     """Fallback: use HuggingFace Whisper to transcribe audio."""
@@ -139,12 +139,16 @@ def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
                 data = {"model": "saaras:v2.5", "prompt": ""}
                 response = requests.post(
                     url, headers=headers, files=files, data=data,
-                    timeout=60,  # hard timeout — prevents IncompleteRead hangs
+                    timeout=90,  # increased — mobile uploads can be slow
+                    stream=False,  # force full response read, prevents IncompleteRead
                 )
             break  # success — exit retry loop
         except (requests.exceptions.ChunkedEncodingError,
                 requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout) as e:
+                requests.exceptions.Timeout,
+                IncompleteRead,
+                ConnectionError,
+                OSError) as e:
             last_exc = e
             logger.warning(f"Sarvam attempt {attempt}/3 failed: {e}")
             if attempt < 3:
