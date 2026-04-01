@@ -68,9 +68,6 @@ API.interceptors.response.use(
     if (shouldRetry(error) && config._retryCount < RETRY_COUNT) {
       config._retryCount += 1;
       const delay = RETRY_DELAY * config._retryCount;
-      if (config._retryCount === 1) {
-        toast.warn(`Server busy, retrying… (${config._retryCount}/${RETRY_COUNT})`);
-      }
       await sleep(delay);
       return API(config);
     }

@@ -8,7 +8,7 @@ const _session = {
   state: 'idle',        // idle | listening | paused | ended
   lines: [],
   segments: [],
-  targetLang: 'hi-IN',
+  targetLang: localStorage.getItem('defaultLanguage') || 'hi-IN',
   stream: null,
   audioCtx: null,
   mediaRecorder: null,

@@ -343,7 +343,20 @@ export default function Profile() {
               </div>
             </div>
             <div className="relative">
-              <select value={state.selectedLanguage} onChange={e => setField('selectedLanguage', e.target.value)}
+              <select value={state.selectedLanguage} onChange={e => {
+                const lang = e.target.value;
+                setField('selectedLanguage', lang);
+                // Sync to desktop widget
+                fetch('http://127.0.0.1:27182/config', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ languages: [lang] }),
+                }).catch(() => {});
+                // Sync to Chrome extension
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                  chrome.storage.local.set({ vtLanguage: lang, vtDefaultLanguage: lang });
+                }
+              }}
                 className="appearance-none bg-gray-50 border border-gray-200 rounded-xl pl-3 pr-8 py-2 text-[13px] font-semibold text-gray-700 cursor-pointer focus:outline-none hover:border-gray-300 transition-all">
                 {Object.entries(LANG_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               </select>

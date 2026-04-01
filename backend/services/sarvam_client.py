@@ -180,7 +180,35 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
     Translates text to the target language.
     Checks the semantic cache first — only calls Sarvam on a cache miss.
     Falls back to HuggingFace if Sarvam fails.
+    For structured email text (contains Subject:), translates line-by-line to preserve formatting.
     """
+    # ── Structured email: translate line-by-line to preserve format ───────
+    is_email = text.strip().startswith("Subject:")
+    if is_email:
+        lines = text.split('\n')
+        translated_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                translated_lines.append('')
+            elif stripped.lower().startswith('subject:'):
+                # Keep "Subject:" label in English, translate only the subject value
+                subject_value = stripped[8:].strip()
+                translated_subject = _translate_single(subject_value, source_language, target_language) if subject_value else ''
+                translated_lines.append(f"Subject: {translated_subject}")
+            elif stripped in ('Yours sincerely,', 'Cheers,', 'Dear Sir/Madam,', 'Hi there,',
+                              'Regards,', 'Best regards,', 'Kind regards,', 'Thanks,'):
+                # Keep standard salutations/closings as-is (they're universally understood)
+                translated_lines.append(stripped)
+            else:
+                translated_lines.append(_translate_single(stripped, source_language, target_language))
+        return '\n'.join(translated_lines)
+
+    return _translate_single(text, source_language, target_language)
+
+
+def _translate_single(text: str, source_language: str, target_language: str) -> str:
+    """Translate a single chunk of text, with cache + Sarvam + HF fallback."""
     # ── Layer 1 & 2: cache lookup ─────────────────────────────────────────
     cached = get_cached(text, target_language)
     if cached:

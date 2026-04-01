@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Languages, Loader2, Download, X, Film, CheckCircle, AlertCircle, Copy, Check, ChevronDown, Clock } from 'lucide-react';
 import * as api from '../services/api';
+import { useApp } from '../context/AppContext';
 
 const TARGET_LANGUAGES = {
   'Hindi': 'hi-IN', 'English': 'en-IN', 'Kannada': 'kn-IN',
@@ -100,12 +101,13 @@ function HistoryPanel({ onClose, onReuse }) {
 
 export default function VideoTranslate() {
   const navigate = useNavigate();
+  const { state } = useApp();
   const saved = loadSavedJob();
   const [step, setStep] = useState(saved?.step ?? 0);
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [videoId, setVideoId] = useState(saved?.videoId ?? null);
-  const [targetLang, setTargetLang] = useState(saved?.targetLang ?? 'hi-IN');
+  const [targetLang, setTargetLang] = useState(saved?.targetLang ?? state.selectedLanguage ?? 'hi-IN');
   const [result, setResult] = useState(saved?.result ?? null);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -113,6 +115,11 @@ export default function VideoTranslate() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyCount, setHistoryCount] = useState(() => loadHistory().length);
   const fileInputRef = useRef(null);
+
+  // Sync when default language changes in Profile (only if no job in progress)
+  useEffect(() => {
+    if (!saved?.targetLang && step === 0) setTargetLang(state.selectedLanguage);
+  }, [state.selectedLanguage]);
   const pollRef = useRef(null);
   const currentFilename = useRef('');
 

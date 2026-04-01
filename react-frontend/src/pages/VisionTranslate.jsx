@@ -16,6 +16,11 @@ export default function VisionTranslate() {
   const { state } = useApp();
   const L = getLabels(state.uiLanguage);
   const [targetLang, setTargetLang] = useState(state.selectedLanguage || 'hi-IN');
+
+  // Keep in sync when default language changes in Profile
+  useEffect(() => {
+    setTargetLang(state.selectedLanguage);
+  }, [state.selectedLanguage]);
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [regions, setRegions] = useState([]);
@@ -210,7 +215,7 @@ export default function VisionTranslate() {
             {isProcessing && (
               <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-[13px] text-amber-700">
                 <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                Gemini Vision is reading and translating all text in the image…
+                Processing please wait.....
               </div>
             )}
 

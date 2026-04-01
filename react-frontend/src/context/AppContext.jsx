@@ -57,7 +57,7 @@ const initialState = {
   confidenceScore: null,       // 0-1 float from Sarvam
   selectedTone: 'Email Formal',
   customTone: '',
-  selectedLanguage: 'hi-IN',
+  selectedLanguage: localStorage.getItem('defaultLanguage') || 'hi-IN',
   selectedVoice: null,
   isSpeaking: false,
   isPlayingEnglish: false,
@@ -95,8 +95,14 @@ function reducer(state, action) {
     case 'LOGOUT':
       return { ...state, authUser: null };
     case 'SET_FIELD':
+      if (action.field === 'selectedLanguage') {
+        localStorage.setItem('defaultLanguage', action.value);
+      }
       return { ...state, [action.field]: action.value };
     case 'SET_FIELDS':
+      if (action.fields.selectedLanguage) {
+        localStorage.setItem('defaultLanguage', action.fields.selectedLanguage);
+      }
       return { ...state, ...action.fields };
     case 'CLEAR_ALL':
       return {

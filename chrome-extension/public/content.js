@@ -59,9 +59,9 @@ const TARGET_LANGUAGES = {
 if (isContextValid()) {
   createFloatingIcon();
 
-  chrome.storage.local.get(['vtActive', 'vtLanguage', 'vtTone', 'vtIconPos', 'vtLanguages'], (result) => {
+  chrome.storage.local.get(['vtActive', 'vtLanguage', 'vtDefaultLanguage', 'vtTone', 'vtIconPos', 'vtLanguages'], (result) => {
     if (!isContextValid()) return;
-    targetLanguage = result.vtLanguage || 'kn-IN';
+    targetLanguage = result.vtLanguage || result.vtDefaultLanguage || 'kn-IN';
     selectedTone = result.vtTone || 'Email Formal';
     if (result.vtIconPos && floatingIcon) {
       floatingIcon.style.left = result.vtIconPos.x + 'px';
@@ -70,6 +70,22 @@ if (isContextValid()) {
       floatingIcon.style.bottom = 'auto';
     }
     if (result.vtActive) activateMode();
+  });
+
+  // Live-sync language when changed from the web app Profile page
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.vtDefaultLanguage || changes.vtLanguage) {
+      const newLang = (changes.vtLanguage || changes.vtDefaultLanguage)?.newValue;
+      if (newLang) {
+        targetLanguage = newLang;
+        // Update all language dropdowns in the panel if open
+        ['vt-mic-lang', 'vt-trans-lang', 'vt-chat-lang-sel'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = newLang;
+        });
+      }
+    }
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -1867,6 +1883,7 @@ if (isContextValid()) {
   let chatTargetLang = 'en-IN';
   let chatMessages = [];
   let chatSeenTexts = new Set(); // dedup by text content
+  let chatSentByMe = new Set(); // texts we sent ourselves, to avoid re-capturing as incoming
   let chatMicRecording = false;
   let chatMicChunks = [];
   let chatMicRecorder = null;
@@ -1890,6 +1907,10 @@ if (isContextValid()) {
     if (el.hasAttribute('data-vt-chat-done')) return;
     // Skip if any ancestor is already processed (avoids parent+child double-processing)
     if (el.closest('[data-vt-chat-done]')) return;
+    // Skip messages that are inside the compose/input area (outgoing, not yet sent)
+    if (el.closest('[data-qa="message_input"], .ql-editor, [contenteditable="true"][role="textbox"]')) return;
+    // Slack: skip messages that are in a "sending" state (optimistic UI before server confirms)
+    if (el.closest('.c-message--sending, [data-qa="message-sending"]')) return;
 
     // For WhatsApp: get text from the inner span.selectable-text to avoid metadata
     let text = '';
@@ -1901,12 +1922,11 @@ if (isContextValid()) {
     if (/^\d{1,2}:\d{2}/.test(text)) return;
     // Skip UI chrome elements (buttons, labels, etc.)
     if (el.closest('button, [role="button"], [data-qa="reaction_button"]')) return;
+    // Skip if this text was sent by us via the extension
+    if (chatSentByMe.has(text)) { el.setAttribute('data-vt-chat-done', '1'); return; }
 
-    // Dedup: skip if we've already processed this exact text recently
-    const dedupeKey = sender + ':' + text;
-    if (chatSeenTexts.has(dedupeKey)) { el.setAttribute('data-vt-chat-done', '1'); return; }
-    chatSeenTexts.add(dedupeKey);
-
+    // Mark element as processed — this is the primary dedup mechanism
+    // (chatSeenTexts is only used to prevent the same element being processed via multiple code paths)
     el.setAttribute('data-vt-chat-done', '1');
     const msgId = 'vtmsg_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     chatMessages.push({ id: msgId, sender, original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
@@ -2014,6 +2034,8 @@ if (isContextValid()) {
           compose.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
         }
         chatMessages.push({ id: 'vtmsg_out_' + Date.now(), sender: 'me', original: text, translated: null, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+        // Prevent the observer from re-capturing our own sent message as incoming
+        chatSentByMe.add(text);
         chatOutgoingText = '';
         refreshChatPanel();
         showToast('✓ Sent');
@@ -2226,6 +2248,7 @@ if (isContextValid()) {
     if (clearBtn) clearBtn.onclick = () => {
       chatMessages = [];
       chatSeenTexts = new Set();
+      chatSentByMe = new Set();
       // Also remove data-vt-chat-done attributes so messages can be re-scanned
       document.querySelectorAll('[data-vt-chat-done]').forEach(el => el.removeAttribute('data-vt-chat-done'));
       refreshChatPanel();
@@ -2243,6 +2266,7 @@ if (isContextValid()) {
       stopObserver();
       chatMessages = [];
       chatSeenTexts = new Set();
+      chatSentByMe = new Set();
       chatOutgoingText = '';
       renderPanel(); wireTabEvents();
       showToast('Live chat stopped.');
@@ -2250,19 +2274,51 @@ if (isContextValid()) {
       liveChatActive = true;
       chatMessages = [];
       chatSeenTexts = new Set();
+      chatSentByMe = new Set();
       chatOutgoingText = '';
-      // Mark all existing DOM elements as already seen — don't translate old messages
       const site = getSite();
       if (site) {
-        document.querySelectorAll(site.msgSelector).forEach(el => {
+        const allEls = [...document.querySelectorAll(site.msgSelector)];
+
+        // Mark ALL existing elements as done — nothing gets auto-processed
+        allEls.forEach(el => {
           el.setAttribute('data-vt-chat-done', '1');
-          const text = (el.innerText || el.textContent || '').trim();
-          if (text) chatSeenTexts.add('them:' + text);
         });
+
+        // Pick the single last element with real text and translate it directly
+        const lastEl = [...allEls].reverse().find(el => {
+          const t = (el.innerText || el.textContent || '').trim();
+          return t && t.length >= 2 && !/^\d{1,2}:\d{2}/.test(t);
+        });
+
+        if (lastEl) {
+          // Get the innermost text — avoid picking up metadata/timestamps
+          const innerSpan = lastEl.querySelector('span.selectable-text span')
+            || lastEl.querySelector('span.selectable-text')
+            || lastEl;
+          let text = (innerSpan.innerText || innerSpan.textContent || '').trim();
+          if (!text) text = (lastEl.innerText || lastEl.textContent || '').trim();
+
+          if (text && text.length >= 2) {
+            const msgId = 'vtmsg_init_' + Date.now();
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            chatMessages.push({ id: msgId, sender: 'them', original: text, translated: null, time });
+            refreshChatPanel();
+            sendMsg({ type: 'API_TRANSLATE_TEXT', text, targetLanguage: chatTargetLang })
+              .then(res => {
+                const msg = chatMessages.find(m => m.id === msgId);
+                if (msg) { msg.translated = res?.success ? (res.data?.translated_text || text) : text; refreshChatPanel(); }
+              })
+              .catch(() => {
+                const msg = chatMessages.find(m => m.id === msgId);
+                if (msg) { msg.translated = text; refreshChatPanel(); }
+              });
+          }
+        }
       }
       startObserver();
       renderPanel(); wireTabEvents();
-      showToast(`Live chat active on ${site?.platform || 'page'} — waiting for new messages`);
+      showToast(`Live chat active on ${site?.platform || 'page'} — loaded last message`);
     }
     return liveChatActive;
   };

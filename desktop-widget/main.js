@@ -22,6 +22,27 @@ let isRecording = false;
 let widgetConfig = { mode: 'nativeToEnglish', languages: ['hi-IN'] };
 let lastFrontApp = null; // track which app was active before overlay opened
 
+// ── Persist widget config to disk ─────────────────────────────────────────────
+// CONFIG_FILE is resolved after app is ready (app.getPath needs ready state)
+let CONFIG_FILE = path.join(os.homedir(), '.seedlingspeaks-widget-config.json');
+
+function loadWidgetConfig() {
+  try {
+    // Resolve to userData path once app is ready
+    try { CONFIG_FILE = path.join(app.getPath('userData'), 'widget-config.json'); } catch {}
+    if (fs.existsSync(CONFIG_FILE)) {
+      const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      if (saved && Array.isArray(saved.languages) && saved.languages.length > 0) {
+        widgetConfig = { mode: 'nativeToEnglish', languages: saved.languages };
+      }
+    }
+  } catch {}
+}
+
+function saveWidgetConfig() {
+  try { fs.writeFileSync(CONFIG_FILE, JSON.stringify(widgetConfig), 'utf8'); } catch {}
+}
+
 // ── Control server ────────────────────────────────────────────────────────────
 function startControlServer() {
   const server = http.createServer((req, res) => {
@@ -45,6 +66,7 @@ function startControlServer() {
             mode: 'nativeToEnglish',
             languages: Array.isArray(inc.languages) && inc.languages.length > 0 ? inc.languages : ['hi-IN'],
           };
+          saveWidgetConfig();
           if (overlayWin) overlayWin.webContents.send('set-config', widgetConfig);
           res.writeHead(200); res.end(JSON.stringify(widgetConfig));
         } catch { res.writeHead(400); res.end(JSON.stringify({ error: 'bad payload' })); }
@@ -461,6 +483,7 @@ function checkScreenPermission() {
 
 // ── App ready ─────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
+  loadWidgetConfig();
   startControlServer();
   createBubble();
   createOverlay();

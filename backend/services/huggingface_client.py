@@ -144,8 +144,8 @@ def describe_image_hf(image_bytes: bytes, mime_type: str) -> str:
 
 # Tone rewrite prompts for HF fallback
 HF_TONE_INSTRUCTIONS = {
-    "Email Formal": "You are a world-class formal business email writer. Rewrite the following as ONE complete formal email. Start with 'Subject:'. Use 'Dear [Name],' greeting. Write a professional body. End with 'Yours sincerely,\\n[Your Name]'. Output ONLY the email, nothing else, no explanations.",
-    "Email Casual": "You are a master of warm casual business emails. Rewrite the following as ONE complete casual email. Start with 'Subject:'. Use 'Hi [Name],' greeting. Write a friendly conversational body. End with 'Cheers,\\n[Your Name]'. Output ONLY the email, nothing else, no explanations.",
+    "Email Formal": "You are a world-class formal business email writer. Rewrite the following as ONE complete formal email. Start with 'Subject:'. Use 'Dear Sir/Madam,' greeting. Write a professional body. End with 'Yours sincerely,'. Do NOT use placeholder tokens like [Name] or [Your Name]. Output ONLY the email, nothing else, no explanations.",
+    "Email Casual": "You are a master of warm casual business emails. Rewrite the following as ONE complete casual email. Start with 'Subject:'. Use 'Hi there,' greeting. Write a friendly conversational body. End with 'Cheers,'. Do NOT use placeholder tokens like [Name] or [Your Name]. Output ONLY the email, nothing else, no explanations.",
     "Slack": "You are a Slack expert. Rewrite the following as ONE short Slack message (1-3 lines max). Add 1-2 relevant emojis. No greeting, no sign-off. Output ONLY the message, nothing else.",
     "LinkedIn": "You are a top LinkedIn creator. Rewrite the following as ONE viral LinkedIn post with a strong hook, 2-3 short paragraphs, a call-to-action question, and 3-5 hashtags. Output ONLY the post, nothing else.",
     "WhatsApp": "You are a WhatsApp Business expert. Rewrite the following as ONE brief WhatsApp message with a clear call-to-action. Use bullet points (•) for lists. Output ONLY the message, nothing else.",
@@ -163,11 +163,11 @@ def _local_tone_rewrite(text: str, tone: str, user_override: str = None) -> str:
     elif tone == "LinkedIn":
         return f"Excited to share this update:\n\n{t}\n\nWhat are your thoughts? Drop a comment below.\n\n#Professional #Update #Growth"
     elif tone == "Email Casual":
-        return f"Subject: Quick update\n\nHi [Name],\n\n{t}\n\nThanks,\n[Your Name]"
+        return f"Subject: Quick update\n\nHi there,\n\n{t}\n\nThanks,"
     elif user_override:
         return f"{t}\n\n[Tone: {user_override}]"
     else:  # Email Formal default
-        return f"Subject: Important Update\n\nDear [Name],\n\n{t}\n\nYours sincerely,\n[Your Name]"
+        return f"Subject: Important Update\n\nDear Sir/Madam,\n\n{t}\n\nYours sincerely,"
 
 
 def rewrite_tone_hf(text: str, tone: str, user_override: str = None) -> str:

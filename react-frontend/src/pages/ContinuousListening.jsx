@@ -24,14 +24,18 @@ const SPEAKER_COLORS = [
 const LANGS = [['Hindi','hi-IN'],['Kannada','kn-IN'],['Tamil','ta-IN'],['Telugu','te-IN'],['Malayalam','ml-IN'],['Bengali','bn-IN'],['English','en-IN']];
 
 export default function ContinuousListening() {
-  const { showError, incrementUsage } = useApp();
+  const { state, showError, incrementUsage } = useApp();
 
   // Singleton session state — persists across navigation
   const session = useContinuousSession();
   const { state: sessionState, lines, segments, amplitude, targetLang } = session;
 
+  // Sync default language into the session when it changes in Profile
+  useEffect(() => {
+    if (sessionState === 'idle') sessionSetLang(state.selectedLanguage);
+  }, [state.selectedLanguage]);
+
   const [isDiarizing,    setIsDiarizing]    = useState(false);
-  const [playLang,       setPlayLang]       = useState('hi-IN');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthSegments,  setSynthSegments]  = useState([]);
   const [playingIdx,     setPlayingIdx]     = useState(null);
@@ -78,7 +82,7 @@ export default function ContinuousListening() {
         translated_text: s.translation || s.text, emotion: s.emotion || 'neutral',
         voice: s.voice || { sarvam: s.gender === 'female' ? 'anushka' : 'abhilash', gtts_gender: s.gender || 'male' },
       }));
-      const result = await api.synthesizeConversation({ segments: mapped, target_language: playLang });
+      const result = await api.synthesizeConversation({ segments: mapped, target_language: targetLang });
       setSynthSegments(result.segments || []);
     } catch (e) { showError(e.response?.data?.detail || 'Synthesis failed'); }
     finally { setIsSynthesizing(false); }
@@ -109,7 +113,7 @@ export default function ContinuousListening() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f8f8]">
+    <div className="h-screen flex flex-col bg-[#f8f8f8]">
 
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-100 shrink-0">
@@ -135,6 +139,21 @@ export default function ContinuousListening() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
+          {isEnded && displayItems.filter(d => !d.processing).length > 0 && (
+            <>
+              <button onClick={handleSynthesize} disabled={isSynthesizing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
+                {isSynthesizing ? <><Loader2 className="w-3 h-3 animate-spin" />Generating…</> : <><Volume2 className="w-3 h-3" />Generate voices</>}
+              </button>
+              {synthSegments.length > 0 && (
+                <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all ${
+                    playingIdx !== null ? 'bg-red-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
+                  {playingIdx !== null ? <><Square className="w-3 h-3 fill-white" />Stop</> : <><Play className="w-3 h-3 fill-white" />Play all</>}
+                </button>
+              )}
+            </>
+          )}
           {(isEnded || isPaused) && lines.length > 0 && (
             <button onClick={handleClear} className="px-3 py-1.5 rounded-xl text-[12px] font-medium text-gray-400 hover:text-red-400 hover:bg-red-50 transition-all">
               Clear
@@ -160,7 +179,8 @@ export default function ContinuousListening() {
       )}
 
       {/* ── Conversation area ── */}
-      <div className="flex-1 px-4 md:px-10 py-5 max-w-3xl w-full mx-auto space-y-3 pb-36">
+      <div className="flex-1 px-4 py-4 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-sm p-4 space-y-3 min-h-0">
 
         {displayItems.length === 0 && !isDiarizing && (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-20">
@@ -170,7 +190,7 @@ export default function ContinuousListening() {
             <p className="text-[15px] text-gray-400 font-medium">
               {isIdle ? 'Press Start to begin' : 'Listening…'}
             </p>
-            <p className="text-[12px] text-gray-300">Live translation · up to 5 speakers · keeps running while you navigate</p>
+
           </div>
         )}
 
@@ -236,35 +256,9 @@ export default function ContinuousListening() {
           );
         })}
 
-        {/* Voice synthesis panel */}
-        {isEnded && displayItems.filter(d => !d.processing).length > 0 && (
-          <div className="mt-4 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Play back in translated voice</p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative">
-                <select value={playLang} onChange={e => setPlayLang(e.target.value)}
-                  className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-[12px] font-semibold text-gray-700 cursor-pointer focus:outline-none pr-7">
-                  {LANGS.map(([n,c]) => <option key={c} value={c}>{n}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-              </div>
-              <button onClick={handleSynthesize} disabled={isSynthesizing}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                {isSynthesizing ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating…</> : <><Volume2 className="w-3.5 h-3.5" />Generate voices</>}
-              </button>
-              {synthSegments.length > 0 && (
-                <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all ${
-                    playingIdx !== null ? 'bg-red-500 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
-                  {playingIdx !== null ? <><Square className="w-3 h-3 fill-white" />Stop</> : <><Play className="w-3 h-3 fill-white" />Play all</>}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         <div ref={boxEndRef} />
-      </div>
+        </div>{/* end scrollable box */}
+      </div>{/* end conversation area */}
 
       {/* ── Bottom controls ── */}
       <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 py-4 left-0 md:left-[220px]">
