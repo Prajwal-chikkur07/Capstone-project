@@ -197,7 +197,6 @@ pip install -r requirements.txt
 ```env
 SARVAM_API_KEY=your_sarvam_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
-HUGGINGFACE_API_KEY=your_hf_key_here
 DATABASE_URL=postgresql://user:password@localhost:5432/seedlingspeaks
 SECRET_KEY=your_jwt_secret
 ```
@@ -278,7 +277,6 @@ Load `chrome-extension/dist` as unpacked extension in `chrome://extensions`.
 ```env
 SARVAM_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxx
 GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxx
-HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxxx
 DATABASE_URL=postgresql://...
 SECRET_KEY=your_jwt_secret_key
 ```

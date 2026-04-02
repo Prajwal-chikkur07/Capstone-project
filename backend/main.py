@@ -212,31 +212,8 @@ async def handle_diarize_audio(
                     await f.write(chunk)
 
             from services.sarvam_client import translate_speech_to_text
-            try:
-                stt = translate_speech_to_text(temp_path, content_type=content_type)
-                full_transcript = stt.get("transcript", "").strip()
-            except Exception as sarvam_err:
-                logger.warning(f"[diarize] Sarvam failed: {sarvam_err}, trying Whisper")
-                HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
-                if not HF_KEY:
-                    raise HTTPException(status_code=500, detail="Transcription unavailable")
-                import requests as req
-                with open(temp_path, "rb") as f:
-                    audio_bytes = f.read()
-                resp = req.post(
-                    "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
-                    headers={"Authorization": f"Bearer {HF_KEY}"},
-                    data=audio_bytes, timeout=60,
-                )
-                if resp.status_code == 503:
-                    import time; time.sleep(10)
-                    resp = req.post(
-                        "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
-                        headers={"Authorization": f"Bearer {HF_KEY}"},
-                        data=audio_bytes, timeout=60,
-                    )
-                if resp.status_code == 200:
-                    full_transcript = resp.json().get("text", "").strip()
+            stt = translate_speech_to_text(temp_path, content_type=content_type)
+            full_transcript = stt.get("transcript", "").strip()
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)

@@ -125,31 +125,33 @@ def _is_quota_error(e) -> bool:
     return "quota" in msg or "429" in msg or "exceeded" in msg or "rate limit" in msg or "resource_exhausted" in msg
 
 
-def _hf_summarize(text: str) -> str:
-    """HuggingFace fallback for summarization using flan-t5."""
-    from services.huggingface_client import rewrite_tone_hf
-    prompt = f"Summarize this text in 2-3 sentences:\n\n{text}"
-    try:
-        import requests as req
-        resp = req.post(
-            "https://api-inference.huggingface.co/models/google/flan-t5-large",
-            headers={"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"},
-            json={"inputs": prompt, "parameters": {"max_new_tokens": 200}},
-            timeout=30,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            if isinstance(data, list) and data:
-                return data[0].get("generated_text", "").strip()
-    except Exception as e:
-        logger.warning(f"HF summarize fallback failed: {e}")
+def _truncate_summary(text: str) -> str:
+    """Local summary fallback when Gemini is unavailable."""
     return text[:300] + "..."
+
+
+def _local_tone_rewrite(text: str, tone: str, user_override: str = None) -> str:
+    """Small local fallback to keep tone rewrite functional without external fallback services."""
+    if user_override:
+        return text
+
+    if tone == "Email Formal":
+        return f"Subject: Message\n\nDear Sir/Madam,\n\n{text.strip()}\n\nYours sincerely,"
+    if tone == "Email Casual":
+        return f"Subject: Quick note\n\nHi there,\n\n{text.strip()}\n\nCheers,"
+    if tone == "Slack":
+        return text.strip()
+    if tone == "LinkedIn":
+        return f"{text.strip()}\n\nWhat do you think?\n\n#leadership #communication #growth"
+    if tone in {"WhatsApp", "WhatsApp Business"}:
+        return text.strip()
+    return text
 
 
 def summarize_transcript(text: str) -> str:
     """Returns a 2-3 sentence TL;DR summary of the transcript."""
     if not GEMINI_API_KEY:
-        return _hf_summarize(text)
+        return _truncate_summary(text)
     prompt = f"""Summarize this transcript in 2-3 clear sentences. Be concise and capture the key points only.
 Output ONLY the summary, no labels, no markdown.
 
@@ -159,16 +161,14 @@ TRANSCRIPT: {text}"""
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Summarize failed: {e}")
-        if _is_quota_error(e):
-            return _hf_summarize(text)
-        return text[:300] + "..."
+        return _truncate_summary(text)
 
 
 def generate_meeting_notes(text: str) -> dict:
     """Returns structured meeting notes."""
     empty = {"summary": "", "action_items": [], "decisions": [], "attendees": [], "follow_ups": []}
     if not GEMINI_API_KEY:
-        return {**empty, "summary": _hf_summarize(text)}
+        return {**empty, "summary": _truncate_summary(text)}
     prompt = f"""Extract structured meeting notes from this transcript. Respond with ONLY a JSON object (no markdown):
 {{
   "summary": "2-3 sentence overview",
@@ -185,8 +185,6 @@ TRANSCRIPT: {text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Meeting notes failed: {e}")
-        if _is_quota_error(e):
-            return {**empty, "summary": _hf_summarize(text)}
         return {**empty, "summary": text[:200]}
 
 
@@ -251,7 +249,7 @@ def _local_sentiment(text: str) -> dict:
 def back_translate_check(native_text: str, source_lang: str) -> dict:
     """Translates native text back to English and rates accuracy."""
     if not GEMINI_API_KEY:
-        return _hf_back_translate(native_text, source_lang)
+        return {"back_translation": "", "accuracy_score": 0, "notes": "Gemini API key not configured."}
     prompt = f"""You are a translation quality checker.
 1. Translate this {source_lang} text back to English.
 2. Rate how accurately it preserves the original meaning (0-100).
@@ -267,20 +265,7 @@ TEXT: {native_text}"""
         return json.loads(raw)
     except Exception as e:
         logger.warning(f"Back-translate failed: {e}")
-        if _is_quota_error(e):
-            return _hf_back_translate(native_text, source_lang)
         return {"back_translation": "", "accuracy_score": 0, "notes": ""}
-
-
-def _hf_back_translate(native_text: str, source_lang: str) -> dict:
-    """HuggingFace fallback for back-translation."""
-    try:
-        from services.huggingface_client import translate_text_hf
-        back = translate_text_hf(native_text, "en-IN")
-        return {"back_translation": back, "accuracy_score": 70, "notes": "Translated via HuggingFace fallback."}
-    except Exception as e:
-        logger.warning(f"HF back-translate failed: {e}")
-        return {"back_translation": "", "accuracy_score": 0, "notes": "Back-translation unavailable."}
 
 
 def get_readability_score(text: str) -> dict:
@@ -422,24 +407,6 @@ Coordinate rules:
     except Exception as e:
         error_str = str(e)
         logger.error(f"Vision translate failed: {e}")
-
-        # Fallback: use HuggingFace BLIP for image description + HF translation
-        if "quota" in error_str.lower() or "429" in error_str or "rate" in error_str.lower():
-            logger.info("Gemini quota exceeded — trying HuggingFace fallback for vision translate")
-            try:
-                from services.huggingface_client import describe_image_hf, translate_text_hf
-                description = describe_image_hf(image_bytes, image_mime)
-                if description:
-                    translated = translate_text_hf(description, target_language)
-                    return [{
-                        "original": description,
-                        "translated": translated,
-                        "x": 0.1, "y": 0.1, "w": 0.8, "h": 0.1,
-                        "font_size": 0.04, "bg_color": "#ffffff", "text_color": "#000000"
-                    }]
-            except Exception as hf_err:
-                logger.error(f"HuggingFace vision fallback failed: {hf_err}")
-
         raise Exception(f"Vision translation failed: {error_str}")
 
 
@@ -520,21 +487,31 @@ REWRITTEN OUTPUT:"""
         logger.info("Gemini rewrite response received.")
         return response.text.strip()
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Gemini API Error: {error_msg}")
-        if "quota" in error_msg.lower() or "exceeded" in error_msg.lower() or "429" in error_msg:
-            logger.info("Gemini quota exceeded — falling back to HuggingFace for tone rewrite")
-            try:
-                from services.huggingface_client import rewrite_tone_hf
-                return rewrite_tone_hf(text, tone_option, user_override)
-            except Exception as hf_err:
-                logger.error(f"HuggingFace tone rewrite fallback failed: {hf_err}")
-                # Last resort: local rule-based rewrite — never raises
-                from services.huggingface_client import _local_tone_rewrite
-                return _local_tone_rewrite(text, tone_option, user_override)
+        logger.error(f"Gemini API Error: {e}")
+        if _is_quota_error(e):
+            return _local_tone_rewrite(text, tone_option, user_override)
         if hasattr(e, 'message'):
             raise Exception(f"Gemini error: {e.message}")
         raise e
+
+
+def gemini_translate_text(text: str, source_language: str, target_language: str) -> str:
+    """Direct Gemini translation helper without cross-service fallback recursion."""
+    if not GEMINI_API_KEY:
+        raise Exception("GEMINI_API_KEY not set")
+
+    source_name = LANG_NAMES.get(source_language, source_language)
+    target_name = LANG_NAMES.get(target_language, target_language)
+    prompt = f"""Translate the following text from {source_name} to {target_name}.
+Preserve meaning, tone, and formatting.
+Return ONLY the translated text.
+
+TEXT:
+{text}"""
+
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
 
 # ── Advanced Neural Translation ───────────────────────────────────────────────

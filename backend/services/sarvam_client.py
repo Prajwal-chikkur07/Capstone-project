@@ -52,37 +52,8 @@ def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wa
         return _transcribe_with_gemini(audio_file_path)
 
 def _transcribe_with_gemini(audio_file_path: str) -> dict:
-    """Fallback: use HuggingFace Whisper to transcribe audio."""
-    try:
-        HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
-        if not HF_API_KEY:
-            raise Exception("HUGGINGFACE_API_KEY not set")
-        import requests as req
-        with open(audio_file_path, "rb") as f:
-            audio_bytes = f.read()
-        headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-        resp = req.post(
-            "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
-            headers=headers,
-            data=audio_bytes,
-            timeout=60,
-        )
-        if resp.status_code == 503:
-            import time; time.sleep(10)
-            resp = req.post(
-                "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
-                headers=headers,
-                data=audio_bytes,
-                timeout=60,
-            )
-        if resp.status_code != 200:
-            raise Exception(f"Whisper failed: {resp.text[:200]}")
-        transcript = resp.json().get("text", "").strip()
-        logger.info(f"Whisper transcription: {transcript[:100]}")
-        return {"transcript": transcript, "confidence": None, "source_language": "en-IN"}
-    except Exception as e:
-        logger.error(f"Whisper transcription also failed: {e}")
-        raise Exception(f"Transcription failed: {e}")
+    """Fallback placeholder after Sarvam failure."""
+    raise Exception("Transcription failed: no non-Sarvam fallback is configured")
 
 
 def _convert_to_wav(audio_file_path: str) -> str | None:
@@ -183,7 +154,7 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
     """
     Translates text to the target language.
     Checks the semantic cache first — only calls Sarvam on a cache miss.
-    Falls back to HuggingFace if Sarvam fails.
+    Falls back to Gemini if Sarvam fails.
     For structured email text (contains Subject:), translates line-by-line to preserve formatting.
     """
     # ── Structured email: translate line-by-line to preserve format ───────
@@ -212,7 +183,7 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
 
 
 def _translate_single(text: str, source_language: str, target_language: str) -> str:
-    """Translate a single chunk of text, with cache + Sarvam + HF fallback."""
+    """Translate a single chunk of text, with cache + Sarvam + Gemini fallback."""
     # ── Layer 1 & 2: cache lookup ─────────────────────────────────────────
     cached = get_cached(text, target_language)
     if cached:
@@ -257,14 +228,14 @@ def _translate_single(text: str, source_language: str, target_language: str) -> 
         except Exception as e:
             logger.warning(f"Sarvam error: {e}, falling back to Gemini")
 
-    # ── Fallback: HuggingFace ─────────────────────────────────────────────
+    # ── Fallback: Gemini ──────────────────────────────────────────────────
     try:
-        from services.huggingface_client import translate_text_hf
-        logger.info(f"Using HuggingFace fallback for {target_language}")
-        result = translate_text_hf(text, target_language)
+        from services.gemini_client import gemini_translate_text
+        logger.info(f"Using Gemini fallback for {target_language}")
+        result = gemini_translate_text(text, source_language, target_language)
         store_translation(text, target_language, result)
         return result
     except Exception as e:
-        logger.error(f"HuggingFace fallback also failed: {e}")
+        logger.error(f"Gemini fallback also failed: {e}")
         # Return original text rather than crashing — caller can handle gracefully
         return text
