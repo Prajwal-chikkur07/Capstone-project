@@ -94,6 +94,7 @@ function renderRecording() {
 function renderResult() {
   const out = getOutputText();
   const hasOut = !!out;
+  const isError = hasOut && /^⚠/.test(out);
 
   root.innerHTML = `
     <div class="topbar">
@@ -122,7 +123,7 @@ function renderResult() {
         <select id="toneSel">${toneOptions()}</select>
       </div>
 
-      <div class="output-box">
+      <div class="output-box ${isError ? 'is-error' : ''}">
         <div class="output-text" id="outputText">
           ${isRewriting
             ? `<div class="spinner"></div>`

@@ -110,24 +110,24 @@ export default function VisionTranslate() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Header */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ImageIcon style={{ width: 20, height: 20, color: 'var(--text-muted)' }} />
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ImageIcon style={{ width: 20, height: 20, color: 'var(--text-faded)' }} />
             {L.visionTranslateTitle}
           </h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Upload an image — translated text appears directly on the image</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: '2px 0 0' }}>Upload an image — translated text appears directly on the image</p>
         </div>
         <div style={{ position: 'relative' }}>
           <select value={targetLang} onChange={e => setTargetLang(e.target.value)}
-            style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', padding: '8px 32px 8px 16px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)' }}>
+            style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--r-pill)', padding: '8px 32px 8px 16px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-ink)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
             {Object.entries(LANG_LABELS).map(([code, name]) => (
               <option key={code} value={code}>{name}</option>
             ))}
           </select>
-          <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-faded)', pointerEvents: 'none' }} />
         </div>
       </div>
 
@@ -139,16 +139,16 @@ export default function VisionTranslate() {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); loadImage(e.dataTransfer.files[0]); }}
             onClick={() => inputRef.current?.click()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--radius-card)', border: `2px dashed ${dragging ? 'var(--accent)' : 'rgba(249,115,22,0.3)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? 'var(--accent-light)' : 'var(--surface)', boxShadow: 'var(--shadow-card)', transition: 'all 0.2s' }}>
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--r-xl)', border: `2px dashed ${dragging ? 'var(--saffron)' : 'rgba(232,130,12,0.35)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? 'var(--saffron-light)' : 'var(--surface)', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s' }}>
             <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" style={{ display: 'none' }} onChange={e => loadImage(e.target.files[0])} />
-            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Upload style={{ width: 24, height: 24, color: 'var(--accent)' }} />
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--saffron-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Upload style={{ width: 24, height: 24, color: 'var(--saffron)' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{L.dropImageHere}</p>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>PNG, JPG, WEBP · up to 10MB</p>
+              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-ink)', margin: '0 0 6px' }}>{L.dropImageHere}</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-faded)', margin: 0 }}>PNG, JPG, WEBP · up to 10MB</p>
             </div>
-            <button style={{ background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-orange)', cursor: 'pointer' }}
+            <button style={{ background: 'var(--saffron)', color: '#fff', borderRadius: 'var(--r-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-saffron)', cursor: 'pointer' }}
               onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
               or browse files
             </button>

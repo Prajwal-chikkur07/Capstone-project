@@ -113,17 +113,17 @@ export default function ContinuousListening() {
   );
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--page-bg)' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
 
       {/* ── Top bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems:'center', justifyContent: 'space-between', padding: '12px 20px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: isActive ? '#EF4444' : 'var(--surface-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: isActive ? '0 4px 12px rgba(239,68,68,0.3)' : 'none', transition: 'all 0.2s' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: isActive ? '#EF4444' : 'var(--surface-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: isActive ? '0 4px 12px rgba(239,68,68,0.3)' : 'none', transition: 'all 0.2s' }}>
             <Mic style={{ width: 20, height: 20, color: '#fff' }} />
           </div>
           <div>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Live Conversation</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 500, color: 'var(--text-ink)', margin: 0, letterSpacing: '-0.02em' }}>Live Conversation</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-faded)', margin: 0 }}>
               {isActive ? 'Listening & translating…' : isPaused ? 'Paused' : isEnded ? 'Session ended' : 'Ready to start'}
             </p>
           </div>
@@ -133,27 +133,27 @@ export default function ContinuousListening() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ position: 'relative' }}>
             <select value={targetLang} onChange={e => handleLangChange(e.target.value)} disabled={isActive}
-              style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', padding: '8px 32px 8px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)', opacity: isActive ? 0.5 : 1 }}>
+              style={{ appearance: 'none', background: 'var(--surface)', border: '1px solid var(--border-warm)', borderRadius: 'var(--r-pill)', padding: '8px 32px 8px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-ink)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', opacity: isActive ? 0.5 : 1 }}>
               {LANGS.map(([n,c]) => <option key={c} value={c}>{n}</option>)}
             </select>
-            <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <ChevronDown style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: 'var(--text-faded)', pointerEvents: 'none' }} />
           </div>
           {isEnded && displayItems.filter(d => !d.processing).length > 0 && (
             <>
               <button onClick={handleSynthesize} disabled={isSynthesizing}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface-dark)', color: '#fff', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', opacity: isSynthesizing ? 0.5 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface-ink)', color: '#fff', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', opacity: isSynthesizing ? 0.5 : 1 }}>
                 {isSynthesizing ? <><Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />Generating…</> : <><Volume2 style={{ width: 12, height: 12 }} />Generate voices</>}
               </button>
               {synthSegments.length > 0 && (
                 <button onClick={() => playingIdx !== null ? stopPlayback() : playSegment(0)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: playingIdx !== null ? '#EF4444' : '#16A34A', color: '#fff', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: playingIdx !== null ? '#EF4444' : '#16A34A', color: '#fff', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
                   {playingIdx !== null ? <><Square style={{ width: 12, height: 12 }} />Stop</> : <><Play style={{ width: 12, height: 12 }} />Play all</>}
                 </button>
               )}
             </>
           )}
           {(isEnded || isPaused) && lines.length > 0 && (
-            <button onClick={handleClear} style={{ padding: '8px 14px', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+            <button onClick={handleClear} style={{ padding: '8px 14px', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-faded)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
           )}
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function ContinuousListening() {
 
       {/* ── Conversation area ── */}
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
 
         {displayItems.length === 0 && !isDiarizing && (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-20">
@@ -261,46 +261,46 @@ export default function ContinuousListening() {
         {isActive && (
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 28, marginBottom: 16 }}>
             {bars.map((h, i) => (
-              <div key={i} style={{ width: 3, borderRadius: 999, background: 'var(--surface-dark)', height: `${h}px`, transition: 'height 75ms' }} />
+              <div key={i} style={{ width: 3, borderRadius: 999, background: 'var(--surface-ink)', height: `${h}px`, transition: 'height 75ms' }} />
             ))}
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           {isIdle && (
             <button onClick={handleStart}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-dark)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,36,64,0.4)', transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#243158'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-dark)'; e.currentTarget.style.transform = 'none'; }}>
-              <Mic style={{ width: 20, height: 20, color: 'var(--accent)' }} />Start Listening
+              style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-ink)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--r-pill)', fontSize: '0.95rem', fontWeight: 500, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(28,25,23,0.35)', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2C2520'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-ink)'; e.currentTarget.style.transform = 'none'; }}>
+              <Mic style={{ width: 20, height: 20, color: 'var(--saffron)' }} />Start Listening
             </button>
           )}
           {isActive && (
             <>
-              <button onClick={handlePause} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F59E0B', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button onClick={handlePause} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F59E0B', color: '#fff', padding: '12px 24px', borderRadius: 'var(--r-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <Pause style={{ width: 16, height: 16 }} />Pause
               </button>
-              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--r-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <StopCircle style={{ width: 16, height: 16 }} />End
               </button>
             </>
           )}
           {isPaused && (
             <>
-              <button onClick={handleResume} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#16A34A', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button onClick={handleResume} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#16A34A', color: '#fff', padding: '12px 24px', borderRadius: 'var(--r-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <Mic style={{ width: 16, height: 16 }} />Resume
               </button>
-              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              <button onClick={handleEnd} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EF4444', color: '#fff', padding: '12px 24px', borderRadius: 'var(--r-pill)', fontSize: '0.9rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <StopCircle style={{ width: 16, height: 16 }} />End
               </button>
             </>
           )}
           {isEnded && (
-            <button onClick={handleClear} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-dark)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,36,64,0.4)' }}>
-              <Mic style={{ width: 20, height: 20, color: 'var(--accent)' }} />New Session
+            <button onClick={handleClear} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-ink)', color: '#fff', padding: '14px 40px', borderRadius: 'var(--r-pill)', fontSize: '0.95rem', fontWeight: 500, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(28,25,23,0.35)', transition: 'all 0.15s' }}>
+              <Mic style={{ width: 20, height: 20, color: 'var(--saffron)' }} />New Session
             </button>
           )}
         </div>
-        {isActive && <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>Translating every {CHUNK_MS/1000}s · keeps running while you navigate</p>}
+        {isActive && <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-faded)', marginTop: 8 }}>Translating every {CHUNK_MS/1000}s · keeps running while you navigate</p>}
       </div>
     </div>
   );

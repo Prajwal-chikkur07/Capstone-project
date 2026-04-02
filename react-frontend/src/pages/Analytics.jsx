@@ -64,76 +64,76 @@ export default function Analytics() {
   const maxDay = Math.max(...dailyCounts.map(d => d.count), 1);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.analyticsTitle}</h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{L.usageInsights}</p>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0 }}>{L.analyticsTitle}</h1>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-faded)', margin: '4px 0 0' }}>{L.usageInsights}</p>
       </div>
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { icon: Mic2,       label: L.totalTranscripts, value: history.length,                          sub: 'all time',      color: 'var(--text-primary)' },
-          { icon: TrendingUp, label: L.thisWeek,          value: thisWeek.length,                         sub: 'transcripts',   color: 'var(--text-primary)' },
-          { icon: Zap,        label: L.avgConfidence,     value: avgConf != null ? `${avgConf}%` : '—',   sub: 'speech clarity', color: avgConf == null ? 'var(--text-muted)' : avgConf >= 85 ? '#16A34A' : avgConf >= 60 ? '#D97706' : '#DC2626' },
-          { icon: Star,       label: L.starred,           value: state.starredIds?.length || 0,           sub: 'saved items',   color: 'var(--text-primary)' },
+          { icon: Mic2,       label: L.totalTranscripts, value: history.length,                          sub: 'all time',      color: 'var(--text-ink)' },
+          { icon: TrendingUp, label: L.thisWeek,          value: thisWeek.length,                         sub: 'transcripts',   color: 'var(--text-ink)' },
+          { icon: Zap,        label: L.avgConfidence,     value: avgConf != null ? `${avgConf}%` : '—',   sub: 'speech clarity', color: avgConf == null ? 'var(--text-faded)' : avgConf >= 85 ? '#16A34A' : avgConf >= 60 ? '#D97706' : '#DC2626' },
+          { icon: Star,       label: L.starred,           value: state.starredIds?.length || 0,           sub: 'saved items',   color: 'var(--text-ink)' },
         ].map(({ icon: Icon, label, value, sub, color }) => (
-          <div key={label} style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 20, transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+          <div key={label} style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 20, transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Icon style={{ width: 18, height: 18, color: 'var(--accent)' }} />
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--saffron-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <Icon style={{ width: 18, height: 18, color: 'var(--saffron)' }} />
             </div>
             <p style={{ fontSize: '2rem', fontWeight: 700, color, margin: 0, lineHeight: 1 }}>{value}</p>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', margin: '6px 0 2px' }}>{label}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{sub}</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-warm)', margin: '6px 0 2px' }}>{label}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-faded)', margin: 0 }}>{sub}</p>
           </div>
         ))}
       </div>
 
       {/* API calls */}
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.apiCalls}</p>
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faded)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.apiCalls}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {[
             { label: 'Sarvam',     value: usage.sarvamCalls || 0, color: '#2563EB'  },
-            { label: 'Gemini',     value: usage.geminiCalls || 0, color: 'var(--accent)' },
+            { label: 'Gemini',     value: usage.geminiCalls || 0, color: 'var(--saffron)' },
             { label: 'Cache hits', value: usage.cacheHits   || 0, color: '#16A34A' },
           ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: 'var(--page-bg)', borderRadius: 'var(--radius-inner)', padding: '16px 20px', textAlign: 'center' }}>
+            <div key={label} style={{ background: 'var(--bg)', borderRadius: 'var(--r-lg)', padding: '16px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color, margin: 0 }}>{value}</p>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{label}</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: '4px 0 0' }}>{label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Daily activity */}
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.dailyActivity}</p>
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faded)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.dailyActivity}</p>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 68 }}>
           {dailyCounts.map(({ label, count }, i) => (
             <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <div style={{ width: '100%', background: 'rgba(0,0,0,0.06)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'flex-end', height: 48 }}>
-                <div style={{ width: '100%', background: i === dailyCounts.length - 1 ? 'var(--surface-dark)' : 'var(--text-muted)', borderRadius: 8, height: `${Math.round((count / maxDay) * 100)}%`, minHeight: count > 0 ? 4 : 0, transition: 'height 0.5s' }} />
+          <div style={{ width: '100%', background: i === dailyCounts.length - 1 ? 'var(--surface-ink)' : 'var(--text-faded)', borderRadius: 8, height: `${Math.round((count / maxDay) * 100)}%`, minHeight: count > 0 ? 4 : 0, transition: 'height 0.5s' }} />
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{label}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-faded)' }}>{label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Confidence trend */}
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 16 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.confidenceTrend}</p>
+      <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 24, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faded)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.confidenceTrend}</p>
         <ConfidenceTrend history={history} />
       </div>
 
       {/* Language breakdown */}
       {langCounts.length > 0 && (
-        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: 24 }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.languageUsage}</p>
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: 24 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faded)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>{L.languageUsage}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {langCounts.map(([lang, count], i) => {
               const gradients = [
@@ -145,11 +145,11 @@ export default function Analytics() {
               ];
               return (
                 <div key={lang} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', width: 80, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{LANG_NAMES[lang] || lang}</span>
-                  <div style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 'var(--radius-pill)', height: 8, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: gradients[i % gradients.length], borderRadius: 'var(--radius-pill)', width: `${Math.round((count / maxLang) * 100)}%`, transition: 'width 0.5s' }} />
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-ink)', width: 80, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{LANG_NAMES[lang] || lang}</span>
+                  <div style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 'var(--r-pill)', height: 8, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: gradients[i % gradients.length], borderRadius: 'var(--r-pill)', width: `${Math.round((count / maxLang) * 100)}%`, transition: 'width 0.5s' }} />
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', width: 20, textAlign: 'right', flexShrink: 0 }}>{count}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-warm)', width: 20, textAlign: 'right', flexShrink: 0 }}>{count}</span>
                 </div>
               );
             })}

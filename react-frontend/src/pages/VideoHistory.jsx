@@ -33,41 +33,47 @@ export default function VideoHistory() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div className="min-h-screen bg-[var(--bg)]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-3 md:py-4 flex items-center gap-3">
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <button onClick={() => navigate('/app/video')}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all">
+          style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border-warm)', color: 'var(--text-faded)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--saffron)'; e.currentTarget.style.color = 'var(--saffron)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-warm)'; e.currentTarget.style.color = 'var(--text-faded)'; }}>
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="text-[18px] md:text-[20px] font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Clock className="w-5 h-5 text-gray-400" />
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-ink)', letterSpacing: '-0.03em', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Clock className="w-5 h-5" style={{ color: 'var(--saffron)' }} />
             Video History
           </h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">{history.length} translated video{history.length !== 1 ? 's' : ''}</p>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-faded)', marginTop: 2, margin: 0 }}>{history.length} translated video{history.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
 
       <div className="px-4 md:px-8 py-6 max-w-5xl mx-auto">
         {history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center">
-              <Film className="w-7 h-7 text-gray-300" />
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: '80px 40px', textAlign: 'center', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 'var(--r-lg)', background: 'var(--surface-tinted)', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Film className="w-7 h-7" style={{ color: 'var(--text-faded)' }} />
             </div>
-            <p className="text-[15px] font-semibold text-gray-400">No translated videos yet</p>
-            <p className="text-[13px] text-gray-400">Translate a video and it will appear here</p>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 500, color: 'var(--text-ink)', margin: '0 0 6px' }}>No translated videos yet</p>
+            <p style={{ color: 'var(--text-faded)', fontSize: '0.85rem', margin: 0, marginBottom: 16 }}>Translate a video and it will appear here</p>
             <button onClick={() => navigate('/app/video')}
-              className="mt-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-700 transition-all">
+              style={{ marginTop: 12, paddingLeft: 20, paddingRight: 20, paddingTop: 12, paddingBottom: 12, background: 'var(--surface-ink)', color: 'white', borderRadius: 'var(--r-lg)', fontSize: '0.88rem', fontWeight: 600, border: 'none', boxShadow: '0 4px 12px rgba(28,25,23,0.25)', cursor: 'pointer', transition: 'all 0.15s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2C2520'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-ink)'; e.currentTarget.style.transform = 'none'; }}>
               Translate a video
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {history.map(item => (
-              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group">
+            {history.map((item, idx) => (
+              <div key={item.id} className="stagger-child" style={{ background: 'var(--surface)', border: '1px solid var(--border-warm)', borderRadius: 'var(--r-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'pointer', animationDelay: `${0.05 + idx * 0.05}s` }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
                 {/* Video player */}
-                <div className="bg-black relative">
+                <div style={{ background: 'var(--surface-ink)', position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
                   {playing === item.id ? (
                     <video
                       src={`/api/video/download/${item.videoId}`}
@@ -78,39 +84,42 @@ export default function VideoHistory() {
                     />
                   ) : (
                     <div
-                      className="flex items-center justify-center cursor-pointer"
-                      style={{ height: '180px' }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', height: '100%' }}
                       onClick={() => setPlaying(item.id)}
                     >
-                      <div className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                        <Play className="w-6 h-6 text-white fill-white ml-1" />
+                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(253,250,244,0.15)', border: '2px solid rgba(253,250,244,0.30)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,130,12,0.30)'; e.currentTarget.style.borderColor = 'rgba(232,130,12,0.6)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(253,250,244,0.15)'; e.currentTarget.style.borderColor = 'rgba(253,250,244,0.30)'; e.currentTarget.style.transform = 'scale(1)'; }}>
+                        <Play className="w-5 h-5 text-white fill-white ml-0.5" />
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Info */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-800 truncate">
+                <div style={{ padding: '16px 18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
                         {item.filename || `Video · ${LANG_NAMES[item.targetLang] || item.targetLang}`}
                       </p>
-                      <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 bg-gray-100 rounded-md font-medium text-gray-600">
+                      <p style={{ fontSize: '11px', color: 'var(--text-faded)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 0' }}>
+                        <span style={{ background: '#EAF4ED', color: '#1A5C35', borderRadius: 'var(--r-pill)', padding: '3px 10px', fontSize: '11px', fontWeight: 700 }}>
                           {LANG_NAMES[item.targetLang] || item.targetLang}
                         </span>
                         · {fmt(item.timestamp)}
                       </p>
                     </div>
                     <button onClick={() => deleteItem(item.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-all shrink-0">
+                      style={{ padding: 6, borderRadius: 'var(--r-md)', background: 'none', border: 'none', color: 'var(--text-faded)', cursor: 'pointer', transition: 'color 0.15s ease', flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#9B1C2E'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faded)'; }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
                   {item.translated_text && (
-                    <p className="text-[12px] text-gray-500 line-clamp-2 mb-3 leading-relaxed">
+                    <p style={{ color: 'var(--text-warm)', fontSize: '0.82rem', lineHeight: 1.55, marginTop: 10, marginBottom: 14, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {item.translated_text}
                     </p>
                   )}
@@ -118,9 +127,10 @@ export default function VideoHistory() {
                   <a
                     href={`/api/video/download/${item.videoId}`}
                     download={`translated_${item.videoId}.mp4`}
-                    className="flex items-center justify-center gap-1.5 w-full py-2 bg-gray-900 text-white rounded-xl text-[12px] font-semibold hover:bg-gray-700 transition-all"
-                  >
-                    <Download className="w-3.5 h-3.5" />Download
+                    style={{ margin: '14px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', paddingTop: 12, paddingBottom: 12, background: 'var(--surface-ink)', color: 'white', borderRadius: 'var(--r-pill)', fontSize: '0.88rem', fontWeight: 500, border: 'none', boxShadow: '0 3px 12px rgba(28,25,23,0.25)', transition: 'all 0.15s ease', cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#2C2520'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-ink)'; e.currentTarget.style.transform = 'none'; }}>
+                    <Download className="w-3.5 h-3.5" style={{ color: 'var(--saffron)' }} />Download
                   </a>
                 </div>
               </div>

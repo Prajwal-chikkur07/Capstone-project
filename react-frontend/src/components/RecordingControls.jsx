@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, ChevronLeft, Square, Upload as UploadIcon, Info } from 'lucide-react';
+import { Mic, ChevronLeft, Square, Upload as UploadIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 
@@ -166,9 +166,13 @@ export default function RecordingControls() {
 
           {/* Main pill */}
           <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm">
-            {/* Info */}
-            <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
-              <Info className="w-4 h-4" />
+            {/* Upload Audio */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+              title="Upload Audio"
+            >
+              <UploadIcon className="w-4 h-4" />
             </button>
 
             <div className="w-px h-5 bg-gray-150 mx-1" />
@@ -182,15 +186,6 @@ export default function RecordingControls() {
               Start Speaking
             </button>
           </div>
-
-          {/* Upload */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 rounded-2xl pl-4 pr-5 py-2 text-[14px] font-semibold hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all shadow-sm"
-          >
-            <UploadIcon className="w-4 h-4" />
-            Upload Audio
-          </button>
         </div>
       )}
     </>

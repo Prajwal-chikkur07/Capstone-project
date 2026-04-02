@@ -7,11 +7,19 @@ import { getLabels } from '../services/uiLabels';
 const WIDGET_URL = 'http://127.0.0.1:27182';
 
 const CARD_COLORS = {
-  '/app/home':              'var(--surface-peach)',
-  '/app/continuous':        'var(--surface-blue)',
-  '/app/english-to-native': 'var(--surface-teal)',
-  '/app/vision':            'var(--surface-lime)',
-  '/app/video':             'var(--surface-lavender)',
+  '/app/home':              '#FAF0E4',   /* warm peach-cream */
+  '/app/continuous':        '#E8EEF8',   /* soft periwinkle */
+  '/app/english-to-native': '#E8F4ED',   /* soft sage */
+  '/app/vision':            '#F5EEF8',   /* soft lavender */
+  '/app/video':             '#FDF4E3',   /* soft turmeric */
+};
+
+const CARD_BORDERS = {
+  '/app/home':              'rgba(232,130,12,0.15)',
+  '/app/continuous':        'rgba(61,79,138,0.15)',
+  '/app/english-to-native': 'rgba(45,106,79,0.15)',
+  '/app/vision':            'rgba(107,70,150,0.15)',
+  '/app/video':             'rgba(212,160,23,0.20)',
 };
 
 export default function AppHome() {
@@ -46,67 +54,66 @@ export default function AppHome() {
   const go = (path) => { clearAll(); navigate(path); };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/seedlinglabs-logo.png" alt="SeedlingSpeaks" style={{ width: 36, height: 36, borderRadius: 12, objectFit: 'contain' }} />
           <div>
-            <h1 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>SeedlingSpeaks</h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Multilingual AI Translation</p>
+            <h1 className="page-header-title">SeedlingSpeaks</h1>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-faded)', margin: 0 }}>Multilingual AI Translation</p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', borderRadius: 'var(--radius-pill)', boxShadow: 'var(--shadow-card)', padding: '10px 18px', width: 220 }} className="hidden md:flex">
-            <Search className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <input placeholder="Search features…" style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.875rem', color: 'var(--text-primary)', width: '100%', boxShadow: 'none' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', borderRadius: 'var(--r-pill)', boxShadow: 'var(--shadow-sm)', padding: '9px 18px', width: 220 }} className="hidden md:flex">
+            <Search className="w-4 h-4" style={{ color: 'var(--text-faded)', flexShrink: 0 }} />
+            <input placeholder="Search features…" style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.85rem', color: 'var(--text-ink)', width: '100%', boxShadow: 'none' }} />
           </div>
-          <button style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface)', boxShadow: 'var(--shadow-card)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+          <button style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface)', boxShadow: 'var(--shadow-sm)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faded)' }}>
             <Bell className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px 80px' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px 80px' }} className="page-content">
         {/* Hero */}
         <div style={{ marginBottom: 36 }}>
           <div className="accent-badge" style={{ marginBottom: 14 }}>
             <Sparkles className="w-3 h-3" />
             Powered by Team ARTiculate
           </div>
-          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
-            Break language barriers<br />with AI-powered translation.
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontWeight: 600, color: 'var(--text-ink)', lineHeight: 1.1, margin: '0 0 12px', letterSpacing: '-0.03em' }}>
+            Break language <em style={{ fontStyle: 'italic' }}>barriers</em><br />with AI-powered <em style={{ fontStyle: 'italic' }}>translation</em>.
           </h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: 460, margin: 0 }}>
+          <p style={{ fontSize: '0.95rem', color: 'var(--text-warm)', lineHeight: 1.7, maxWidth: 460, margin: 0 }}>
             Speak, type, or scan — translate between Indian regional languages and English with professional tone styling.
           </p>
         </div>
 
         {/* Choose mode */}
-        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 16 }}>{L.chooseMode}</p>
+        <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', color: 'var(--text-faded)', textTransform: 'uppercase', marginBottom: 16 }}>{L.chooseMode}</p>
 
         {/* Feature cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
           {FEATURES.map(({ icon: Icon, title, desc, path }) => (
-            <button key={path} className="feature-card" onClick={() => go(path)} style={{ background: CARD_COLORS[path] }}>
+            <button key={path} className="feature-card stagger-child" onClick={() => go(path)} style={{ background: CARD_COLORS[path], border: `1px solid ${CARD_BORDERS[path]}` }}>
               <div className="card-deco" />
               <div className="card-icon"><Icon className="w-5 h-5" strokeWidth={2} /></div>
               <ArrowRight className="card-arrow" />
-              <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{title}</p>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{desc}</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 500, color: 'var(--text-ink)', margin: '0 0 4px', letterSpacing: '-0.01em' }}>{title}</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-warm)', lineHeight: 1.6, margin: 0 }}>{desc}</p>
             </button>
           ))}
         </div>
 
         {/* Desktop Widget */}
-        <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-inner)', boxShadow: 'var(--shadow-card)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-warm)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Radio className="w-5 h-5" style={{ color: 'var(--accent)' }} strokeWidth={1.8} />
+            <div style={{ width: 44, height: 44, borderRadius: 'var(--r-md)', background: 'var(--saffron-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Radio className="w-5 h-5" style={{ color: 'var(--saffron)' }} strokeWidth={1.8} />
             </div>
             <div>
-              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Desktop Widget</p>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{widgetOn ? 'Active — floating bubble is visible' : 'Disabled — toggle to enable'}</p>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-ink)', margin: 0 }}>Desktop Widget</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: 0 }}>{widgetOn ? 'Active — floating bubble is visible' : 'Disabled — toggle to enable'}</p>
             </div>
           </div>
           <button onClick={toggleWidget} disabled={widgetLoading}
@@ -117,7 +124,7 @@ export default function AppHome() {
         </div>
 
         {/* Languages */}
-        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 14 }}>{L.supportedLanguages}</p>
+        <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', color: 'var(--text-faded)', textTransform: 'uppercase', marginBottom: 14 }}>{L.supportedLanguages}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {['Hindi', 'Bengali', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Gujarati', 'Kannada', 'Punjabi', 'Odia'].map(lang => (
             <span key={lang} className="lang-pill">{lang}</span>

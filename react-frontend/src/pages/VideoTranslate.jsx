@@ -228,29 +228,29 @@ export default function VideoTranslate() {
   const langName = getLangName(targetLang);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div className="min-h-screen bg-[var(--bg)]">
       {/* Header */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Film style={{ width: 20, height: 20, color: 'var(--text-muted)' }} />
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Film style={{ width: 20, height: 20, color: 'var(--text-faded)' }} />
             Video Translation
           </h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Upload a video — get it back with translated voice</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: '2px 0 0' }}>Upload a video — get it back with translated voice</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={() => navigate('/app/video-history')}
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', boxShadow: 'var(--shadow-card)' }}>
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-warm)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
             <Clock style={{ width: 14, height: 14 }} />
             History
             {historyCount > 0 && (
-              <span style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, background: 'var(--saffron)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 {historyCount > 9 ? '9+' : historyCount}
               </span>
             )}
           </button>
           {step > 0 && (
-            <button onClick={reset} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <button onClick={reset} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-faded)', cursor: 'pointer' }}>
               <X style={{ width: 14, height: 14 }} />New video
             </button>
           )}
@@ -271,16 +271,16 @@ export default function VideoTranslate() {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); loadFile(e.dataTransfer.files[0]); }}
             onClick={() => fileInputRef.current?.click()}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--radius-card)', border: `2px dashed ${dragging ? '#7C3AED' : 'rgba(99,102,241,0.3)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? '#F5F3FF' : 'var(--surface)', boxShadow: 'var(--shadow-card)', transition: 'all 0.2s' }}>
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, borderRadius: 'var(--r-xl)', border: `2px dashed ${dragging ? '#7C3AED' : 'rgba(99,102,241,0.3)'}`, cursor: 'pointer', padding: '80px 40px', background: dragging ? '#F5F3FF' : 'var(--surface)', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s' }}>
             <input ref={fileInputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.mkv,.webm" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
             <div style={{ width: 64, height: 64, borderRadius: 18, background: '#EEE8F8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Upload style={{ width: 24, height: 24, color: '#7C3AED' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>Drop your video here</p>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>MP4, MOV, AVI, MKV, WEBM · up to 200MB</p>
+              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-ink)', margin: '0 0 6px' }}>Drop your video here</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-faded)', margin: 0 }}>MP4, MOV, AVI, MKV, WEBM · up to 200MB</p>
             </div>
-            <button style={{ background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-orange)', cursor: 'pointer' }}
+            <button style={{ background: 'var(--saffron)', color: '#fff', borderRadius: 'var(--r-pill)', padding: '10px 24px', fontWeight: 600, fontSize: '0.85rem', border: 'none', boxShadow: 'var(--shadow-saffron)', cursor: 'pointer' }}
               onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
               or browse files
             </button>

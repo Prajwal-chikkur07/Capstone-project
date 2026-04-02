@@ -45,12 +45,12 @@ export default function Templates() {
   const handleUseTemplate = (text) => { setField('englishText', text); navigate('/app/home'); showSuccess('Template loaded'); };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.templatesTitle}</h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{templates.length} saved</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0 }}>{L.templatesTitle}</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-faded)', margin: '4px 0 0' }}>{templates.length} saved</p>
         </div>
         <div className="flex items-center gap-2">
           {templates.length > 0 && (

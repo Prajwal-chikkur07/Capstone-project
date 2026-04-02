@@ -11,12 +11,12 @@ const NavBtn = ({ icon: Icon, label, badge, active, onClick }) => (
   <button onClick={onClick} className={`nav-item${active ? ' active' : ''}`}>
     <Icon className="w-4 h-4 shrink-0" strokeWidth={1.8} />
     <span style={{ flex: 1 }}>{label}</span>
-    {badge && <span style={{ fontSize: 9, fontWeight: 700, background: active ? 'rgba(255,255,255,0.25)' : 'var(--accent-light)', color: active ? '#fff' : 'var(--accent)', padding: '2px 7px', borderRadius: 999 }}>{badge}</span>}
+    {badge && <span style={{ fontSize: 9, fontWeight: 700, background: active ? 'rgba(255,255,255,0.25)' : 'var(--saffron-light)', color: active ? '#fff' : 'var(--saffron)', padding: '2px 7px', borderRadius: 999 }}>{badge}</span>}
   </button>
 );
 
 const BottomNavBtn = ({ icon: Icon, label, active, onClick }) => (
-  <button onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flex: 1, padding: '4px 0', color: active ? 'var(--accent)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+  <button onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flex: 1, padding: '4px 0', color: active ? 'var(--saffron)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
     <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.6} />
     <span style={{ fontSize: 9, fontWeight: 600 }}>{label}</span>
   </button>
@@ -39,15 +39,14 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
 
   return (
     <>
-      <aside className={`sidebar${isOpen ? ' open' : ''}`} style={{ padding: '24px 12px' }}>
+      <aside className={`sidebar${isOpen ? ' open' : ''}`}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, padding: '0 4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, boxShadow: '0 0 8px rgba(249,115,22,0.5)' }} />
-            <img src="/seedlinglabs-logo.png" alt="" style={{ width: 26, height: 26, borderRadius: 8, objectFit: 'contain' }} />
-            <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>SeedlingSpeaks</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: '0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--saffron)', flexShrink: 0, boxShadow: 'var(--shadow-saffron)' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-ink)', letterSpacing: '-0.02em' }}>SeedlingSpeaks</span>
           </div>
-          <button onClick={onClose} className="md:hidden" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="md:hidden" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faded)', padding: 4 }}><X className="w-4 h-4" /></button>
         </div>
 
         {/* Nav */}
@@ -68,10 +67,10 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         </nav>
 
         {/* Bottom */}
-        <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 16, marginTop: 16 }}>
-          <button onClick={toggleDark} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-inner)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
+          <button onClick={toggleDark} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 'var(--r-md)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 500 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {state.darkMode ? <Sun className="w-4 h-4" style={{ color: 'var(--accent)' }} /> : <Moon className="w-4 h-4" />}
+              {state.darkMode ? <Sun className="w-4 h-4" style={{ color: 'var(--saffron)' }} /> : <Moon className="w-4 h-4" />}
               <span>{state.darkMode ? L.lightMode : L.darkMode}</span>
             </div>
             <div className={state.darkMode ? 'toggle-on' : 'toggle-off'} style={{ width: 34, height: 20, borderRadius: 999, display: 'flex', alignItems: 'center', padding: '0 2px', transition: 'all 0.2s' }}>
@@ -81,7 +80,7 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
           <NavBtn icon={User}     label={L.profile}  active={is('/app/profile')}  onClick={() => { navigate('/app/profile'); onClose?.(); }} />
           <NavBtn icon={Settings} label={L.settings} active={is('/app/settings')} onClick={() => { navigate('/app/settings'); onClose?.(); }} />
           <button onClick={handleLogout} className="nav-item" style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#FEE8E8'; e.currentTarget.style.color = '#EF4444'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(28,25,23,0.08)'; e.currentTarget.style.color = '#9B1C2E'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
             <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.8} /><span>{L.logout}</span>
           </button>

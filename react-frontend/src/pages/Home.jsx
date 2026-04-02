@@ -508,13 +508,13 @@ export default function Home() {
   // ── File upload mode ──
   if (state.recordingMode === RECORDING_MODES.FILE_UPLOAD && !editableTranscript) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Header */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-muted)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
-          <span style={{ color: 'var(--text-muted)' }}>/</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{L.uploadAudio || "Upload Audio"}</span>
+          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-faded)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
+          <span style={{ color: 'var(--text-faded)' }}>/</span>
+          <span style={{ color: 'var(--text-ink)', fontWeight: 600 }}>{L.uploadAudio || "Upload Audio"}</span>
         </div>
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', maxWidth: 600, margin: '0 auto' }}>
@@ -536,17 +536,17 @@ export default function Home() {
   const rcc = rewrittenText?.length || 0;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--page-bg)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Top bar */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-muted)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
-          <span style={{ color: 'var(--text-muted)' }}>/</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{L.speechToText || "Speech to Text"}</span>
+          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-faded)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
+          <span style={{ color: 'var(--text-faded)' }}>/</span>
+          <span style={{ color: 'var(--text-ink)', fontWeight: 600 }}>{L.speechToText || "Speech to Text"}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'none' }}>⌘↵ translate · ⌘R rewrite</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-light)', color: 'var(--accent)', borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-faded)', display: 'none' }}>⌘↵ translate · ⌘R rewrite</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--saffron-light)', color: 'var(--saffron)', borderRadius: 'var(--r-pill)', padding: '4px 12px', fontSize: 11, fontWeight: 700 }}>
             SeedlingSpeaks v2.5
           </span>
         </div>
@@ -587,8 +587,8 @@ export default function Home() {
               value={editableTranscript}
               onChange={e => setEditableTranscript(e.target.value)}
               rows={Math.max(4, editableTranscript.split('\n').length + 1)}
-              style={{ width: '100%', fontSize: 16, lineHeight: 1.8, color: 'var(--text-primary)', background: 'var(--surface)', borderRadius: 'var(--radius-card)', padding: '20px', border: '2px solid transparent', outline: 'none', resize: 'none', boxShadow: 'var(--shadow-card)', fontFamily: 'var(--font)', transition: 'border-color 0.2s' }}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              style={{ width: '100%', fontSize: 16, lineHeight: 1.8, color: 'var(--text-ink)', background: 'var(--surface)', borderRadius: 'var(--r-xl)', padding: '20px', border: '2px solid transparent', outline: 'none', resize: 'none', boxShadow: 'var(--shadow-sm)', fontFamily: 'var(--font)', transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = 'var(--saffron)'}
               onBlur={e => e.target.style.borderColor = 'transparent'}
               spellCheck={false}
               placeholder="Your transcript will appear here..."
@@ -920,17 +920,17 @@ export default function Home() {
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '60px 0' }}>
-            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--surface)', boxShadow: 'var(--shadow-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Mic style={{ width: 28, height: 28, color: 'var(--text-muted)' }} strokeWidth={1.8} />
+            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--surface)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mic style={{ width: 28, height: 28, color: 'var(--text-faded)' }} strokeWidth={1.8} />
             </div>
-            <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Press <span style={{ color: 'var(--accent)' }}>Start Speaking</span> to begin</p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Your transcript will appear here</p>
+            <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-ink)', margin: 0 }}>Press <span style={{ color: 'var(--saffron)' }}>Start Speaking</span> to begin</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-faded)', margin: 0 }}>Your transcript will appear here</p>
           </div>
         )}
       </div>
 
       {/* Fixed bottom toolbar */}
-      <div style={{ position: 'fixed', bottom: 0, right: 0, left: 0, display: 'flex', justifyContent: 'center', zIndex: 50, paddingBottom: 72, paddingTop: 64, background: 'linear-gradient(to top, var(--page-bg) 60%, transparent)', pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', bottom: 0, right: 0, left: 0, display: 'flex', justifyContent: 'center', zIndex: 50, paddingBottom: 72, paddingTop: 64, background: 'linear-gradient(to top, var(--bg) 60%, transparent)', pointerEvents: 'none' }}>
         <div style={{ pointerEvents: 'auto', width: '100%', maxWidth: 480, padding: '0 16px', display: 'flex', justifyContent: 'center' }}>
           <RecordingControls />
         </div>

@@ -207,27 +207,27 @@ export default function EnglishToNativeView() {
   const dotColor = LANG_DOT_COLORS[state.selectedLanguage] || '#f97316';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '16px 24px' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.textTranslate}</h2>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{L.translationsNative}</p>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0 }}>{L.textTranslate}</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: '2px 0 0' }}>{L.translationsNative}</p>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '24px', gap: 16, maxWidth: 1100, width: '100%', margin: '0 auto' }} className="md:flex-row">
 
         {/* LEFT — English input */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', border: '2px solid transparent', transition: 'border-color 0.2s, box-shadow 0.2s' }}
-          onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249,115,22,0.1)'; }}
-          onBlurCapture={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', border: '2px solid transparent', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+          onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--saffron)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(232,130,12,0.15)'; }}
+          onBlurCapture={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>English</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-ink)' }}>English</span>
           </div>
           <textarea
             value={state.englishText}
             onChange={(e) => setField('englishText', e.target.value)}
             placeholder={L.typeEnglishHere}
-            style={{ flex: 1, width: '100%', padding: '20px', fontSize: '1rem', color: 'var(--text-primary)', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.8, minHeight: 300, fontFamily: 'var(--font)' }}
+            style={{ flex: 1, width: '100%', padding: '20px', fontSize: '1rem', color: 'var(--text-ink)', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.8, minHeight: 300, fontFamily: 'var(--font)' }}
           />
           <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
             <button onClick={handleTranslateClick} disabled={!state.englishText?.trim() || isTranslating}
@@ -238,39 +238,39 @@ export default function EnglishToNativeView() {
         </div>
 
         {/* RIGHT — Native output */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface-teal)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface-teal)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor }} />
-              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{langName}</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-ink)' }}>{langName}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={handleSpeak} disabled={!state.nativeTranslation || isTranslating}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--radius-pill)', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', backdropFilter: 'blur(4px)', opacity: (!state.nativeTranslation || isTranslating) ? 0.4 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r-pill)', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-warm)', border: 'none', cursor: 'pointer', backdropFilter: 'blur(4px)', opacity: (!state.nativeTranslation || isTranslating) ? 0.4 : 1 }}>
                 {isPlaying ? <><Square style={{ width: 12, height: 12 }} />Stop</> : <><Volume2 style={{ width: 12, height: 12 }} />Speak</>}
               </button>
               <div style={{ position: 'relative' }}>
                 <select value={state.selectedLanguage} onChange={(e) => handleLangChange(e.target.value)}
-                  style={{ appearance: 'none', background: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: 'var(--radius-pill)', padding: '6px 28px 6px 12px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
+                  style={{ appearance: 'none', background: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: 'var(--r-pill)', padding: '6px 28px 6px 12px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-warm)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
                   {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
                     <option key={code} value={code}>{name}</option>
                   ))}
                 </select>
-                <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                <ChevronDown style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: 'var(--text-faded)', pointerEvents: 'none' }} />
               </div>
             </div>
           </div>
 
           <div style={{ flex: 1, padding: '20px', overflowY: 'auto', minHeight: 300 }}>
             {isTranslating ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-faded)' }}>
                 <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
                 <span style={{ fontSize: '0.9rem' }}>Translating...</span>
               </div>
             ) : state.nativeTranslation ? (
-              <p style={{ fontSize: '1rem', color: 'var(--text-primary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }} className="animate-fade-in-blur">{state.nativeTranslation}</p>
+              <p style={{ fontSize: '1rem', color: 'var(--text-ink)', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }} className="animate-fade-in-blur">{state.nativeTranslation}</p>
             ) : (
-              <p style={{ fontSize: '1rem', color: 'var(--text-muted)', margin: 0 }}>{L.translationAppears}</p>
+              <p style={{ fontSize: '1rem', color: 'var(--text-faded)', margin: 0 }}>{L.translationAppears}</p>
             )}
           </div>
 
@@ -279,7 +279,7 @@ export default function EnglishToNativeView() {
               {TONES.map((tone) => (
                 <button key={tone} onClick={() => handleToneClick(tone)}
                   disabled={!state.englishText?.trim() || isTranslating}
-                  style={{ padding: '6px 16px', borderRadius: 'var(--radius-pill)', fontSize: '0.8rem', fontWeight: 600, border: selectedTone === tone ? 'none' : '1px solid rgba(255,255,255,0.8)', background: selectedTone === tone ? 'var(--accent)' : 'rgba(255,255,255,0.6)', color: selectedTone === tone ? '#fff' : 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.15s', opacity: (!state.englishText?.trim() || isTranslating) ? 0.4 : 1 }}>
+                  style={{ padding: '6px 16px', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, border: selectedTone === tone ? 'none' : '1px solid rgba(255,255,255,0.8)', background: selectedTone === tone ? 'var(--saffron)' : 'rgba(255,255,255,0.6)', color: selectedTone === tone ? '#fff' : 'var(--text-warm)', cursor: 'pointer', transition: 'all 0.15s', opacity: (!state.englishText?.trim() || isTranslating) ? 0.4 : 1 }}>
                   {tone}
                 </button>
               ))}

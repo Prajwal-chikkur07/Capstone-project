@@ -78,12 +78,12 @@ export default function History() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{L.transcriptHistory}</h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0 }}>{L.transcriptHistory}</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-faded)', margin: '4px 0 0' }}>{state.transcriptHistory?.length || 0} saved · last 50 kept</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => setShowStarred(v => !v)}
@@ -131,14 +131,14 @@ export default function History() {
       {/* Search */}
       {(state.transcriptHistory?.length > 0) && (
         <div style={{ position: 'relative', marginBottom: 12 }}>
-          <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-muted)' }} />
+          <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--text-faded)' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search transcripts..."
-            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 'var(--radius-pill)', border: '1px solid rgba(0,0,0,0.07)', background: 'var(--surface)', fontSize: '0.9rem', color: 'var(--text-primary)', outline: 'none', boxShadow: 'var(--shadow-card)', fontFamily: 'var(--font)', boxSizing: 'border-box' }}
-            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-            onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.07)'; e.target.style.boxShadow = 'var(--shadow-card)'; }}
+            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 'var(--r-pill)', border: '1px solid rgba(0,0,0,0.07)', background: 'var(--surface)', fontSize: '0.9rem', color: 'var(--text-ink)', outline: 'none', boxShadow: 'var(--shadow-sm)', fontFamily: 'var(--font)', boxSizing: 'border-box' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--saffron)'; e.target.style.boxShadow = '0 0 0 3px rgba(232,130,12,0.15)'; }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.07)'; e.target.style.boxShadow = 'var(--shadow-sm)'; }}
           />
         </div>
       )}
@@ -174,9 +174,9 @@ export default function History() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.map((entry) => (
             <div key={entry.id}
-              style={{ background: 'var(--surface)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-card)', padding: '20px 24px', border: '1px solid rgba(0,0,0,0.05)', transition: 'transform 0.15s ease, box-shadow 0.15s ease', cursor: 'default' }}
+              style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', padding: '20px 24px', border: '1px solid rgba(0,0,0,0.05)', transition: 'transform 0.15s ease, box-shadow 0.15s ease', cursor: 'default' }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               className="group">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -196,15 +196,15 @@ export default function History() {
                       };
                       const lc = langColors[entry.lang] || { bg: '#F0F4F8', color: '#5A6478' };
                       return (
-                        <span style={{ borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 700, background: lc.bg, color: lc.color }}>
+                        <span style={{ borderRadius: 'var(--r-pill)', padding: '4px 12px', fontSize: 12, fontWeight: 700, background: lc.bg, color: lc.color }}>
                           {LANG_NAMES[entry.lang] || entry.lang || 'Unknown'}
                         </span>
                       );
                     })()}
                     <ConfidencePill score={entry.confidence} />
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{fmt(entry.timestamp)}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-faded)' }}>{fmt(entry.timestamp)}</span>
                   </div>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-ink)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {entry.text}
                   </p>
                   {/* Tags */}
