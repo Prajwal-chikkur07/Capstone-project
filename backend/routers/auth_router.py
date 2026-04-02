@@ -165,6 +165,28 @@ def update_consent(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/check-user")
+def check_user_exists(email: str, db: Session = Depends(get_db)):
+    """
+    Check if a user with the given email already exists.
+    Used during signup to prevent duplicate accounts.
+    Returns {"exists": true/false}
+    """
+    try:
+        email_lower = email.lower().strip()
+        user = db.query(User).filter(User.email == email_lower).first()
+        
+        if user:
+            print(f"[CHECK-USER] User with email {email_lower} exists")
+            return {"exists": True, "message": "User already exists"}
+        else:
+            print(f"[CHECK-USER] User with email {email_lower} does not exist")
+            return {"exists": False, "message": "User not found"}
+    except Exception as e:
+        print(f"[CHECK-USER] ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
 @router.get("/debug/users")
 def debug_list_all_users(db: Session = Depends(get_db)):
     """DEBUG ENDPOINT: List all users in database (remove in production)"""
