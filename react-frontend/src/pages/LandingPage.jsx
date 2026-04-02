@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const goAuth = () => navigate('/auth');
+  const goSignIn = () => navigate('/auth');
+  const goSignUp = () => navigate('/auth?mode=signup');
 
   const features = [
     { icon: Mic,       title: 'Live Transcription',    desc: 'Push-to-talk recording in 10 Indian languages with instant English output.',  tag: 'Push-to-talk' },
@@ -29,10 +30,16 @@ export default function LandingPage() {
           <img src="/seedlinglabs-logo.png" alt="Seedlinglabs" className="w-8 h-8 rounded-full object-cover" />
           <span className="text-[15px] font-bold text-[#1a0f00] tracking-tight">SeedlingSpeaks</span>
         </div>
-        <button onClick={goAuth}
-          className="flex items-center gap-2 bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all">
-          Get started <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={goSignIn}
+            className="text-[13px] font-semibold text-[#1a0f00] hover:text-[#2d1a00] px-4 py-2 transition-colors">
+            Sign in
+          </button>
+          <button onClick={goSignUp}
+            className="flex items-center gap-2 bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all">
+            Sign up
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -53,13 +60,13 @@ export default function LandingPage() {
         </p>
 
         <div className="flex items-center gap-4 flex-wrap justify-center">
-          <button onClick={goAuth}
+          <button onClick={goSignUp}
             className="flex items-center gap-2 bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[15px] font-bold px-8 py-3.5 rounded-full transition-all shadow-lg shadow-[#1a0f00]/20">
             Start for free <ArrowRight className="w-4 h-4" />
           </button>
-          <button onClick={goAuth}
+          <button onClick={goSignIn}
             className="flex items-center gap-2 border border-[#d4c4a8] hover:border-[#c9a84c] text-[#3b1f0e] text-[15px] font-semibold px-8 py-3.5 rounded-full transition-all">
-            Try demo
+            Sign in
           </button>
         </div>
 
@@ -110,7 +117,7 @@ export default function LandingPage() {
           <p className="text-[14px] text-white/50">No setup needed. Works right in your browser.</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <button onClick={goAuth}
+          <button onClick={goSignUp}
             className="flex items-center gap-2 bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a0f00] text-[15px] font-bold px-8 py-3.5 rounded-full transition-all shadow-lg">
             Get started free <ArrowRight className="w-4 h-4" />
           </button>

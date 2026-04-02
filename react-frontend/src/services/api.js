@@ -107,6 +107,11 @@ export const getMe = async () => {
   return data; // { id, email, first_name, last_name, avatar_url, created_at }
 };
 
+export const checkUserExists = async (email) => {
+  const { data } = await API.get('/auth/check-user', { params: { email } });
+  return data; // { exists: boolean, message: string }
+};
+
 export const translateAudio = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
