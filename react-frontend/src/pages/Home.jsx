@@ -350,12 +350,18 @@ export default function Home() {
         tone === 'Custom' ? customToneInput : null,
         state.customDictionary?.length ? state.customDictionary : null,
       );
+      if (!result || !result.trim()) {
+        showError('Retone returned empty. Please try again.');
+        setShowOriginalTranscript(true);
+        return;
+      }
       setRewrittenText(result);
       incrementUsage('geminiCalls');
-      // Auto-run readability on rewritten text
       api.getReadability(result).then(setReadability).catch(() => {});
     } catch (err) {
-      showError(err.response?.data?.detail || 'Rewrite failed');
+      const msg = err.response?.data?.detail || err.message || 'Rewrite failed';
+      showError(msg);
+      setShowOriginalTranscript(true);
     } finally {
       setIsRewriting(false);
     }
