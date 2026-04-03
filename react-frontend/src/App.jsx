@@ -95,6 +95,10 @@ function AppRoutes() {
       />
       <Route
         path="/app/home"
+        element={<Navigate to="/app/native-to-english" replace />}
+      />
+      <Route
+        path="/app/native-to-english"
         element={
           <ProtectedAppShell>
             <Home />

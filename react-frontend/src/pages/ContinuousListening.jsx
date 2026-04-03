@@ -257,7 +257,7 @@ export default function ContinuousListening() {
       </div>{/* end conversation area */}
 
       {/* ── Bottom controls ── */}
-      <div style={{ background: 'var(--surface)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '16px 20px', flexShrink: 0 }}>
+      <div style={{ padding: '16px 20px', flexShrink: 0, background: 'transparent' }}>
         {isActive && (
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 28, marginBottom: 16 }}>
             {bars.map((h, i) => (

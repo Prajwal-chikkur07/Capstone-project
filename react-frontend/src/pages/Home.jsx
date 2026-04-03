@@ -7,9 +7,9 @@ import {
   Mic, Ear, Copy, Check, Download, Sparkles, Volume2, Square,
   Languages, Loader2, ChevronDown, Mail, Slack, Linkedin,
   MessageSquare, X, Send, ExternalLink, BookmarkPlus, Hash,
-  Upload, Smile, Frown, Minus, Wand2, FileAudio,
+  Upload, Smile, Frown, Minus, Wand2, FileAudio, Trash2,
   AlignLeft, ClipboardList, HelpCircle, Link, ChevronUp, ChevronDown as ChevronDownIcon,
-  ArrowLeftRight, BookOpen, BarChart2, Globe2, Tag, Keyboard, Pin
+  ArrowLeftRight, BookOpen, BarChart2, Globe2, Tag, Keyboard, Pin, RotateCcw
 } from 'lucide-react';
 import { useSpeech } from '../hooks/useSpeech';
 import * as api from '../services/api';
@@ -70,7 +70,7 @@ function SentimentBadge({ sentiment, score, summary }) {
   const { icon: Icon, color } = map[sentiment] || map.neutral;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${color}`} title={summary}>
-      <Icon className="w-3 h-3" />{sentiment} · {score}%
+      <Icon className="w-3 h-3" />Sentiment: {sentiment} · {score}%
     </span>
   );
 }
@@ -282,6 +282,13 @@ export default function Home() {
   const [isMultiTranslating, setIsMultiTranslating] = useState(false);
   const [showMultiLang, setShowMultiLang] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // New UI changes - for comprehensive output box redesign
+  const [showOriginalTranscript, setShowOriginalTranscript] = useState(true);
+  const [showRetoneDropdown, setShowRetoneDropdown] = useState(false);
+  const [selectedRetoneForDropdown, setSelectedRetoneForDropdown] = useState(null);
+  const [translatedOriginal, setTranslatedOriginal] = useState('');
+  const [translatedRetone, setTranslatedRetone] = useState('');
+  const [showTranslation, setShowTranslation] = useState(false);
   const prevEnglishText = useRef('');
 
   // Reset playback state on unmount to avoid stuck "playing" indicators
@@ -334,6 +341,8 @@ export default function Home() {
     if (!text?.trim()) return;
     setIsRewriting(true);
     setRewrittenText('');
+    setShowOriginalTranscript(false);
+    setShowTranslation(false);
     try {
       const result = await api.rewriteTone(
         text,
@@ -354,26 +363,47 @@ export default function Home() {
 
   const handleToneClick = (tone) => {
     setSelectedTone(tone);
+    setShowOriginalTranscript(false);
+    setShowTranslation(false);
     if (tone !== 'Custom') handleRewrite(tone);
   };
 
+  const handleRetoneDropdownApply = useCallback(async () => {
+    if (!selectedRetoneForDropdown) return;
+    setShowRetoneDropdown(false);
+    setSelectedTone(selectedRetoneForDropdown);
+    await handleRewrite(selectedRetoneForDropdown);
+  }, [selectedRetoneForDropdown]);
+
   const handleTranslate = useCallback(async () => {
-    const text = editableTranscript || state.englishText;
-    if (!text?.trim()) return;
+    // Translate the currently displayed version (Original or Retoned)
+    const textToTranslate = showOriginalTranscript ? editableTranscript : (rewrittenText || editableTranscript);
+    if (!textToTranslate?.trim()) return;
+    
     setIsTranslating(true);
     try {
-      const translated = await api.translateText(text, state.selectedLanguage);
-      setField('nativeTranslation', translated);
+      const translated = await api.translateText(textToTranslate, state.selectedLanguage);
+      // Store translation in appropriate state based on current view
+      if (showOriginalTranscript) {
+        setTranslatedOriginal(translated);
+      } else {
+        setTranslatedRetone(translated);
+      }
+      setShowTranslation(true);
       incrementUsage('sarvamCalls');
     } catch (err) {
       showError(err.response?.data?.detail || 'Translation error');
     } finally {
       setIsTranslating(false);
     }
-  }, [editableTranscript, state.englishText, state.selectedLanguage, setField, showError, incrementUsage]);
+  }, [editableTranscript, rewrittenText, showOriginalTranscript, state.selectedLanguage, showError, incrementUsage]);
 
   const handleLangChange = useCallback((lang) => {
-    setFields({ selectedLanguage: lang, nativeTranslation: '' });
+    setFields({ selectedLanguage: lang });
+    // Clear translations when language changes
+    setTranslatedOriginal('');
+    setTranslatedRetone('');
+    setShowTranslation(false);
   }, [setFields]);
 
   const handleDownload = () => {
@@ -407,6 +437,9 @@ export default function Home() {
     setToneConfidence(null);
     setMultiResults({});
     setField('nativeTranslation', '');
+    setTranslatedOriginal('');
+    setTranslatedRetone('');
+    setShowTranslation(false);
   };
 
   const handleSummarize = async () => {
@@ -505,6 +538,49 @@ export default function Home() {
 
   const shareText = rewrittenText || state.nativeTranslation || editableTranscript;
 
+  const handleSendClick = useCallback(() => {
+    if (!shareText?.trim()) return;
+    const inferredChannelId = selectedTone ? (TONE_TO_CHANNELS[selectedTone]?.[0] || 'email') : 'email';
+    const trimmedText = shareText.trim();
+
+    if (inferredChannelId === 'email') {
+      let subject = 'Message from SeedlingSpeaks';
+      let body = trimmedText;
+      const subjectMatch = trimmedText.match(/^Subject:\s*(.+?)[\r\n]/i);
+      if (subjectMatch) {
+        subject = subjectMatch[1].trim();
+        body = trimmedText.replace(/^Subject:\s*.+?[\r\n]+/i, '').trim();
+      }
+      window.open(
+        `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+        '_blank'
+      );
+      return;
+    }
+
+    if (inferredChannelId === 'whatsapp') {
+      window.open(`https://wa.me/?text=${encodeURIComponent(trimmedText)}`, '_blank');
+      return;
+    }
+
+    if (inferredChannelId === 'slack') {
+      navigator.clipboard.writeText(trimmedText).catch(() => {});
+      const slackWindow = window.open('slack://open', '_blank');
+      if (!slackWindow) {
+        window.open('https://app.slack.com/client', '_blank');
+      }
+      showSuccess('Message copied. Paste it into Slack.');
+      return;
+    }
+
+    if (inferredChannelId === 'linkedin') {
+      navigator.clipboard.writeText(trimmedText).catch(() => {});
+      window.open('https://www.linkedin.com/feed/', '_blank');
+      showSuccess('Post copied. Paste it into LinkedIn.');
+      return;
+    }
+  }, [shareText, selectedTone, showSuccess]);
+
   // ── File upload mode ──
   if (state.recordingMode === RECORDING_MODES.FILE_UPLOAD && !editableTranscript) {
   return (
@@ -535,14 +611,57 @@ export default function Home() {
   const rwc = rewrittenText?.trim() ? rewrittenText.trim().split(/\s+/).length : 0;
   const rcc = rewrittenText?.length || 0;
 
+  // Unified mode state
+  const activeMode = showTranslation ? 'translation' : (rewrittenText && !showOriginalTranscript) ? 'retoned' : 'transcript';
+  
+  const getModeTitle = () => {
+    if (activeMode === 'translation') return `Translation · ${state.selectedLanguage}`;
+    if (activeMode === 'retoned') return `Retoned · ${selectedTone || 'Select tone'}`;
+    return 'Transcript';
+  };
+
+  const getModeContent = () => {
+    if (activeMode === 'translation') return translatedRetone || translatedOriginal;
+    if (activeMode === 'retoned') return rewrittenText;
+    return editableTranscript;
+  };
+
+  const getModeWordCount = () => {
+    const content = getModeContent();
+    if (!content) return { words: 0, chars: 0 };
+    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const chars = content.length;
+    return { words, chars };
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Top bar */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <button onClick={() => setField('recordingMode', null)} style={{ color: 'var(--text-faded)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Home</button>
-          <span style={{ color: 'var(--text-faded)' }}>/</span>
-          <span style={{ color: 'var(--text-ink)', fontWeight: 600 }}>{L.speechToText || "Speech to Text"}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'var(--surface-ink)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Mic style={{ width: '24px', height: '24px', color: 'var(--saffron)' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ color: 'var(--text-ink)', fontWeight: 600, fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', fontSize: '1.05rem' }}>
+              {L.speechToText || "Speech to Text"}
+            </span>
+            <span style={{ color: 'var(--text-faded)', fontSize: '0.82rem', fontWeight: 500 }}>
+              {editableTranscript?.trim() ? 'Transcript ready to edit' : 'Ready to start'}
+            </span>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 11, color: 'var(--text-faded)', display: 'none' }}>⌘↵ translate · ⌘R rewrite</span>
@@ -552,388 +671,253 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', paddingBottom: 160, maxWidth: 720, width: '100%', margin: '0 auto' }}>
+      {/* Main content - REFACTORED: No max-width constraint, full workspace */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', width: '100%', minHeight: 0 }}>
 
         {editableTranscript ? (
-          <div className="animate-fade-in-blur">
-
-            {/* Transcript header */}
-            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">{L.transcript || "Transcript"}</span>
-                {confPct != null && (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${confColor}`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-                    {confPct}% · {confLabel}
-                  </span>
-                )}
-                <SentimentBadge {...(sentiment || {})} />
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <SpeakBtn onClick={handleSpeakEnglish} isPlaying={isPlaying} disabled={!editableTranscript} />
-                <CopyBtn text={editableTranscript} />
-                <button onClick={handleDownload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-700 text-[13px] font-medium transition-all">
-                  <Download className="w-3.5 h-3.5" />Save
-                </button>
-                <button onClick={handleClear} className="px-3 py-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 text-[13px] font-medium transition-all">
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            {/* Editable transcript */}
-            <textarea
-              value={editableTranscript}
-              onChange={e => setEditableTranscript(e.target.value)}
-              rows={Math.max(4, editableTranscript.split('\n').length + 1)}
-              style={{ width: '100%', fontSize: 16, lineHeight: 1.8, color: 'var(--text-ink)', background: 'var(--surface)', borderRadius: 'var(--r-xl)', padding: '20px', border: '2px solid transparent', outline: 'none', resize: 'none', boxShadow: 'var(--shadow-sm)', fontFamily: 'var(--font)', transition: 'border-color 0.2s' }}
-              onFocus={e => e.target.style.borderColor = 'var(--saffron)'}
-              onBlur={e => e.target.style.borderColor = 'transparent'}
-              spellCheck={false}
-              placeholder="Your transcript will appear here..."
-            />
-            <div className="flex items-center gap-1 mt-1 mb-1">
-              <Hash className="w-3 h-3 text-gray-300" />
-              <span className="text-[11px] text-gray-300">{wc} words · {cc} chars</span>
-            </div>
-
-            {/* AI Tools panel */}
-            <div className="mt-3 mb-1">
-              <button onClick={() => setShowAIPanel(v => !v)}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-400 hover:text-gray-700 transition-colors">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                {L.aiTools || "AI Tools"}
-                {showAIPanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDownIcon className="w-3 h-3" />}
-              </button>
-
-              {showAIPanel && (
-                <div className="mt-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4 animate-fade-in-blur">
-                  {/* Quick action buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={handleSummarize} disabled={isSummarizing || !editableTranscript?.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[12px] font-semibold hover:bg-gray-50 disabled:opacity-40 transition-all">
-                      {isSummarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlignLeft className="w-3 h-3" />}
-                      Summarize
-                    </button>
-                    <button onClick={handleMeetingNotes} disabled={isMeetingNotes || !editableTranscript?.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[12px] font-semibold hover:bg-gray-50 disabled:opacity-40 transition-all">
-                      {isMeetingNotes ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardList className="w-3 h-3" />}
-                      Meeting notes
-                    </button>
-                    <button onClick={handleShareLink} disabled={isSharing || !editableTranscript?.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[12px] font-semibold hover:bg-gray-50 disabled:opacity-40 transition-all">
-                      {isSharing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link className="w-3 h-3" />}
-                      Share link
-                    </button>
-                  </div>
-
-                  {/* Summary output */}
-                  {summary && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-                      <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">Summary</p>
-                      <p className="text-[13px] text-gray-700 leading-relaxed">{summary}</p>
-                    </div>
-                  )}
-
-                  {/* Meeting notes output */}
-                  {meetingNotes && (
-                    <div className="space-y-2">
-                      {meetingNotes.summary && (
-                        <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-3">
-                          <p className="text-[11px] font-bold text-purple-400 uppercase tracking-widest mb-1">Overview</p>
-                          <p className="text-[13px] text-gray-700">{meetingNotes.summary}</p>
-                        </div>
-                      )}
-                      {[
-                        { key: 'action_items', label: 'Action items', color: 'text-red-400 bg-red-50 border-red-100' },
-                        { key: 'decisions',    label: 'Decisions',    color: 'text-green-500 bg-green-50 border-green-100' },
-                        { key: 'attendees',    label: 'Attendees',    color: 'text-sky-500 bg-sky-50 border-sky-100' },
-                        { key: 'follow_ups',   label: 'Follow-ups',   color: 'text-amber-500 bg-amber-50 border-amber-100' },
-                      ].map(({ key, label, color }) => meetingNotes[key]?.length > 0 && (
-                        <div key={key} className={`border rounded-xl px-4 py-3 ${color.split(' ').slice(1).join(' ')}`}>
-                          <p className={`text-[11px] font-bold uppercase tracking-widest mb-1.5 ${color.split(' ')[0]}`}>{label}</p>
-                          <ul className="space-y-1">
-                            {meetingNotes[key].map((item, i) => (
-                              <li key={i} className="text-[13px] text-gray-700 flex items-start gap-1.5">
-                                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-400 shrink-0" />{item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Share link output */}
-                  {shareLink && (
-                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
-                      <Link className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="text-[13px] text-gray-600 flex-1">Link ID: <span className="font-mono font-semibold text-gray-900">{shareLink}</span></span>
-                      <button onClick={() => { navigator.clipboard.writeText(shareLink); showSuccess('Copied!'); }}
-                        className="text-[12px] text-gray-400 hover:text-gray-700 transition-colors">Copy</button>
-                    </div>
-                  )}
-
-                  {/* Q&A */}
-                  <div>
-                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Ask about this transcript</p>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <HelpCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                        <input value={qaQuestion} onChange={e => setQaQuestion(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleAskQuestion()}
-                          placeholder="e.g. What was the main concern?"
-                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-gray-400 transition-all" />
-                      </div>
-                      <button onClick={handleAskQuestion} disabled={!qaQuestion.trim() || isAsking || !editableTranscript?.trim()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-900 text-white text-[12px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                        {isAsking ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Ask'}
-                      </button>
-                    </div>
-                    {qaAnswer && (
-                      <div className="mt-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[13px] text-gray-700 leading-relaxed">
-                        {qaAnswer}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Translate row */}
-            <div className="mt-4 flex items-center gap-3 flex-wrap">
-              <div className="relative">
+          <div className="animate-fade-in-blur" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', flex: 1, gap: '24px' }}>
+            
+            {/* ===== UNIFIED TOOLBAR (Language, Translate, Retone) ===== */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              {/* Language selector */}
+              <div style={{ position: 'relative' }}>
                 <select value={state.selectedLanguage} onChange={(e) => handleLangChange(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 rounded-xl pl-3 pr-7 py-2 text-[13px] font-medium text-gray-600 cursor-pointer focus:outline-none hover:border-gray-300 transition-all shadow-sm">
+                  style={{ appearance: 'none', background: 'white', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '6px', paddingLeft: '10px', paddingRight: '28px', paddingTop: '6px', paddingBottom: '6px', fontSize: '12px', fontWeight: 500, color: 'rgb(75, 85, 99)', cursor: 'pointer', outline: 'none', transition: 'all 0.2s' }}>
                   {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
                     <option key={code} value={code}>{name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <ChevronDown style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: '12px', height: '12px', color: 'rgb(156, 163, 175)', pointerEvents: 'none' }} />
               </div>
-              <button onClick={handleTranslate} disabled={!editableTranscript?.trim() || isTranslating}
-                className="flex items-center gap-2 bg-gray-900 text-white rounded-xl px-4 py-2 text-[13px] font-semibold hover:bg-gray-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-sm">
-                {isTranslating
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{L.translating}</>
-                  : <><Languages className="w-3.5 h-3.5" />{L.translate}</>}
+
+              {/* Translate button */}
+              <button onClick={handleTranslate} disabled={!(showOriginalTranscript ? editableTranscript?.trim() : (rewrittenText || editableTranscript)?.trim()) || isTranslating}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isTranslating ? 'rgb(107, 114, 128)' : 'rgb(17, 24, 39)', color: 'white', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, border: 'none', cursor: (showOriginalTranscript ? editableTranscript?.trim() : (rewrittenText || editableTranscript)?.trim()) && !isTranslating ? 'pointer' : 'not-allowed', opacity: !(showOriginalTranscript ? editableTranscript?.trim() : (rewrittenText || editableTranscript)?.trim()) || isTranslating ? 0.3 : 1, transition: 'all 0.2s' }}
+                onMouseEnter={e => { if ((showOriginalTranscript ? editableTranscript?.trim() : (rewrittenText || editableTranscript)?.trim()) && !isTranslating) e.target.style.background = 'rgb(31, 41, 55)'; }}
+                onMouseLeave={e => { e.target.style.background = isTranslating ? 'rgb(107, 114, 128)' : 'rgb(17, 24, 39)'; }}>
+                {isTranslating ? <Loader2 style={{ width: '12px', height: '12px', animation: 'spin 1s linear infinite' }} /> : <ArrowLeftRight style={{ width: '12px', height: '12px' }} />}
+                Translate
               </button>
+
+              {/* Retone dropdown button */}
+              <div style={{ position: 'relative' }}>
+                <button onClick={() => setShowRetoneDropdown(v => !v)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', border: '1px solid rgba(0,0,0,0.06)', color: 'rgb(75, 85, 99)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', outline: 'none', transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.target.style.borderColor = 'rgba(0,0,0,0.12)'}
+                  onMouseLeave={e => e.target.style.borderColor = 'rgba(0,0,0,0.06)'}>
+                  Retone
+                  {showRetoneDropdown ? <ChevronUp style={{ width: '14px', height: '14px' }} /> : <ChevronDown style={{ width: '14px', height: '14px' }} />}
+                </button>
+
+                {/* Retone dropdown menu */}
+                {showRetoneDropdown && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', background: 'white', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, minWidth: '180px' }}>
+                    <div style={{ padding: '4px' }}>
+                      {TONE_OPTIONS.map(t => (
+                        <button key={t} onClick={() => { handleToneClick(t); setShowRetoneDropdown(false); }} disabled={isRewriting}
+                          style={{ width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: '13px', fontWeight: 500, color: selectedTone === t ? 'var(--saffron)' : 'rgb(75, 85, 99)', background: selectedTone === t ? 'rgba(232, 130, 12, 0.1)' : 'transparent', border: 'none', cursor: isRewriting ? 'not-allowed' : 'pointer', opacity: isRewriting ? 0.4 : 1, transition: 'all 0.2s', borderRadius: '4px' }}
+                          onMouseEnter={e => { if (!isRewriting) e.target.style.background = 'rgba(0,0,0,0.03)'; }}
+                          onMouseLeave={e => { if (selectedTone !== t) e.target.style.background = 'transparent'; }}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedTone === 'Custom' && (
+                      <div style={{ borderTop: '1px solid rgba(0,0,0,0.1)', padding: '8px' }}>
+                        <input value={customToneInput} onChange={e => setCustomToneInput(e.target.value)}
+                          placeholder="Describe tone..."
+                          style={{ width: '100%', padding: '6px 8px', fontSize: '12px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', outline: 'none', marginBottom: '8px', boxSizing: 'border-box' }} />
+                        <button onClick={() => { handleRewrite('Custom'); setShowRetoneDropdown(false); }} disabled={!customToneInput.trim() || isRewriting}
+                          style={{ width: '100%', padding: '6px 8px', fontSize: '12px', fontWeight: 600, background: 'rgb(17, 24, 39)', color: 'white', border: 'none', borderRadius: '4px', cursor: customToneInput.trim() && !isRewriting ? 'pointer' : 'not-allowed', opacity: !customToneInput.trim() || isRewriting ? 0.4 : 1, transition: 'all 0.2s' }}>
+                          {isRewriting ? 'Applying...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Translation output */}
-            {state.nativeTranslation && (
-              <div className="mt-5 pt-5 border-t border-gray-100 animate-fade-in-blur">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
-                    {L.translation} · {state.selectedLanguage}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <SpeakBtn onClick={handleSpeakNative} isPlaying={isPlaying} disabled={!state.nativeTranslation} />
-                    <button onClick={handleBackTranslate} disabled={isBackTranslating}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 text-[12px] font-medium disabled:opacity-40 transition-all">
-                      {isBackTranslating ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowLeftRight className="w-3 h-3" />}
-                      Back-check
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[18px] text-gray-700 leading-[1.9] whitespace-pre-wrap font-normal tracking-[-0.01em]">
-                  {state.nativeTranslation}
-                </p>
-                {/* Back-translation result */}
-                {backTranslation && (
-                  <div className="mt-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 animate-fade-in-blur">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Back-translation (accuracy check)</p>
-                      <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full border ${
-                        backTranslation.accuracy_score >= 80 ? 'bg-green-50 text-green-600 border-green-100' :
-                        backTranslation.accuracy_score >= 60 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-red-50 text-red-500 border-red-100'
-                      }`}>{backTranslation.accuracy_score}% accurate</span>
-                    </div>
-                    <p className="text-[13px] text-gray-700 italic">"{backTranslation.back_translation}"</p>
-                    {backTranslation.notes && <p className="text-[12px] text-gray-400 mt-1">{backTranslation.notes}</p>}
-                  </div>
+            {/* ===== UNIFIED MODE TOGGLE (Transcript | Retoned | Translation) ===== */}
+            {(rewrittenText || translatedOriginal || translatedRetone) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: 'rgba(0,0,0,0.06)' }}>
+                <button onClick={() => {  setShowOriginalTranscript(true); setShowTranslation(false); }}
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '12px', fontWeight: 600, background: activeMode === 'transcript' ? 'rgb(17, 24, 39)' : 'transparent', color: activeMode === 'transcript' ? 'white' : 'rgb(75, 85, 99)', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  Transcript
+                </button>
+                {rewrittenText && (
+                  <button onClick={() => { setShowOriginalTranscript(false); setShowTranslation(false); }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '12px', fontWeight: 600, background: activeMode === 'retoned' ? 'rgb(17, 24, 39)' : 'transparent', color: activeMode === 'retoned' ? 'white' : 'rgb(75, 85, 99)', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    Retoned
+                  </button>
+                )}
+                {(translatedOriginal || translatedRetone) && (
+                  <button onClick={() => setShowTranslation(true)}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '12px', fontWeight: 600, background: activeMode === 'translation' ? 'rgb(17, 24, 39)' : 'transparent', color: activeMode === 'translation' ? 'white' : 'rgb(75, 85, 99)', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    Translation
+                  </button>
                 )}
               </div>
             )}
 
-            {/* Multi-language output */}
-            <div className="mt-4">
-              <button onClick={() => setShowMultiLang(v => !v)}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-400 hover:text-gray-700 transition-colors">
-                <Globe2 className="w-3.5 h-3.5 text-blue-400" />
-                {L.multiLangOutput || "Multi-language output"}
-                {showMultiLang ? <ChevronUp className="w-3 h-3" /> : <ChevronDownIcon className="w-3 h-3" />}
-              </button>
-              {showMultiLang && (
-                <div className="mt-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-fade-in-blur">
-                  <p className="text-[12px] text-gray-400 mb-3">Select up to 3 languages to translate simultaneously</p>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {Object.entries(TARGET_LANGUAGES).map(([name, code]) => {
-                      const sel = multiLangs.includes(code);
-                      return (
-                        <button key={code} onClick={() => setMultiLangs(prev =>
-                          sel ? prev.filter(l => l !== code) : prev.length < 3 ? [...prev, code] : prev
-                        )}
-                          className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all ${
-                            sel ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                          }`}>
-                          {name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button onClick={handleMultiTranslate} disabled={multiLangs.length === 0 || isMultiTranslating || !editableTranscript?.trim()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all mb-3">
-                    {isMultiTranslating ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Translating...</> : <><Languages className="w-3.5 h-3.5" />Translate all</>}
-                  </button>
-                  {Object.keys(multiResults).length > 0 && (
-                    <div className="space-y-3">
-                      {Object.entries(multiResults).map(([lang, text]) => {
-                        const langName = Object.entries(TARGET_LANGUAGES).find(([, c]) => c === lang)?.[0] || lang;
-                        return (
-                          <div key={lang} className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{langName}</span>
-                              <button onClick={() => navigator.clipboard.writeText(text)}
-                                className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors">Copy</button>
-                            </div>
-                            <p className="text-[15px] text-gray-700 leading-relaxed">{text}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Tone rewriting */}
-            <div className="mt-5 pt-5 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">{L.rewriteTone || "Rewrite tone"}</span>
-                  <button onClick={handleSmartTone} disabled={isSuggestingTone || !editableTranscript?.trim()}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-100 text-amber-600 text-[11px] font-semibold hover:bg-amber-100 disabled:opacity-40 transition-all">
-                    {isSuggestingTone ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                    Smart suggest
-                  </button>
-                </div>
-                {rewrittenText && (
-                  <button onClick={() => { setRewrittenText(''); setSelectedTone(null); }}
-                    className="text-[12px] text-gray-400 hover:text-gray-700 transition-colors">↩ Reset</button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {TONE_OPTIONS.map(t => (
-                  <button key={t} onClick={() => handleToneClick(t)} disabled={isRewriting}
-                    className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all disabled:opacity-40 ${
-                      selectedTone === t ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-800'
-                    }`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              {selectedTone === 'Custom' && (
-                <div className="flex gap-2 mb-3">
-                  <input value={customToneInput} onChange={e => setCustomToneInput(e.target.value)}
-                    placeholder="Describe your tone (e.g. friendly and brief)"
-                    className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-gray-400 transition-all" />
-                  <button onClick={() => handleRewrite('Custom')} disabled={!customToneInput.trim() || isRewriting}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 disabled:opacity-40 transition-all">
-                    {isRewriting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    Apply
-                  </button>
-                </div>
-              )}
+            {/* ===== OUTPUT PANEL (Structured: Header/Content/Footer) ===== */}
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: 'var(--surface)', borderRadius: 'var(--r-xl)', border: '2px solid transparent', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', transition: 'border-color 0.2s', position: 'relative' }}
+              onMouseEnter={e => e.target.style.borderColor = 'rgba(232, 130, 12, 0.2)'}
+              onMouseLeave={e => e.target.style.borderColor = 'transparent'}>
+              
+              {/* Retoning overlay */}
               {isRewriting && (
-                <div className="flex items-center gap-2 text-[13px] text-gray-400 py-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Rewriting with AI...
-                </div>
-              )}
-              {rewrittenText && !isRewriting && (
-                <div className="animate-fade-in-blur">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">{selectedTone} · Rewritten</span>
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(253, 250, 244, 0.88)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: 'var(--r-xl)', padding: '24px' }}>
+                  <div style={{ width: 'min(320px, 100%)', background: '#FFFFFF', borderRadius: '24px', boxShadow: '0 14px 42px rgba(60,40,20,0.12)', border: '1px solid rgba(232,130,12,0.14)', padding: '26px 24px 22px', display: 'grid', justifyItems: 'center', gap: '12px', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', position: 'relative', display: 'grid', placeItems: 'center', background: 'rgba(232,130,12,0.06)' }}>
+                      <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', border: '1px solid rgba(232,130,12,0.18)', animation: 'retoneOrbit 1.2s linear infinite' }}>
+                        <span style={{ position: 'absolute', top: '-3px', left: '50%', transform: 'translateX(-50%)', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--saffron)', boxShadow: '0 0 0 4px rgba(232,130,12,0.10)' }} />
+                      </div>
+                      <Loader2 style={{ width: '20px', height: '20px', color: 'var(--saffron)', opacity: 0.9 }} />
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <SpeakBtn onClick={() => speak(rewrittenText, 'en-IN')} isPlaying={isPlaying} disabled={!rewrittenText} />
-                      <CopyBtn text={rewrittenText} />
-                      <button onClick={handleSaveTemplate}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-amber-50 text-gray-400 hover:text-amber-600 text-[13px] font-medium border border-gray-200 hover:border-amber-200 transition-all">
-                        <BookmarkPlus className="w-3.5 h-3.5" />Save
-                      </button>
+                    <div style={{ display: 'grid', gap: '6px' }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.12rem', fontWeight: 600, color: 'var(--text-ink)', letterSpacing: '-0.02em' }}>Shaping your message</span>
+                      <span style={{ fontSize: '14px', color: 'var(--text-warm)', lineHeight: 1.55 }}>
+                        Retoning for {selectedTone || 'your selected tone'}...
+                      </span>
+                    </div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '2px' }}>
+                      {[0, 1, 2].map((index) => (
+                        <span
+                          key={index}
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: index === 1 ? 'rgba(232,130,12,0.72)' : 'rgba(232,130,12,0.32)',
+                            animation: `retoneDotPulse 1s ease-in-out ${index * 0.14}s infinite`,
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
-                  <textarea
-                    value={rewrittenText}
-                    onChange={e => setRewrittenText(e.target.value)}
-                    rows={Math.max(6, rewrittenText.split('\n').length + 2)}
-                    className="w-full text-[15px] text-gray-800 leading-[1.85] font-normal tracking-[-0.01em] bg-amber-50 rounded-xl px-4 py-3 border border-amber-100 focus:outline-none focus:border-amber-300 resize-none transition-all"
-                    spellCheck={false}
-                  />
-                  <div className="flex items-center gap-1 mt-1 mb-2">
-                    <Hash className="w-3 h-3 text-gray-300" />
-                    <span className="text-[11px] text-gray-300">{rwc} words · {rcc} chars</span>
-                    {readability && (
-                      <span className="ml-2 text-[11px] text-gray-400 flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" />
-                        Readability: <span className="font-semibold">{readability.label}</span> · {readability.grade}
+                </div>
+              )}
+              
+              {/* HEADER: Title, confidence, sentiment, and actions */}
+              <div style={{ padding: '20px 20px 12px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  {/* Mode title with confidence badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-ink)' }}>{getModeTitle()}</span>
+                    {confPct != null && activeMode !== 'translation' && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '4px', border: `1px solid currentColor`, fontSize: '11px', fontWeight: 600, color: confColor.includes('green') ? 'rgb(34, 197, 94)' : confColor.includes('amber') ? 'rgb(217, 119, 6)' : 'rgb(239, 68, 68)' }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
+                        {confPct}%
                       </span>
                     )}
                   </div>
-                  {/* Tone confidence */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <button onClick={handleToneConfidence} disabled={isToneConfidence}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 text-[11px] font-semibold disabled:opacity-40 transition-all">
-                      {isToneConfidence ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart2 className="w-3 h-3" />}
-                      Check tone fit
-                    </button>
-                    {toneConfidence && (
-                      <div className="flex items-center gap-1.5 animate-fade-in-blur">
-                        <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full border ${
-                          toneConfidence.score >= 80 ? 'bg-green-50 text-green-600 border-green-100' :
-                          toneConfidence.score >= 60 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-red-50 text-red-500 border-red-100'
-                        }`}>{toneConfidence.score}% tone match</span>
-                        {toneConfidence.feedback && <span className="text-[11px] text-gray-400">{toneConfidence.feedback}</span>}
-                      </div>
-                    )}
-                  </div>
-                  {/* Send via — context-aware per tone */}
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest mr-1">Send via</span>
-                    {CHANNELS.filter(ch => (TONE_TO_CHANNELS[selectedTone] || []).includes(ch.id)).map((ch) => (
-                      <button key={ch.id} onClick={() => setActiveChannel(ch)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 ${ch.bg} ${ch.border} ${ch.color}`}>
-                        <ch.icon className="w-4 h-4" />
-                        Send to {ch.label}
-                      </button>
-                    ))}
-                  </div>
+                  {sentiment && activeMode !== 'translation' && <SentimentBadge {...sentiment} />}
                 </div>
-              )}
+
+                {/* Header actions: Speak, Copy, Save, Clear */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <SpeakBtn onClick={activeMode === 'translation' ? handleSpeakNative : () => speak(getModeContent())} isPlaying={isPlaying} disabled={!getModeContent()} />
+                  <CopyBtn text={getModeContent()} />
+                  <button onClick={() => { setField('englishText', editableTranscript); showSuccess('Saved to history'); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', color: 'rgb(107, 114, 128)', fontSize: '12px', fontWeight: 500, background: 'white', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.03)'}
+                    onMouseLeave={e => e.target.style.background = 'white'}>
+                    <Download style={{ width: '12px', height: '12px' }} />
+                    Save
+                  </button>
+                  <button onClick={handleClear}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', color: 'rgb(239, 68, 68)', fontSize: '12px', fontWeight: 500, background: 'white', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.target.style.background = 'rgba(239, 68, 68, 0.05)'}
+                    onMouseLeave={e => e.target.style.background = 'white'}>
+                    <Trash2 style={{ width: '12px', height: '12px' }} />
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* CONTENT: Textarea with text output */}
+              <textarea
+                value={getModeContent()}
+                onChange={e => {
+                  if (activeMode === 'retoned') setRewrittenText(e.target.value);
+                  else if (activeMode === 'transcript') setEditableTranscript(e.target.value);
+                }}
+                readOnly={activeMode === 'translation'}
+                style={{ flex: 1, width: '100%', fontSize: '16px', lineHeight: 1.8, color: 'var(--text-ink)', background: 'transparent', padding: '20px', border: 'none', outline: 'none', resize: 'none', fontFamily: 'var(--font)', overflow: 'auto', cursor: activeMode === 'translation' ? 'default' : 'text' }}
+                spellCheck={false}
+                placeholder="Your transcript will appear here..."
+              />
+
+              {/* FOOTER: Language, Translate link, Send button */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                  <Hash style={{ width: '12px', height: '12px', color: 'var(--text-faded)' }} />
+                  <span style={{ fontSize: '11px', color: 'var(--text-faded)' }}>{getModeWordCount().words} words · {getModeWordCount().chars} chars</span>
+                </div>
+
+                {/* Send button (right-aligned) */}
+                <button
+                  onClick={handleSendClick}
+                  disabled={!shareText?.trim()}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', background: 'var(--saffron)', color: 'white', border: 'none', cursor: shareText?.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', flexShrink: 0, opacity: shareText?.trim() ? 1 : 0.45 }}
+                  onMouseEnter={e => { if (shareText?.trim()) e.target.style.background = 'rgb(217, 119, 6)'; }}
+                  onMouseLeave={e => { e.target.style.background = 'var(--saffron)'; }}
+                  title="Send">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* ===== SECONDARY ACTION: Record Again (Bottom center button) ===== */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '24px', paddingBottom: '24px' }}>
+              <button onClick={handleClear} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '24px', background: 'rgb(17, 24, 39)', color: 'white', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                onMouseEnter={e => { e.target.style.background = 'rgb(31, 41, 55)'; e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)'; }}
+                onMouseLeave={e => { e.target.style.background = 'rgb(17, 24, 39)'; e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }}>
+                <Mic style={{ width: '18px', height: '18px' }} />
+                Record Again
+              </button>
             </div>
 
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '60px 0' }}>
-            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--surface)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Mic style={{ width: 28, height: 28, color: 'var(--text-faded)' }} strokeWidth={1.8} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '24px' }}>
+            {/* Empty state content - centered vertically */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+              {/* Empty state icon */}
+              <div style={{ width: 72, height: 72, borderRadius: 20, background: state.isRecording ? 'var(--saffron-light)' : 'var(--surface)', boxShadow: state.isRecording ? '0 8px 24px rgba(232,130,12,0.18)' : 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Mic style={{ width: 28, height: 28, color: state.isRecording ? 'var(--saffron)' : 'var(--text-faded)' }} strokeWidth={1.8} />
+              </div>
+
+              {/* Empty state text */}
+              <div style={{ textAlign: 'center' }}>
+                {state.isRecording ? (
+                  <>
+                    <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-ink)', margin: 0 }}>
+                      Your voice is turning into text in real time
+                    </p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-faded)', margin: '6px 0 0 0', maxWidth: '360px', lineHeight: 1.6 }}>
+                      Keep talking naturally. We are listening for the important parts and shaping a clean transcript for you.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-ink)', margin: 0 }}>Press <span style={{ color: 'var(--saffron)' }}>Start Speaking</span> to begin</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-faded)', margin: '4px 0 0 0' }}>Your transcript will appear here</p>
+                  </>
+                )}
+              </div>
             </div>
-            <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-ink)', margin: 0 }}>Press <span style={{ color: 'var(--saffron)' }}>Start Speaking</span> to begin</p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-faded)', margin: 0 }}>Your transcript will appear here</p>
+            
+            {/* Recording controls - bottom section */}
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <RecordingControls />
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Fixed bottom toolbar */}
-      <div style={{ position: 'fixed', bottom: 0, right: 0, left: 0, display: 'flex', justifyContent: 'center', zIndex: 50, paddingBottom: 72, paddingTop: 64, background: 'linear-gradient(to top, var(--bg) 60%, transparent)', pointerEvents: 'none' }}>
-        <div style={{ pointerEvents: 'auto', width: '100%', maxWidth: 480, padding: '0 16px', display: 'flex', justifyContent: 'center' }}>
-          <RecordingControls />
-        </div>
       </div>
 
       {/* Channel modal */}
@@ -953,7 +937,6 @@ export default function Home() {
               {[
                 { keys: '⌘ + Enter', action: 'Translate transcript' },
                 { keys: '⌘ + R',     action: 'Rewrite with active tone' },
-                { keys: '⌘ + K',     action: 'Open command palette' },
                 { keys: 'Space',     action: 'Push-to-talk (hold)' },
                 { keys: 'Esc',       action: 'Close modals / panels' },
               ].map(({ keys, action }) => (

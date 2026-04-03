@@ -36,12 +36,16 @@ function shouldRetry(error) {
 function friendlyMessage(error) {
   if (!error.response) return 'Network error — check your connection';
   const status = error.response.status;
+  const detail = error.response?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
   if (status === 503 || status === 502) return 'Server busy, please try again';
   if (status === 504) return 'Request timed out — server is slow';
   if (status === 500) return 'Server error — try again in a moment';
   if (status === 401) return 'Session expired — please log in again';
   if (status === 429) return 'Too many requests — slow down a bit';
-  return error.response?.data?.detail || error.message || 'Something went wrong';
+  return detail || error.message || 'Something went wrong';
 }
 
 // ── Request interceptor: attach auth token ───────────────────────────────────

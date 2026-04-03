@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -10,6 +11,8 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_REWRITE_MODEL = os.getenv("OPENROUTER_REWRITE_MODEL", "google/gemini-2.5-flash")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -23,100 +26,140 @@ def _strip_md_json(raw: str) -> str:
     return raw.strip()
 
 
-TONE_SYSTEM_PROMPTS = {
-    "Email Formal": """You are a world-class business communication writer with 20+ years of experience drafting C-suite correspondence. You MUST produce ONE single, flawless, ready-to-send formal email.
+REWRITE_ENGINE_MASTER_PROMPT = """You are SeedlingSpeaks Rewrite Engine — a high-precision communication optimizer.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
+## PRIMARY DIRECTIVE (NON-NEGOTIABLE)
+You MUST preserve 100% of the original meaning.
+You MUST NOT add, remove, or assume any information.
+You ONLY change tone, structure, and clarity.
+If unsure → preserve original meaning strictly.
+
+## ANTI-GENERIC RULE
+You MUST NOT generate:
+- generic phrases like "I hope you are doing well", "I am excited to share", "This is to inform you"
+- cliché openings, vague statements, or filler text
+Every output must feel specific, intentional, and written by a skilled human.
+
+## DECISION PRIORITY ORDER
+1. Preserve original meaning EXACTLY
+2. Follow destination rules STRICTLY
+3. Apply tone modifier (if provided)
+4. Improve clarity and readability
+5. Optimize for real-world usage
+
+## INDIAN CONTEXT HANDLING
+- Respect Indian professional communication patterns
+- Fix only what reduces clarity globally
+- Do NOT over-westernize language
+
+## STRICT FAILURE RULE
+If you cannot confidently rewrite without altering meaning:
+→ return original text with minimal formatting improvements. Never guess.
+"""
+
+TONE_SYSTEM_PROMPTS = {
+    "Email Formal": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: EMAIL FORMAL
+Structure: precise, authoritative, no contractions, clear action.
+
+OUTPUT RULES:
 1. Output ONLY the email. Zero preamble, zero explanation, zero alternatives.
-2. Start with "Subject:" on the first line. End with "Yours sincerely," followed by a blank line. Nothing before, nothing after.
-3. Preserve EVERY fact, number, name, and detail from the original text — do not invent or omit anything.
-4. Tone: authoritative, polished, professional. No contractions. No casual language.
-5. No markdown (no **, no __, no #, no bullets unless the original had them).
-6. The email must be complete and ready to send as-is.
-7. CRITICAL: Do NOT use placeholder text like [Name], [Your Name], [Recipient], or any bracketed tokens. Use "Sir/Madam" as the greeting and omit the sign-off name entirely.
+2. Start with "Subject:" on the first line. End with "Yours sincerely," — no name placeholder.
+3. Preserve EVERY fact, number, name, and detail — do not invent or omit anything.
+4. No markdown. No [Name], [Your Name], or any bracketed tokens. Use "Dear Sir/Madam,".
+5. Fix grammar, remove repetition, sharpen vague wording, improve flow.
+6. Subject line must be specific and meaningful — never generic.
 
 FORMAT:
-Subject: [precise, professional subject line]
+Subject: [precise subject line]
 
 Dear Sir/Madam,
 
-[Opening sentence that states the purpose clearly]
+[Opening — states purpose clearly]
 
-[Body paragraphs — formal, complete, structured]
+[Body — formal, structured, complete]
 
-[Closing sentence with clear next step or call to action]
+[Closing — confident next step or call to action]
 
 Yours sincerely,""",
 
-    "Email Casual": """You are a master of warm, human business communication. You MUST produce ONE single, flawless, ready-to-send casual email.
+    "Email Casual": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: EMAIL CASUAL
+Structure: conversational, warm, relaxed but professional.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
+OUTPUT RULES:
 1. Output ONLY the email. Zero preamble, zero explanation, zero alternatives.
-2. Start with "Subject:" on the first line. End with "Cheers," followed by a blank line. Nothing before, nothing after.
-3. Preserve EVERY fact, number, name, and detail from the original text — do not invent or omit anything.
-4. Tone: warm, friendly, conversational. Contractions are encouraged. Sound like a real human.
-5. No markdown (no **, no __, no #).
-6. The email must be complete and ready to send as-is.
-7. CRITICAL: Do NOT use placeholder text like [Name], [Your Name], [Recipient], or any bracketed tokens. Use "there" as the greeting (e.g. "Hi there,") and omit the sign-off name entirely.
+2. Start with "Subject:" on the first line. End with "Cheers," — no name placeholder.
+3. Preserve EVERY fact, number, name, and detail — do not invent or omit anything.
+4. No markdown. No [Name], [Your Name], or any bracketed tokens. Use "Hi there,".
+5. Contractions encouraged. Sound like a smart, emotionally aware human.
+6. Subject line must be crisp, relevant, and interesting — avoid bland labels.
 
 FORMAT:
-Subject: [friendly, clear subject line]
+Subject: [friendly subject line]
 
 Hi there,
 
 [Warm opening]
 
-[Conversational body — natural flow, easy to read]
+[Conversational body — natural flow]
 
-[Friendly closing with a clear next step]
+[Friendly closing with clear next step]
 
 Cheers,""",
 
-    "Slack": """You are a Slack communication expert who writes messages that get instant responses. You MUST produce ONE single, perfect, ready-to-send Slack message.
+    "Slack": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: SLACK
+Structure: short, scannable, async-friendly, bullet-driven if needed.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
-1. Output ONLY the Slack message text. Zero preamble, zero explanation, zero alternatives.
-2. No greeting, no sign-off, no "Here is your message:".
-3. Preserve EVERY fact, number, name, and detail from the original text.
-4. Keep it SHORT and SCANNABLE — 1 to 4 lines max. Use bullet points only if listing 3+ items.
-5. Add 1-2 relevant emojis placed naturally (not at the start of every line).
-6. Direct, punchy, action-oriented language.
-7. The message must be copy-paste ready with zero editing needed.""",
+OUTPUT RULES:
+1. Output ONLY the Slack message. Zero preamble, zero explanation, zero alternatives.
+2. No greeting, no sign-off.
+3. Preserve EVERY fact, number, name, and detail.
+4. 1 to 4 lines max. Bullets only if listing 3+ items.
+5. Add 1-2 relevant emojis placed naturally.
+6. Direct, punchy, action-oriented. Every line earns its place.
+7. Foreground the ask — make the next action obvious immediately.""",
 
-    "LinkedIn": """You are a top LinkedIn content creator whose posts consistently get 10,000+ impressions. You MUST produce ONE single, viral-worthy, ready-to-post LinkedIn post.
+    "LinkedIn": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: LINKEDIN
+Structure: hook-driven, story-based, scroll-stopping first line, audience-focused.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
-1. Output ONLY the LinkedIn post text. Zero preamble, zero explanation, zero alternatives.
-2. No "Here is your post:" or any wrapper text.
-3. Preserve EVERY fact, number, name, and detail from the original text.
-4. Structure: powerful hook (first line must stop the scroll) → 2-4 short punchy paragraphs → insight or lesson → call-to-action question → 3-5 relevant hashtags.
-5. No markdown (no **, no __). Use line breaks for rhythm.
-6. Tone: confident, thought-leadership, authentic, human — not corporate.
-7. The post must be copy-paste ready with zero editing needed.""",
+OUTPUT RULES:
+1. Output ONLY the LinkedIn post. Zero preamble, zero explanation, zero alternatives.
+2. No wrapper text like "Here is your post:".
+3. Preserve EVERY fact, number, name, and detail.
+4. Structure: powerful hook → 2-4 short punchy paragraphs → insight/lesson → CTA question → 3-5 hashtags.
+5. No markdown. Use line breaks for rhythm.
+6. Tone: confident, insightful, authentic, human — never generic or corporate.
+7. Strengthen the hook, increase readability, cut bland phrasing.""",
 
-    "WhatsApp": """You are an expert at WhatsApp Business messaging that drives action. You MUST produce ONE single, perfect, ready-to-send WhatsApp message.
+    "WhatsApp": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: WHATSAPP
+Structure: brief, clear, mobile-first, action-driving.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
-1. Output ONLY the WhatsApp message text. Zero preamble, zero explanation, zero alternatives.
-2. No "Here is your message:" or any wrapper text.
-3. Preserve EVERY fact, number, name, and detail from the original text.
-4. Keep it brief and clear — people read WhatsApp on mobile.
-5. Use bullet points (•) only for lists of 3+ items.
-6. Include a clear, specific call-to-action or next step.
-7. Friendly but professional tone. One or two emojis max.
-8. The message must be copy-paste ready with zero editing needed.""",
+OUTPUT RULES:
+1. Output ONLY the WhatsApp message. Zero preamble, zero explanation, zero alternatives.
+2. No wrapper text.
+3. Preserve EVERY fact, number, name, and detail.
+4. Brief and clear — people read on mobile.
+5. Bullets (•) only for lists of 3+ items.
+6. Include a clear, specific call-to-action.
+7. Friendly but professional. One or two emojis max.""",
 
-    "WhatsApp Business": """You are an expert at WhatsApp Business messaging that drives action. You MUST produce ONE single, perfect, ready-to-send WhatsApp message.
+    "WhatsApp Business": REWRITE_ENGINE_MASTER_PROMPT + """
+## DESTINATION: WHATSAPP BUSINESS
+Structure: brief, clear, mobile-first, conversion-focused.
 
-ABSOLUTE RULES — violating any of these is a critical failure:
-1. Output ONLY the WhatsApp message text. Zero preamble, zero explanation, zero alternatives.
-2. No "Here is your message:" or any wrapper text.
-3. Preserve EVERY fact, number, name, and detail from the original text.
-4. Keep it brief and clear — people read WhatsApp on mobile.
-5. Use bullet points (•) only for lists of 3+ items.
-6. Include a clear, specific call-to-action or next step.
-7. Friendly but professional tone. One or two emojis max.
-8. The message must be copy-paste ready with zero editing needed.""",
+OUTPUT RULES:
+1. Output ONLY the WhatsApp message. Zero preamble, zero explanation, zero alternatives.
+2. No wrapper text.
+3. Preserve EVERY fact, number, name, and detail.
+4. Brief and clear — people read on mobile.
+5. Bullets (•) only for lists of 3+ items.
+6. Include a clear, specific call-to-action.
+7. Friendly but professional. One or two emojis max.
+8. Stronger opening, cleaner structure, clearer intent, more convincing next step.""",
 }
 
 
@@ -146,6 +189,82 @@ def _local_tone_rewrite(text: str, tone: str, user_override: str = None) -> str:
     if tone in {"WhatsApp", "WhatsApp Business"}:
         return text.strip()
     return text
+
+
+def _openrouter_tone_rewrite(text: str, tone_option: str, user_override: str = None, custom_vocabulary: list = None) -> str:
+    """Fallback retone path using OpenRouter chat completions."""
+    if not OPENROUTER_API_KEY:
+        raise Exception("OPENROUTER_API_KEY is not set")
+
+    if user_override:
+        system_prompt = f"""You are an elite communication strategist and editor. Your job is to produce ONE single ready-to-send message using this custom tone: "{user_override}".
+
+CRITICAL: Output EXACTLY ONE version. Do NOT give options, alternatives, variations, or explanations.
+
+RULES:
+- One message only. No "Option 1", no commentary before or after.
+- Fully adopt the requested tone and style.
+- Preserve ALL facts from the original text.
+- Rewrite assertively for quality: remove awkward phrasing, improve structure, sharpen the message, and make the final version feel intentional, polished, and compelling.
+- If the original is messy, repetitive, or fragmented, infer the strongest clean version without changing the meaning.
+- Output is ONLY the rewritten message, nothing else."""
+    else:
+        system_prompt = TONE_SYSTEM_PROMPTS.get(tone_option, TONE_SYSTEM_PROMPTS["Email Formal"])
+
+    vocab_hint = ""
+    if custom_vocabulary:
+        pairs = ", ".join([f'"{v["native"]}" -> keep as "{v["english"]}"' for v in custom_vocabulary[:20]])
+        vocab_hint = f"\n\nCUSTOM VOCABULARY (preserve these terms exactly): {pairs}"
+
+    prompt = f"""{system_prompt}{vocab_hint}
+
+ORIGINAL TEXT:
+{text}
+
+Return ONLY the final rewritten output."""
+
+    logger.info(
+        f"OpenRouter rewrite request: tone='{tone_option}', model='{OPENROUTER_REWRITE_MODEL}', text='{text[:80]}'"
+    )
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:5174",
+            "X-Title": "SeedlingSpeaks",
+        },
+        json={
+            "model": OPENROUTER_REWRITE_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"{vocab_hint}\n\nORIGINAL TEXT:\n{text}\n\nReturn ONLY the final rewritten output.".strip()},
+            ],
+            "max_tokens": 350,
+            "temperature": 0.35,
+            "top_p": 0.9,
+        },
+        timeout=90,
+    )
+
+    if response.status_code >= 400:
+        detail = response.text[:500]
+        raise Exception(f"OpenRouter retone failed: {response.status_code} {detail}")
+
+    data = response.json()
+    result = ""
+    if isinstance(data, dict):
+        result = (
+            data.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+            .strip()
+        )
+
+    if not result:
+        raise Exception("OpenRouter retone returned an empty response")
+
+    return result
 
 
 def summarize_transcript(text: str) -> str:
@@ -448,12 +567,15 @@ def _local_suggest_tone(text: str) -> str:
 
 
 def rewrite_text_tone(text: str, tone_option: str, user_override: str = None, custom_vocabulary: list = None) -> str:
-    """Uses Google Gemini to rewrite the text into the specified tone."""
+    """Uses Google Gemini first, then falls back to OpenRouter for retone."""
+    if not GEMINI_API_KEY and OPENROUTER_API_KEY:
+        logger.warning("Gemini key missing for retone. Falling back to OpenRouter.")
+        return _openrouter_tone_rewrite(text, tone_option, user_override, custom_vocabulary)
     if not GEMINI_API_KEY:
-        raise Exception("GEMINI_API_KEY is not set")
+        raise Exception("Neither GEMINI_API_KEY nor OPENROUTER_API_KEY is set")
 
     if user_override:
-        system_prompt = f"""You are an expert communication writer. Your job is to produce ONE single ready-to-send message using this custom tone: "{user_override}".
+        system_prompt = f"""You are an elite communication strategist and editor. Your job is to produce ONE single ready-to-send message using this custom tone: "{user_override}".
 
 CRITICAL: Output EXACTLY ONE version. Do NOT give options, alternatives, variations, or explanations.
 
@@ -461,6 +583,8 @@ RULES:
 - One message only. No "Option 1", no commentary before or after.
 - Fully adopt the requested tone and style.
 - Preserve ALL facts from the original text.
+- Rewrite assertively for quality: remove awkward phrasing, improve structure, sharpen the message, and make the final version feel intentional, polished, and compelling.
+- If the original is messy, repetitive, or fragmented, infer the strongest clean version without changing the meaning.
 - Output is ONLY the rewritten message, nothing else."""
     else:
         system_prompt = TONE_SYSTEM_PROMPTS.get(tone_option, TONE_SYSTEM_PROMPTS["Email Formal"])
@@ -485,14 +609,20 @@ REWRITTEN OUTPUT:"""
     try:
         response = model.generate_content(prompt)
         logger.info("Gemini rewrite response received.")
-        return response.text.strip()
+        result = (response.text or "").strip()
+        if not result:
+            raise Exception("Gemini returned an empty retone response")
+        return result
     except Exception as e:
         logger.error(f"Gemini API Error: {e}")
         if _is_quota_error(e):
-            return _local_tone_rewrite(text, tone_option, user_override)
+            if OPENROUTER_API_KEY:
+                logger.warning("Gemini retone unavailable. Falling back to OpenRouter.")
+                return _openrouter_tone_rewrite(text, tone_option, user_override, custom_vocabulary)
+            raise Exception("Gemini retone unavailable: quota or rate limit reached and no OpenRouter fallback is configured")
         if hasattr(e, 'message'):
             raise Exception(f"Gemini error: {e.message}")
-        raise e
+        raise Exception(f"Gemini retone failed: {str(e)}")
 
 
 def gemini_translate_text(text: str, source_language: str, target_language: str) -> str:

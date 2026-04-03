@@ -53,13 +53,13 @@ export default function WidgetSetup() {
     setWidgetMode(localWidgetMode);
     setWidgetSetupDone();
     setWidgetEnabled(true);
-    navigate('/app/home');
+    navigate('/app/native-to-english');
   };
 
   const handleSkip = () => {
     setWidgetSetupDone();
     setWidgetEnabled(false);
-    navigate('/app/home');
+    navigate('/app/native-to-english');
   };
 
   return (

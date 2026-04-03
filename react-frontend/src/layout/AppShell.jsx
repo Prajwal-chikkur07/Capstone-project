@@ -8,7 +8,6 @@ import { setAuthToken } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Notifications from '../components/Notifications';
-import CommandPalette from '../components/CommandPalette';
 import Onboarding from '../components/Onboarding';
 import NotificationCenter from '../components/NotificationCenter';
 import ToastContainer from '../components/Toast';
@@ -116,7 +115,6 @@ export default function AppShell({ children }) {
       {/* Global overlays and modals */}
       <LoadingOverlay />
       <Notifications />
-      <CommandPalette />
       <NotificationCenter />
       <ToastContainer />
       {!state.onboardingDone && <Onboarding />}

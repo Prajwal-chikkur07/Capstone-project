@@ -42,7 +42,7 @@ export default function Templates() {
 
   const handleDelete = (id) => saveTemplates(templates.filter(t => t.id !== id));
   const handleClearAll = () => { saveTemplates([]); setConfirmClear(false); showSuccess('All templates cleared'); };
-  const handleUseTemplate = (text) => { setField('englishText', text); navigate('/app/home'); showSuccess('Template loaded'); };
+  const handleUseTemplate = (text) => { setField('englishText', text); navigate('/app/native-to-english'); showSuccess('Template loaded'); };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '24px', maxWidth: 760, margin: '0 auto' }}>

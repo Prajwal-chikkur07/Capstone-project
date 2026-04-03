@@ -43,7 +43,20 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: '0 4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--saffron)', flexShrink: 0, boxShadow: 'var(--shadow-saffron)' }} />
+            <img
+              src="/seedlinglabs-logo.png"
+              alt="SeedlingSpeaks"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 12,
+                objectFit: 'cover',
+                flexShrink: 0,
+                boxShadow: '0 4px 14px rgba(60,40,20,0.12)',
+                border: '1px solid rgba(90,70,50,0.08)',
+                background: '#fff',
+              }}
+            />
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-ink)', letterSpacing: '-0.02em' }}>SeedlingSpeaks</span>
           </div>
           <button onClick={onClose} className="md:hidden" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faded)', padding: 4 }}><X className="w-4 h-4" /></button>
@@ -53,7 +66,7 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         <nav style={{ flex: 1, overflowY: 'auto' }}>
           <NavBtn icon={Mic2} label={L.home} active={is('/app')} onClick={nav('/app')} />
           <SectionLabel label={L.translation} />
-          <NavBtn icon={Mic2}     label={L.nativeToEnglish}     active={is('/app/home')}              onClick={nav('/app/home')} />
+          <NavBtn icon={Mic2}     label={L.nativeToEnglish}     active={is('/app/native-to-english')} onClick={nav('/app/native-to-english')} />
           <NavBtn icon={Ear}      label={L.continuousListening} active={is('/app/continuous')}        onClick={nav('/app/continuous')} badge={isLive ? (session.state === 'listening' ? '● LIVE' : '⏸') : null} />
           <NavBtn icon={Globe}    label={L.englishToNative}     active={is('/app/english-to-native')} onClick={nav('/app/english-to-native')} />
           <NavBtn icon={ScanText} label={L.visionTranslate}     active={is('/app/vision')}            onClick={nav('/app/vision')} />
@@ -93,7 +106,7 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
         <button onClick={onOpen} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flex: 1, padding: '4px 0', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
           <Menu className="w-5 h-5" strokeWidth={1.6} /><span style={{ fontSize: 9, fontWeight: 600 }}>Menu</span>
         </button>
-        <BottomNavBtn icon={Mic2}      label="Translate" active={is('/app/home') || is('/app')} onClick={nav('/app/home')} />
+        <BottomNavBtn icon={Mic2}      label="Translate" active={is('/app/native-to-english') || is('/app')} onClick={nav('/app/native-to-english')} />
         <BottomNavBtn icon={Ear}       label="Listen"    active={is('/app/continuous')}          onClick={nav('/app/continuous')} />
         <BottomNavBtn icon={Globe}     label="Native"    active={is('/app/english-to-native')}   onClick={nav('/app/english-to-native')} />
         <BottomNavBtn icon={Clock}     label="History"   active={is('/app/history')}             onClick={nav('/app/history')} />

@@ -534,6 +534,16 @@ select:focus {
   }
 }
 
+@keyframes waveHand {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-8deg); }
+  45% { transform: rotate(14deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
 .page-content {
   animation: fadeUp 0.4s ease both;
 }
@@ -591,6 +601,42 @@ select:focus {
 
 .pulse-dot {
   animation: pulse-dot 1.4s infinite;
+}
+
+@keyframes retonePulse {
+  0% {
+    opacity: 0.55;
+    background-position: 0% 50%;
+  }
+  50% {
+    opacity: 1;
+    background-position: 100% 50%;
+  }
+  100% {
+    opacity: 0.55;
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes retoneOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes retoneDotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.78);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* ── MOBILE ────────────────────────────────────────────────────────────────── */

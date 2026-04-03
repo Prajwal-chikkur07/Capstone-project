@@ -155,34 +155,65 @@ export default function RecordingControls() {
         </div>
       ) : (
         /* ── Default toolbar ── */
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Back */}
-          <button
-            onClick={() => { clearAll(); setField('recordingMode', null); }}
-            className="w-11 h-11 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            <ChevronLeft className="w-4 h-4 text-gray-500" />
-          </button>
-
-          {/* Main pill */}
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '4px', 
+            background: 'var(--surface-ink)', 
+            borderRadius: 'var(--r-pill)', 
+            padding: '8px', 
+            boxShadow: '0 10px 30px rgba(28,25,23,0.3)',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}>
             {/* Upload Audio */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+              style={{
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'rgba(255,255,255,0.5)',
+                background: 'rgba(255,255,255,0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
               title="Upload Audio"
             >
               <UploadIcon className="w-4 h-4" />
             </button>
 
-            <div className="w-px h-5 bg-gray-150 mx-1" />
+            {/* Vertical Divider */}
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
-            {/* Primary action */}
+            {/* Primary action: Start Speaking */}
             <button
               onClick={handleMainAction}
-              className="flex items-center gap-2 bg-gray-900 text-white rounded-xl pl-4 pr-5 py-2 text-[14px] font-semibold hover:bg-gray-700 active:scale-95 transition-all"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: 'transparent',
+                color: '#fff',
+                padding: '0 24px 0 12px',
+                height: '40px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <Mic className="w-4 h-4" />
+              <Mic style={{ width: '18px', height: '18px', color: 'var(--saffron)' }} />
               Start Speaking
             </button>
           </div>

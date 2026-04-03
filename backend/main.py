@@ -397,7 +397,17 @@ async def handle_tone_rewrite(request: RewriteRequest):
         )
         return {"rewritten_text": rewritten_text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        detail = str(e)
+        lowered = detail.lower()
+        if "quota" in lowered or "rate limit" in lowered:
+            if "openrouter" in lowered:
+                raise HTTPException(status_code=429, detail="OpenRouter retone is temporarily unavailable because the model quota or rate limit was reached. Please try again shortly.")
+            raise HTTPException(status_code=429, detail="Gemini retone is temporarily unavailable because the model quota or rate limit was reached. Please try again shortly.")
+        if "openrouter" in lowered:
+            raise HTTPException(status_code=503, detail=detail)
+        if "gemini" in lowered:
+            raise HTTPException(status_code=503, detail=detail)
+        raise HTTPException(status_code=500, detail=detail)
 
 @app.post("/api/translate-text")
 async def handle_text_translation(request: TranslationRequest):

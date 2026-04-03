@@ -213,10 +213,10 @@ export default function EnglishToNativeView() {
         <p style={{ fontSize: '0.8rem', color: 'var(--text-faded)', margin: '2px 0 0' }}>{L.translationsNative}</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '24px', gap: 16, maxWidth: 1100, width: '100%', margin: '0 auto' }} className="md:flex-row">
+      <div style={{ display: 'flex', flex: 1, padding: '24px', gap: 24, maxWidth: 1200, width: '100%', margin: '0 auto' }} className="flex-col md:flex-row">
 
         {/* LEFT — English input */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', border: '2px solid transparent', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', border: '2px solid transparent', transition: 'all 0.2s' }}
           onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--saffron)'; e.currentTarget.style.boxShadow = '0 0 0 4px rgba(232,130,12,0.15)'; }}
           onBlurCapture={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
@@ -238,7 +238,7 @@ export default function EnglishToNativeView() {
         </div>
 
         {/* RIGHT — Native output */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface-teal)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', border: '2px solid transparent', transition: 'all 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor }} />
@@ -246,12 +246,12 @@ export default function EnglishToNativeView() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={handleSpeak} disabled={!state.nativeTranslation || isTranslating}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r-pill)', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-warm)', border: 'none', cursor: 'pointer', backdropFilter: 'blur(4px)', opacity: (!state.nativeTranslation || isTranslating) ? 0.4 : 1 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid var(--border-warm)', borderRadius: 'var(--r-pill)', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-ink)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', opacity: (!state.nativeTranslation || isTranslating) ? 0.4 : 1 }}>
                 {isPlaying ? <><Square style={{ width: 12, height: 12 }} />Stop</> : <><Volume2 style={{ width: 12, height: 12 }} />Speak</>}
               </button>
               <div style={{ position: 'relative' }}>
                 <select value={state.selectedLanguage} onChange={(e) => handleLangChange(e.target.value)}
-                  style={{ appearance: 'none', background: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: 'var(--r-pill)', padding: '6px 28px 6px 12px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-warm)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
+                  style={{ appearance: 'none', background: '#fff', border: '1px solid var(--border-warm)', borderRadius: 'var(--r-pill)', padding: '6px 28px 6px 12px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-ink)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
                   {Object.entries(TARGET_LANGUAGES).map(([name, code]) => (
                     <option key={code} value={code}>{name}</option>
                   ))}
@@ -274,12 +274,12 @@ export default function EnglishToNativeView() {
             )}
           </div>
 
-          <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {TONES.map((tone) => (
                 <button key={tone} onClick={() => handleToneClick(tone)}
                   disabled={!state.englishText?.trim() || isTranslating}
-                  style={{ padding: '6px 16px', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, border: selectedTone === tone ? 'none' : '1px solid rgba(255,255,255,0.8)', background: selectedTone === tone ? 'var(--saffron)' : 'rgba(255,255,255,0.6)', color: selectedTone === tone ? '#fff' : 'var(--text-warm)', cursor: 'pointer', transition: 'all 0.15s', opacity: (!state.englishText?.trim() || isTranslating) ? 0.4 : 1 }}>
+                  style={{ padding: '6px 16px', borderRadius: 'var(--r-pill)', fontSize: '0.8rem', fontWeight: 600, border: selectedTone === tone ? 'none' : '1px solid var(--border-warm)', background: selectedTone === tone ? 'var(--saffron)' : '#fff', color: selectedTone === tone ? '#fff' : 'var(--text-ink)', cursor: 'pointer', transition: 'all 0.15s', boxShadow: selectedTone === tone ? 'none' : 'var(--shadow-sm)', opacity: (!state.englishText?.trim() || isTranslating) ? 0.4 : 1 }}>
                   {tone}
                 </button>
               ))}

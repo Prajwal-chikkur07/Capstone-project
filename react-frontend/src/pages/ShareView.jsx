@@ -34,7 +34,7 @@ export default function ShareView() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <div className="bg-white border-b border-gray-100 px-8 py-4 flex items-center gap-3">
-        <button onClick={() => navigate('/app/home')}
+        <button onClick={() => navigate('/app/native-to-english')}
           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </button>

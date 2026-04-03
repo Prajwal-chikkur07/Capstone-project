@@ -63,7 +63,7 @@ export default function History() {
 
   const handleRestore = (entry) => {
     setFields({ englishText: entry.text, selectedLanguage: entry.lang || 'hi-IN' });
-    navigate('/app/home');
+    navigate('/app/native-to-english');
   };
 
   const handleExport = async (format) => {

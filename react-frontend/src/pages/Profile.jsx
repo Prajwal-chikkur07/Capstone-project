@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext';
 import {
   Mail, Check, Eye, EyeOff, Volume2, ChevronDown, Mic2, RefreshCw,
   ChevronRight, ArrowLeft, Pencil, Globe, X, Save,
 } from 'lucide-react';
 import { getLabels } from '../services/uiLabels';
+import { loadUserProfile, mergeAuthProfile, saveUserProfile, getProfileInitials, normalizeProfile } from '../services/userProfile';
 
 const LANG_LABELS = {
   'hi-IN': 'Hindi', 'bn-IN': 'Bengali', 'ta-IN': 'Tamil', 'te-IN': 'Telugu',
@@ -47,10 +49,6 @@ const CHANNEL_META = [
   { id: 'linkedin', label: 'LinkedIn', credKey: 'linkedinToken' },
   { id: 'whatsapp', label: 'WhatsApp', credKey: 'whatsappPhone' },
 ];
-
-function loadProfile() {
-  try { return JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch { return {}; }
-}
 
 function SecretInput({ value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -233,10 +231,10 @@ function ChannelsView({ onBack }) {
 }
 
 function EditProfileModal({ profile, onSave, onClose }) {
-  const [name, setName] = useState(profile.name || '');
+  const [name, setName] = useState(profile.fullName || profile.name || '');
   const [email, setEmail] = useState(profile.email || '');
   const [role, setRole] = useState(profile.role || '');
-  const initials = name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const initials = getProfileInitials({ fullName: name, email });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={onClose}>
@@ -263,7 +261,7 @@ function EditProfileModal({ profile, onSave, onClose }) {
         </div>
         <div className="flex items-center justify-end gap-2 mt-5">
           <button onClick={onClose} className="px-4 py-2 rounded-xl text-[13px] font-medium text-gray-500 hover:bg-gray-100 transition-all">Cancel</button>
-          <button onClick={() => { onSave({ name: name.trim(), email: email.trim(), role: role.trim() }); onClose(); }}
+          <button onClick={() => { onSave({ fullName: name.trim(), name: name.trim(), email: email.trim(), role: role.trim() }); onClose(); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-[13px] font-semibold hover:bg-gray-700 transition-all">
             <Save className="w-3.5 h-3.5" />Save
           </button>
@@ -275,17 +273,33 @@ function EditProfileModal({ profile, onSave, onClose }) {
 
 export default function Profile() {
   const { state, setField } = useApp();
+  const { user: clerkUser } = useUser();
   const L = getLabels(state.uiLanguage);
   const [subView, setSubView] = useState(null);
-  const [profile, setProfile] = useState(() => loadProfile());
+  const [profile, setProfile] = useState(() => normalizeProfile(loadUserProfile()));
   const [editOpen, setEditOpen] = useState(false);
+  const [showAvatarImage, setShowAvatarImage] = useState(true);
 
-  const saveProfile = (updated) => { setProfile(updated); localStorage.setItem('userProfile', JSON.stringify(updated)); };
+  useEffect(() => {
+    if (!clerkUser) return;
+    const merged = mergeAuthProfile({
+      fullName: clerkUser.fullName || [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim(),
+      email: clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || '',
+      avatarUrl: clerkUser.imageUrl || '',
+      uid: clerkUser.id,
+    });
+    setProfile(merged);
+  }, [clerkUser]);
+
+  const saveProfile = (updated) => {
+    const next = saveUserProfile({ ...profile, ...updated });
+    setProfile(next);
+  };
 
   if (subView === 'voice')    return <VoiceView    onBack={() => setSubView(null)} />;
   if (subView === 'channels') return <ChannelsView onBack={() => setSubView(null)} />;
 
-  const initials = (profile.name || 'U').trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const initials = getProfileInitials(profile);
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 md:px-10 pt-6 md:pt-10 pb-10 md:pb-16 max-w-3xl mx-auto">
@@ -305,11 +319,23 @@ export default function Profile() {
         {/* Avatar + stats */}
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center text-white font-extrabold text-[20px] shrink-0">
-              {initials}
-            </div>
+            {profile.avatarUrl && showAvatarImage ? (
+              <img
+                src={profile.avatarUrl}
+                alt={profile.fullName || profile.email || 'Profile avatar'}
+                className="w-14 h-14 rounded-2xl object-cover shrink-0"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  setShowAvatarImage(false);
+                }}
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center text-white font-extrabold text-[20px] shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-[17px] font-extrabold text-gray-900 truncate">{profile.name || 'Your Name'}</p>
+              <p className="text-[17px] font-extrabold text-gray-900 truncate">{profile.fullName || profile.name || 'Your Name'}</p>
               <p className="text-[13px] text-gray-400 mt-0.5 truncate">{profile.email || 'Add your email'}</p>
               {profile.role && <p className="text-[12px] text-gray-300 mt-0.5 truncate">{profile.role}</p>}
             </div>

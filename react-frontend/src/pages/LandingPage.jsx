@@ -61,8 +61,8 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-4 flex-wrap justify-center">
           <button onClick={goSignUp}
-            className="flex items-center gap-2 bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[15px] font-bold px-8 py-3.5 rounded-full transition-all shadow-lg shadow-[#1a0f00]/20">
-            Start for free <ArrowRight className="w-4 h-4" />
+            className="flex items-center gap-2 bg-[#1a0f00] hover:bg-[#2d1a00] text-white text-[15px] font-bold px-8 py-3.5 rounded-full transition-all shadow-lg shadow-[#1a0f00]/20 group">
+            Start for free <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
           <button onClick={goSignIn}
             className="flex items-center gap-2 border border-[#d4c4a8] hover:border-[#c9a84c] text-[#3b1f0e] text-[15px] font-semibold px-8 py-3.5 rounded-full transition-all">
@@ -70,12 +70,48 @@ export default function LandingPage() {
           </button>
         </div>
 
+        {/* Hero Video Showcase */}
+        <div className="w-full max-w-5xl mx-auto mt-20 px-2 md:px-0 relative perspective-1000">
+          {/* Decorative glows */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#c9a84c]/20 blur-[100px] rounded-full pointer-events-none" />
+          
+          <div className="relative rounded-[2rem] p-2.5 bg-gradient-to-b from-[#ffffff] to-[#faf8f4] border border-[#ede5d8] shadow-[0_40px_100px_-20px_rgba(26,15,0,0.2)] transition-all duration-700 hover:scale-[1.01] hover:shadow-[0_50px_120px_-20px_rgba(201,168,76,0.25)]">
+            <div className="rounded-[1.5rem] overflow-hidden bg-[#0c0700] ring-1 ring-inset ring-white/10 relative flex flex-col transform translate-z-0">
+              {/* Fake Window Header */}
+              <div className="bg-gradient-to-b from-[#1a0f00] to-[#0c0700] px-5 py-3.5 flex items-center justify-between border-b border-white/10 relative z-20">
+                <div className="flex gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f56]/90 shadow-[0_0_10px_rgba(255,95,86,0.5)]" />
+                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 shadow-[0_0_10px_rgba(255,189,46,0.5)]" />
+                  <div className="w-3 h-3 rounded-full bg-[#27c93f]/90 shadow-[0_0_10px_rgba(39,201,63,0.5)]" />
+                </div>
+                <div className="text-white/40 text-[11px] font-bold tracking-[0.25em] uppercase flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#c9a84c]" />
+                  SeedlingSpeaks Interactive
+                </div>
+                <div className="w-12" />{/* Spacer */}
+              </div>
+              
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0700]/40 via-transparent to-transparent z-10 pointer-events-none mix-blend-overlay transition-opacity duration-700 group-hover:opacity-50" />
+                <video 
+                  src="/Voice_Translation_App_Animation_Creation.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-auto object-cover opacity-95 transition-opacity duration-1000"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="flex items-center gap-10 mt-14 flex-wrap justify-center">
+        <div className="flex items-center gap-16 mt-24 flex-wrap justify-center w-full max-w-4xl mx-auto">
           {stats.map(s => (
-            <div key={s.label} className="text-center">
-              <p className="text-[2rem] font-extrabold text-[#1a0f00]">{s.value}</p>
-              <p className="text-[12px] text-[#9a8a75] font-medium mt-0.5">{s.label}</p>
+            <div key={s.label} className="text-center px-4 flex flex-col items-center">
+              <p className="text-[2.5rem] font-extrabold text-[#1a0f00] leading-none mb-2">{s.value}</p>
+              <p className="text-[12px] text-[#c9a84c] font-bold uppercase tracking-widest">{s.label}</p>
             </div>
           ))}
         </div>
