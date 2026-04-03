@@ -52,8 +52,38 @@ def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wa
         return _transcribe_with_gemini(audio_file_path)
 
 def _transcribe_with_gemini(audio_file_path: str) -> dict:
-    """Fallback placeholder after Sarvam failure."""
-    raise Exception("Transcription failed: no non-Sarvam fallback is configured")
+def _transcribe_with_gemini(audio_file_path: str) -> dict:
+    """Fallback: use HuggingFace Whisper to transcribe audio when Sarvam fails."""
+    try:
+        HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+        if not HF_API_KEY:
+            raise Exception("HUGGINGFACE_API_KEY not set")
+        import requests as req
+        with open(audio_file_path, "rb") as f:
+            audio_bytes = f.read()
+        headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+        resp = req.post(
+            "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+            headers=headers,
+            data=audio_bytes,
+            timeout=60,
+        )
+        if resp.status_code == 503:
+            import time; time.sleep(10)
+            resp = req.post(
+                "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                headers=headers,
+                data=audio_bytes,
+                timeout=60,
+            )
+        if resp.status_code != 200:
+            raise Exception(f"Whisper failed: {resp.text[:200]}")
+        transcript = resp.json().get("text", "").strip()
+        logger.info(f"Whisper transcription: {transcript[:100]}")
+        return {"transcript": transcript, "confidence": None, "source_language": "en-IN"}
+    except Exception as e:
+        logger.error(f"Whisper transcription also failed: {e}")
+        raise Exception(f"Transcription failed: {e}")
 
 
 def _convert_to_wav(audio_file_path: str) -> str | None:
