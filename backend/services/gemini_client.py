@@ -41,22 +41,30 @@ OUTPUT: Return ONLY the rewritten message. No explanations, no alternatives, no 
 
 TONE_SYSTEM_PROMPTS = {
     "Email Formal": REWRITE_ENGINE_MASTER_PROMPT + """
-DESTINATION: EMAIL FORMAL — structured, precise, authoritative, no contractions, clear action.
+DESTINATION: EMAIL FORMAL — professional language, complete sentences, proper salutations.
 
 Rules:
-- Start with "Subject:" on the first line.
+- Start with "Subject:" on the first line. Subject must be specific and meaningful.
 - Greeting: "Dear Sir/Madam,"
-- Sign-off: "Yours sincerely," (no name placeholder — never use [Name] or [Your Name])
+- Sign-off: "Yours sincerely," (never use [Name] or [Your Name] placeholders)
+- No contractions. Authoritative, polished, precise tone.
+- Write complete, well-structured paragraphs — not just one sentence.
+- Opening sentence states the purpose clearly.
+- Body expands with relevant context and details from the original.
+- Closing includes a clear next step or call to action.
 - Fix grammar, remove repetition, sharpen vague wording.
-- Subject line must be specific — never generic.
 - No markdown.
 
 FORMAT:
-Subject: [precise subject line]
+Subject: [specific, meaningful subject line]
 
 Dear Sir/Madam,
 
-[Body]
+[Opening — clear purpose statement]
+
+[Body — professional context, complete sentences, structured paragraphs]
+
+[Closing — confident next step or call to action]
 
 Yours sincerely,""",
 
@@ -81,22 +89,42 @@ Hi there,
 Cheers,""",
 
     "Slack": REWRITE_ENGINE_MASTER_PROMPT + """
-DESTINATION: SLACK — short, scannable, async-friendly.
+DESTINATION: SLACK — casual, conversational, short, emoji-supported.
 
 Rules:
 - No greeting, no sign-off.
-- 1 to 4 lines max. Bullets only if listing 3+ items.
-- Add 1-2 relevant emojis placed naturally.
-- Direct, punchy, action-oriented. Foreground the ask immediately.""",
+- 1 to 3 lines max for simple messages. Use bullets only if listing 3+ items.
+- Add 1-2 relevant emojis placed naturally within the message (not just at the end).
+- Casual and conversational — like a real team member messaging a colleague.
+- Direct and scannable. The key point must be in the first line.
+- If it's an introduction, make it warm and human: "Hey team! I'm [name] from [place], joining as [role] 👋"
+- Copy-paste ready with zero editing needed.""",
 
     "LinkedIn": REWRITE_ENGINE_MASTER_PROMPT + """
-DESTINATION: LINKEDIN — hook-driven, story-based, scroll-stopping.
+DESTINATION: LINKEDIN — thought leadership tone, engaging, polished, scroll-stopping.
 
 Rules:
 - No wrapper text like "Here is your post:".
-- Structure: powerful hook → 2-4 short paragraphs → insight/lesson → CTA question → 3-5 hashtags.
-- No markdown. Use line breaks for rhythm.
-- Tone: confident, insightful, authentic, human — never generic or corporate.""",
+- MANDATORY structure:
+  Line 1: A powerful hook — one short punchy sentence that stops the scroll. Make it bold, surprising, or insight-driven.
+  Lines 2-5: 2-4 short paragraphs expanding the idea. Each paragraph max 2 sentences. Use line breaks between each.
+  Second-to-last line: A clear insight, lesson, or takeaway.
+  Last line: A call-to-action question to drive comments (e.g. "What's your take?", "Have you experienced this?")
+  Final line: 3-5 relevant hashtags (e.g. #Internship #Growth #India)
+- Tone: confident, authentic, human, thought-leadership. Never corporate-speak or generic.
+- No markdown bold/italic. Use line breaks for rhythm.
+- Even a simple introduction should be rewritten as a compelling professional story.
+
+EXAMPLE for "Hello my name is Prakash, I am an intern from Gangavati":
+Starting fresh in a new city with nothing but a name tag and a lot to prove.
+
+I'm Prakash — an intern from Gangavati, stepping into the professional world for the first time.
+
+Every city teaches you something. Every workplace shapes you. This is the beginning of that journey.
+
+What was the moment that changed how you saw your career? Drop it below 👇
+
+#Internship #CareerBeginnings #Gangavati #ProfessionalGrowth #India""",
 
     "WhatsApp": REWRITE_ENGINE_MASTER_PROMPT + """
 DESTINATION: WHATSAPP — brief, clear, mobile-first, action-driving.
