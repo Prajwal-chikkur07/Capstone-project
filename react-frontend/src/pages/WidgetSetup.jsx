@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-
-const WIDGET_URL = 'http://127.0.0.1:27182';
+import { enableWidgetWithConfig } from '../services/widgetService';
 
 const LANGUAGES = [
   { code: 'en-IN', name: 'English',   native: 'English',    flag: '🇬🇧' },
@@ -42,13 +41,7 @@ export default function WidgetSetup() {
   const handleEnable = async () => {
     setEnabling(true);
     try {
-      await fetch(`${WIDGET_URL}/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: localWidgetMode, languages: selected }),
-        signal: AbortSignal.timeout(1000),
-      });
-      await fetch(`${WIDGET_URL}/enable`, { signal: AbortSignal.timeout(1000) });
+      await enableWidgetWithConfig({ mode: localWidgetMode, languages: selected });
     } catch { /* widget may not be running yet — that's fine */ }
     setWidgetMode(localWidgetMode);
     setWidgetSetupDone();

@@ -13,6 +13,8 @@ import NotificationCenter from '../components/NotificationCenter';
 import ToastContainer from '../components/Toast';
 import MobileWidget from '../components/MobileWidget';
 
+const OFFLINE_BANNER_HEIGHT = 48;
+
 /**
  * AppShell — Master layout component for the entire authenticated app.
  * Provides consistent sidebar, error handling, offline detection, and nested route rendering.
@@ -52,8 +54,10 @@ export default function AppShell({ children }) {
 
   // Offline detection
   useEffect(() => {
+    let cancelled = false;
     const check = async () => {
       const online = await api.checkHealth();
+      if (cancelled) return;
       if (online) {
         failCountRef.current = 0;
         setOnline(true);
@@ -61,23 +65,34 @@ export default function AppShell({ children }) {
         failCountRef.current += 1;
         if (failCountRef.current >= 2) setOnline(false);
       }
+      pollRef.current = setTimeout(check, online ? 30000 : 120000);
     };
     const initTimer = setTimeout(check, 3000);
-    pollRef.current = setInterval(check, 30000);
+    const onFocus = () => {
+      clearTimeout(pollRef.current);
+      check();
+    };
+    window.addEventListener('focus', onFocus);
     return () => {
+      cancelled = true;
       clearTimeout(initTimer);
-      clearInterval(pollRef.current);
+      clearTimeout(pollRef.current);
+      window.removeEventListener('focus', onFocus);
     };
   }, [setOnline]);
 
   const isPublicPage = ['/', '/landing', '/auth', '/splash'].includes(location.pathname);
   const showSidebar = !state.focusMode && !isPublicPage && location.pathname !== '/widget-setup';
+  const offlineOffsetPx = state.isOnline ? 0 : OFFLINE_BANNER_HEIGHT;
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
       {/* Offline banner */}
       {!state.isOnline && (
-        <div className="fixed top-0 inset-x-0 z-[9999] bg-red-500 text-white text-center text-[13px] font-semibold py-2 flex items-center justify-center gap-2">
+        <div
+          className="fixed top-0 inset-x-0 z-[9999] bg-red-500 text-white text-center text-[13px] font-semibold flex items-center justify-center gap-2"
+          style={{ height: OFFLINE_BANNER_HEIGHT }}
+        >
           <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
           Backend unreachable — some features may not work
         </div>
@@ -89,6 +104,7 @@ export default function AppShell({ children }) {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onOpen={() => setSidebarOpen(true)}
+          topOffset={offlineOffsetPx}
         />
       )}
 
@@ -97,6 +113,7 @@ export default function AppShell({ children }) {
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden fixed top-3 left-3 z-[45] w-9 h-9 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all"
+          style={{ top: 12 + offlineOffsetPx }}
         >
           <Menu className="w-4 h-4" />
         </button>

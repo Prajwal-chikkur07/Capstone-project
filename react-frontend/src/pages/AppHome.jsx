@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { getLabels } from '../services/uiLabels';
 import { loadUserProfile, subscribeToUserProfile, getProfileFirstName } from '../services/userProfile';
-
-const WIDGET_URL = 'http://127.0.0.1:27182';
+import { getWidgetStatus, toggleWidgetPower } from '../services/widgetService';
 
 const CARD_COLORS = {
   '/app/native-to-english': '#FAF0E4',   /* warm peach-cream */
@@ -34,8 +33,9 @@ export default function AppHome() {
   const [profile, setProfile] = useState(() => loadUserProfile());
 
   useEffect(() => {
-    fetch(`${WIDGET_URL}/status`, { signal: AbortSignal.timeout(800) })
-      .then(r => r.json()).then(d => setWidgetOn(d.enabled)).catch(() => {});
+    getWidgetStatus().then((data) => {
+      if (data) setWidgetOn(Boolean(data.enabled));
+    });
   }, []);
 
   useEffect(() => subscribeToUserProfile(setProfile), []);
@@ -43,8 +43,7 @@ export default function AppHome() {
   const toggleWidget = async () => {
     setWidgetLoading(true);
     try {
-      const res = await fetch(`${WIDGET_URL}/toggle`, { signal: AbortSignal.timeout(1500) });
-      const d = await res.json();
+      const d = await toggleWidgetPower();
       setWidgetOn(d.enabled);
     } catch {}
     setWidgetLoading(false);

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getLabels } from '../services/uiLabels';
 import { loadUserProfile, mergeAuthProfile, saveUserProfile, getProfileInitials, normalizeProfile } from '../services/userProfile';
+import { syncWidgetConfig } from '../services/widgetService';
 
 const LANG_LABELS = {
   'hi-IN': 'Hindi', 'bn-IN': 'Bengali', 'ta-IN': 'Tamil', 'te-IN': 'Telugu',
@@ -370,11 +371,7 @@ export default function Profile() {
                 const lang = e.target.value;
                 setField('selectedLanguage', lang);
                 // Sync to desktop widget
-                fetch('http://127.0.0.1:27182/config', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ languages: [lang] }),
-                }).catch(() => {});
+                syncWidgetConfig({ languages: [lang] }).catch(() => {});
                 // Sync to Chrome extension
                 if (typeof chrome !== 'undefined' && chrome.storage) {
                   chrome.storage.local.set({ vtLanguage: lang, vtDefaultLanguage: lang });

@@ -22,7 +22,7 @@ const BottomNavBtn = ({ icon: Icon, label, active, onClick }) => (
   </button>
 );
 
-export default function Sidebar({ isOpen, onClose, onOpen }) {
+export default function Sidebar({ isOpen, onClose, onOpen, topOffset = 0 }) {
   const { state, clearAll, toggleDark, logout } = useApp();
   const { signOut } = useClerk();
   const navigate = useNavigate();
@@ -39,7 +39,10 @@ export default function Sidebar({ isOpen, onClose, onOpen }) {
 
   return (
     <>
-      <aside className={`sidebar${isOpen ? ' open' : ''}`}>
+      <aside
+        className={`sidebar${isOpen ? ' open' : ''}`}
+        style={{ top: topOffset, height: `calc(100vh - ${topOffset}px)` }}
+      >
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: '0 4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

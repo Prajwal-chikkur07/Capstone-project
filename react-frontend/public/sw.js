@@ -15,8 +15,16 @@ self.addEventListener('activate', e => {
 
 // Network-first for API calls, cache-first for static assets
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('/api/')) return; // never cache API calls
+  if (e.request.method !== 'GET' || e.request.url.includes('/api/')) return; // never cache API calls
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    fetch(e.request).catch(async () => {
+      const cached = await caches.match(e.request);
+      if (cached) return cached;
+      return new Response('Offline', {
+        status: 503,
+        statusText: 'Offline',
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    })
   );
 });

@@ -3,8 +3,7 @@ import { useApp } from '../context/AppContext';
 import { RefreshCw, Database, Trash2, Zap, BarChart2, Moon, Sun, Monitor, Globe, X, ShieldCheck } from 'lucide-react';
 import * as api from '../services/api';
 import { getLabels } from '../services/uiLabels';
-
-const WIDGET_URL = 'http://127.0.0.1:27182';
+import { getWidgetStatus, toggleWidgetEnabled } from '../services/widgetService';
 
 const UI_LANGUAGES = [
   { code: 'en',    name: 'English'   },
@@ -52,10 +51,10 @@ export default function Settings() {
 
   useEffect(() => {
     (async () => {
-      try {
-        await fetch(`${WIDGET_URL}/status`, { signal: AbortSignal.timeout(800) });
+      const status = await getWidgetStatus();
+      if (status) {
         setWidgetRunning(true);
-      } catch {
+      } else {
         setWidgetRunning(false);
         // if widget isn't running but state says enabled, reset it
         if (state.widgetEnabled) setWidgetEnabled(false);
@@ -89,8 +88,7 @@ export default function Settings() {
     if (!isWidgetRunning && !state.widgetEnabled) return; // can't enable if widget not running
     setWidgetLoading(true);
     try {
-      const res = await fetch(`${WIDGET_URL}${state.widgetEnabled ? '/disable' : '/enable'}`, { signal: AbortSignal.timeout(1500) });
-      const data = await res.json();
+      const data = await toggleWidgetEnabled({ enabled: !state.widgetEnabled });
       setWidgetEnabled(data.enabled);
       // re-check running status
       setWidgetRunning(true);
