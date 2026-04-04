@@ -52,7 +52,6 @@ def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wa
         return _transcribe_with_gemini(audio_file_path)
 
 def _transcribe_with_gemini(audio_file_path: str) -> dict:
-def _transcribe_with_gemini(audio_file_path: str) -> dict:
     """Fallback: use HuggingFace Whisper to transcribe audio when Sarvam fails."""
     try:
         HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")

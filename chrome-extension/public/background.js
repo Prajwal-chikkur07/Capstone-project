@@ -118,6 +118,23 @@ async function apiShareLinkedIn(data) {
   return await res.json();
 }
 
+function sendToActiveTab(message, fallback, sendResponse) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]?.id) {
+      sendResponse(fallback);
+      return;
+    }
+
+    chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ...fallback, error: chrome.runtime.lastError.message });
+        return;
+      }
+      sendResponse(response || fallback);
+    });
+  });
+}
+
 // ========== MESSAGE HANDLER ==========
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -130,24 +147,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'GET_SELECTED_TEXT') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_SELECTION' }, (response) => {
-          sendResponse(response || { text: '' });
-        });
-      } else { sendResponse({ text: '' }); }
-    });
+    sendToActiveTab({ type: 'GET_SELECTION' }, { text: '' }, sendResponse);
     return true;
   }
 
   if (message.type === 'TOGGLE_ACTIVE') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'TOGGLE_ACTIVE', active: message.active }, (response) => {
-          sendResponse(response || { active: message.active });
-        });
-      } else { sendResponse({ active: false }); }
-    });
+    sendToActiveTab({ type: 'TOGGLE_ACTIVE', active: message.active }, { active: message.active }, sendResponse);
     return true;
   }
 
@@ -161,23 +166,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'TRANSLATE_ALL_PAGE') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'TRANSLATE_ALL_PAGE' }, (r) => sendResponse(r || { started: true }));
-    });
+    sendToActiveTab({ type: 'TRANSLATE_ALL_PAGE' }, { started: true }, sendResponse);
     return true;
   }
 
   if (message.type === 'STOP_TRANSLATION') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'STOP_TRANSLATION' }, (r) => sendResponse(r || { done: true }));
-    });
+    sendToActiveTab({ type: 'STOP_TRANSLATION' }, { done: true }, sendResponse);
     return true;
   }
 
   if (message.type === 'TRANSLATE_SELECTION_FROM_POPUP') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'TRANSLATE_SELECTION_FROM_POPUP' }, (r) => sendResponse(r || { started: true }));
-    });
+    sendToActiveTab({ type: 'TRANSLATE_SELECTION_FROM_POPUP' }, { started: true }, sendResponse);
     return true;
   }
 
