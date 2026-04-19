@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, ChevronDown, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useUser } from '@clerk/clerk-react';
 import * as api from '../services/api';
 
 export default function PushToTalkRecorder() {
+  const { user } = useUser();
   const { state, setField, setFields, setLoading, showError } = useApp();
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -85,6 +87,28 @@ export default function PushToTalkRecorder() {
             englishText: result.transcript || '',
             translatedText: result.translation || '',
           });
+
+          // Save the native-to-english session
+          if (user?.id) {
+            api.saveNativeToEnglishSession({
+              userId: user.id,
+              originalLanguage: state.sourceLanguage || 'en-IN',
+              originalText: result.native_transcript || result.transcript || '', // Original native STT
+              translatedText: result.transcript || ''
+            }).then(data => {
+              if (data?.session_id) {
+                setField('n2eSessionId', data.session_id);
+                // Also optionally save the immediate transcription
+                api.saveNativeToEnglishTranscription({
+                  sessionId: data.session_id,
+                  originalTranscript: result.transcript || '',
+                  toneApplied: null,
+                  rewrittenText: null,
+                  confidenceScore: null
+                }).catch(console.error);
+              }
+            }).catch(console.error);
+          }
 
           setLoading(null);
         } catch (err) {

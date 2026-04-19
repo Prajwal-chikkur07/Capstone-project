@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import RecordingControls from '../components/RecordingControls';
 import PushToTalkRecorder from '../components/PushToTalkRecorder';
 import { useApp } from '../context/AppContext';
@@ -249,6 +250,7 @@ function ChannelModal({ channel, text, onClose }) {
 }
 
 export default function Home() {
+  const { user } = useUser();
   const { state, setField, setFields, RECORDING_MODES, TARGET_LANGUAGES, showError, showSuccess, addHistory, saveTemplates, incrementUsage, addNotificationLog } = useApp();
   const L = getLabels(state.uiLanguage);
   const { isPlaying, speak } = useSpeech();
@@ -316,9 +318,23 @@ export default function Home() {
       });
       // Run sentiment analysis in background
       api.analyzeSentiment(state.englishText).then(setSentiment).catch(() => {});
+
+      // Auto-save translation to database
+      if (user?.id && !state.n2eSessionId) {
+        api.saveNativeToEnglishSession({
+          userId: user.id,
+          originalLanguage: state.selectedLanguage || 'hi-IN',
+          originalText: state.nativeTranscript || state.englishText || '',
+          translatedText: state.englishText || ''
+        }).then(data => {
+          if (data?.session_id) {
+            setField('n2eSessionId', data.session_id);
+          }
+        }).catch(console.error);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.englishText]);
+  }, [state.englishText, state.nativeTranscript, user?.id, state.selectedLanguage]);
 
   // Keyboard shortcuts: Cmd/Ctrl+Enter = translate, Cmd/Ctrl+R = rewrite
   useEffect(() => {
@@ -358,6 +374,19 @@ export default function Home() {
       setRewrittenText(result);
       incrementUsage('geminiCalls');
       api.getReadability(result).then(setReadability).catch(() => {});
+
+      // Add to Native to English DB seamlessly in background
+        if (state.n2eSessionId) {
+          api.saveNativeToEnglishTranscription({
+            sessionId: state.n2eSessionId,
+            originalTranscript: text,
+            toneApplied: tone,
+            rewrittenText: result,
+            customToneDesc: tone === 'Custom' ? customToneInput : null,
+            confidenceScore: state.confidenceScore || 0
+          }).catch(console.error); // Fire and forget
+        }
+
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'Rewrite failed';
       showError(msg);
@@ -365,14 +394,7 @@ export default function Home() {
     } finally {
       setIsRewriting(false);
     }
-  }, [editableTranscript, state.englishText, state.customDictionary, customToneInput, showError, incrementUsage]);
-
-  const handleToneClick = (tone) => {
-    setSelectedTone(tone);
-    setShowOriginalTranscript(false);
-    setShowTranslation(false);
-    if (tone !== 'Custom') handleRewrite(tone);
-  };
+  }, [editableTranscript, state.englishText, state.customDictionary, customToneInput, showError, incrementUsage, state.n2eSessionId, state.sourceLanguage, state.confidenceScore]);
 
   const handleRetoneDropdownApply = useCallback(async () => {
     if (!selectedRetoneForDropdown) return;
@@ -430,6 +452,8 @@ export default function Home() {
 
   const handleClear = () => {
     setField('englishText', '');
+    setField('nativeTranscript', '');
+    setField('n2eSessionId', null);
     setEditableTranscript('');
     setRewrittenText('');
     setSelectedTone(null);
@@ -536,10 +560,31 @@ export default function Home() {
     finally { setIsMultiTranslating(false); }
   };
 
-  const handleFileTranscribed = ({ transcript, confidence, error }) => {    if (error) { showError(error); return; }
+  const handleFileTranscribed = ({ transcript, native_transcript, confidence, error }) => {    if (error) { showError(error); return; }
     setFields({ englishText: transcript, confidenceScore: confidence ?? null });
     incrementUsage('sarvamCalls');
     showSuccess('File transcribed successfully');
+
+// Save the session ID
+      if (user?.id) {
+        api.saveNativeToEnglishSession({
+          userId: user.id,
+          originalLanguage: state.sourceLanguage || 'hi-IN',
+          originalText: native_transcript || transcript || '',
+          translatedText: transcript || ''
+        }).then(data => {
+          if (data?.session_id) {
+            setField('n2eSessionId', data.session_id);
+            api.saveNativeToEnglishTranscription({
+              sessionId: data.session_id,
+              originalTranscript: transcript || '',
+              toneApplied: null,
+              rewrittenText: null,
+              confidenceScore: confidence || null
+            }).catch(console.error);
+          }
+      }).catch(console.error);
+    }
   };
 
   const shareText = rewrittenText || state.nativeTranslation || editableTranscript;
@@ -720,7 +765,13 @@ export default function Home() {
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', background: 'white', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, minWidth: '180px' }}>
                     <div style={{ padding: '4px' }}>
                       {TONE_OPTIONS.map(t => (
-                        <button key={t} onClick={() => { handleToneClick(t); setShowRetoneDropdown(false); }} disabled={isRewriting}
+                        <button key={t} onClick={() => { 
+                            setSelectedTone(t); 
+                            if (t !== 'Custom') {
+                              handleRewrite(t);
+                              setShowRetoneDropdown(false);
+                            }
+                          }} disabled={isRewriting}
                           style={{ width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: '13px', fontWeight: 500, color: selectedTone === t ? 'var(--saffron)' : 'rgb(75, 85, 99)', background: selectedTone === t ? 'rgba(232, 130, 12, 0.1)' : 'transparent', border: 'none', cursor: isRewriting ? 'not-allowed' : 'pointer', opacity: isRewriting ? 0.4 : 1, transition: 'all 0.2s', borderRadius: '4px' }}
                           onMouseEnter={e => { if (!isRewriting) e.target.style.background = 'rgba(0,0,0,0.03)'; }}
                           onMouseLeave={e => { if (selectedTone !== t) e.target.style.background = 'transparent'; }}>

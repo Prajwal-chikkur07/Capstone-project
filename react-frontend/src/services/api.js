@@ -145,10 +145,11 @@ export const rewriteTone = async (text, tone, userOverride = null, customVocabul
   return data.rewritten_text;
 };
 
-export const translateText = async (text, targetLanguage) => {
+export const translateText = async (text, targetLanguage, userId = null) => {
   const { data } = await API.post('/translate-text', {
     text,
     target_language: targetLanguage,
+    user_id: userId,
   });
   return data.translated_text;
 };
@@ -316,6 +317,62 @@ export const visionTranslate = async (imageFile, targetLanguage) => {
     timeout: 60000,
   });
   return data; // { regions: [{original, translated, x, y, w, h, font_size, bg_color, text_color}], count }
+};
+
+// --- Native to English Sessions ---
+
+export const saveNativeToEnglishSession = async (sessionData) => {
+  const { data } = await API.post('/native-to-english/session', {
+    user_id: sessionData.userId,
+    original_language: sessionData.originalLanguage,
+    original_text: sessionData.originalText,
+    translated_text: sessionData.translatedText,
+  });
+  return data;
+};
+
+export const saveNativeToEnglishTranscription = async (transcriptionData) => {
+  const { data } = await API.post('/native-to-english/transcription', {
+    session_id: transcriptionData.sessionId,
+    original_transcript: transcriptionData.originalTranscript,
+    tone_applied: transcriptionData.toneApplied,
+    rewritten_text: transcriptionData.rewrittenText,
+    custom_tone_desc: transcriptionData.customToneDesc,
+    confidence_score: transcriptionData.confidenceScore,
+  });
+  return data;
+};
+
+export const getNativeToEnglishSessions = async (userId) => {
+  const { data } = await API.get(`/native-to-english/sessions/${userId}`);
+  return data;
+};
+
+// --- English to Native Sessions ---
+
+export const saveEnglishToNativeSession = async ({ userId, targetLanguage, originalLanguage = 'en-IN' }) => {
+  const { data } = await API.post('/english-to-native/session', {
+    user_id: userId,
+    target_language: targetLanguage,
+    original_language: originalLanguage,
+  });
+  return data; // { status, session_id }
+};
+
+export const saveEnglishToNativeTranslation = async ({ sessionId, inputText, translatedText, toneApplied = null, tonedText = null }) => {
+  const { data } = await API.post('/english-to-native/translation', {
+    session_id: sessionId,
+    input_text: inputText,
+    translated_text: translatedText,
+    tone_applied: toneApplied,
+    toned_text: tonedText,
+  });
+  return data; // { status, translation_id }
+};
+
+export const getEnglishToNativeSessions = async (userId) => {
+  const { data } = await API.get(`/english-to-native/sessions/${userId}`);
+  return data;
 };
 
 // ── Video translation ─────────────────────────────────────────────────────────

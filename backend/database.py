@@ -74,7 +74,26 @@ def init_db():
         # Quick connectivity check
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
+        # Migrate: drop removed columns from english_to_native_translations
+        _migrate_e2n_translations()
         logger.info("PostgreSQL connected and tables verified.")
     except Exception as e:
         logger.error(f"Database init failed: {e}")
         raise
+
+
+def _migrate_e2n_translations():
+    """Drop legacy columns (tone_applied, toned_text, was_toned) if they still exist."""
+    dropped = []
+    with engine.connect() as conn:
+        for col in ("tone_applied", "toned_text", "was_toned"):
+            try:
+                conn.execute(text(
+                    f"ALTER TABLE english_to_native_translations DROP COLUMN IF EXISTS {col}"
+                ))
+                dropped.append(col)
+            except Exception:
+                pass
+        conn.commit()
+    if dropped:
+        logger.info(f"E2N migration: dropped columns {dropped}")

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_REWRITE_MODEL = os.getenv("OPENROUTER_REWRITE_MODEL", "google/gemini-2.5-flash")
+OPENROUTER_REWRITE_MODEL = os.getenv("OPENROUTER_REWRITE_MODEL", "google/gemini-2.0-flash")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -285,7 +285,7 @@ def generate_meeting_notes(text: str) -> dict:
 
 TRANSCRIPT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -308,7 +308,7 @@ QUESTION: {question}
 
 ANSWER:"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Q&A failed: {e}")
@@ -327,7 +327,7 @@ Use "positive", "neutral", or "negative" for sentiment. Score is 0-100.
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -365,7 +365,7 @@ Respond ONLY with JSON (no markdown):
 
 TEXT: {native_text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -422,7 +422,7 @@ Respond ONLY with JSON (no markdown):
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -487,7 +487,7 @@ Coordinate rules:
 - Output ONLY the JSON array, nothing else"""
 
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         image_part = {"mime_type": image_mime, "data": image_bytes}
         response = model.generate_content([prompt, image_part])
         raw = _strip_md_json(response.text)
@@ -525,7 +525,7 @@ Respond with ONLY the tone name, nothing else.
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         result = model.generate_content(prompt).text.strip()
         valid = ["Email Formal", "Email Casual", "Slack", "LinkedIn", "WhatsApp Business"]
         return result if result in valid else "Email Formal"
@@ -590,7 +590,7 @@ ORIGINAL TEXT:
 REWRITTEN OUTPUT:"""
 
     logger.info(f"Gemini rewrite request: tone='{tone_option}', text='{text[:80]}'")
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash')
 
     try:
         response = model.generate_content(prompt)
@@ -627,7 +627,7 @@ Return ONLY the translated text.
 TEXT:
 {text}"""
 
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash')
     response = model.generate_content(prompt)
     return response.text.strip()
 
@@ -687,7 +687,7 @@ def advanced_translate(
     )
 
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt)
         raw = _strip_md_json(response.text)
         result = json.loads(raw)

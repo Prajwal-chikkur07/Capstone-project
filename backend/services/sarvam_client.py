@@ -41,9 +41,10 @@ def translate_speech_to_text(audio_file_path: str, content_type: str = "audio/wa
                 futures = [executor.submit(_process_single_audio, path, "audio/wav") for path in chunk_paths]
                 results = [f.result() for f in futures]
             full_transcript = " ".join([r["transcript"] for r in results if r.get("transcript")])
+            full_native = " ".join([r["native_transcript"] for r in results if r.get("native_transcript")])
             conf_scores = [r["confidence"] for r in results if r.get("confidence") is not None]
             avg_confidence = round(sum(conf_scores) / len(conf_scores), 3) if conf_scores else None
-            return {"transcript": full_transcript, "confidence": avg_confidence}
+            return {"transcript": full_transcript, "native_transcript": full_native, "confidence": avg_confidence}
         finally:
             cleanup_chunks(chunk_paths)
 
@@ -118,9 +119,10 @@ def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
     """
     Processes a single audio file (must be <= 30 seconds).
     Converts to WAV first, retries up to 3 times on connection errors.
-    Returns dict with 'transcript' and 'confidence' keys.
+    Returns dict with 'transcript', 'native_transcript', and 'confidence' keys.
     """
-    url = "https://api.sarvam.ai/speech-to-text-translate"
+    url_translate = "https://api.sarvam.ai/speech-to-text-translate"
+    url_native = "https://api.sarvam.ai/speech-to-text"
     headers = {"api-subscription-key": SARVAM_API_KEY}
 
     # Convert to WAV for best Sarvam compatibility
@@ -131,53 +133,64 @@ def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
 
     logger.info(f"Sending audio to Sarvam: file={filename}, content_type={send_ct}")
 
-    last_exc = None
-    for attempt in range(1, 4):  # up to 3 attempts
-        try:
-            with open(send_path, "rb") as f:
-                files = {"file": (filename, f, send_ct)}
-                data = {"model": "saaras:v2.5", "prompt": ""}
-                response = requests.post(
-                    url, headers=headers, files=files, data=data,
-                    timeout=90,  # increased — mobile uploads can be slow
-                    stream=False,  # force full response read, prevents IncompleteRead
-                )
-            break  # success — exit retry loop
-        except (requests.exceptions.ChunkedEncodingError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout,
-                IncompleteRead,
-                ConnectionError,
-                OSError) as e:
-            last_exc = e
-            logger.warning(f"Sarvam attempt {attempt}/3 failed: {e}")
-            if attempt < 3:
-                import time; time.sleep(1.5 * attempt)
-    else:
-        # All retries exhausted
+    def _make_req(url, model_name):
+        last_exc = None
+        for attempt in range(1, 4):  # up to 3 attempts
+            try:
+                with open(send_path, "rb") as f:
+                    files = {"file": (filename, f, send_ct)}
+                    data = {"model": model_name, "prompt": ""}
+                    response = requests.post(
+                        url, headers=headers, files=files, data=data,
+                        timeout=90, stream=False
+                    )
+                return response
+            except (requests.exceptions.ChunkedEncodingError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                    IncompleteRead,
+                    ConnectionError,
+                    OSError) as e:
+                last_exc = e
+                logger.warning(f"Sarvam attempt {attempt}/3 failed on {url}: {e}")
+                if attempt < 3:
+                    import time; time.sleep(1.5 * attempt)
+        raise Exception(f"Sarvam connection failed after 3 attempts on {url}: {last_exc}")
+
+    from concurrent.futures import ThreadPoolExecutor
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            fut_trans = executor.submit(_make_req, url_translate, "saaras:v2.5")
+            fut_native = executor.submit(_make_req, url_native, "saaras:v3")
+            
+            resp_trans = fut_trans.result()
+            resp_native = fut_native.result()
+    finally:
         if wav_path:
             try: os.unlink(wav_path)
             except Exception: pass
-        raise Exception(f"Sarvam connection failed after 3 attempts: {last_exc}")
 
-    if wav_path:
-        try: os.unlink(wav_path)
-        except Exception: pass
-
-    logger.info(f"Sarvam STT response: status={response.status_code}, body={response.text[:300]}")
-    if response.status_code == 200:
-        body = response.json()
-        transcript = body.get("transcript", "")
-        confidence = body.get("confidence", None)
+    logger.info(f"Sarvam STT-Translate response: status={resp_trans.status_code}, body={resp_trans.text[:300]}")
+    logger.info(f"Sarvam STT-Native response: status={resp_native.status_code}, body={resp_native.text[:300]}")
+    
+    if resp_trans.status_code == 200 and resp_native.status_code == 200:
+        tbody = resp_trans.json()
+        nbody = resp_native.json()
+        
+        transcript = tbody.get("transcript", "")
+        native_transcript = nbody.get("transcript", "")
+        confidence = tbody.get("confidence", None)
+        
         if confidence is None:
-            words = body.get("words", [])
+            words = tbody.get("words", [])
             if words:
                 scores = [w.get("confidence", 1.0) for w in words if "confidence" in w]
                 confidence = round(sum(scores) / len(scores), 3) if scores else None
-        return {"transcript": transcript, "confidence": confidence}
+                
+        return {"transcript": transcript, "native_transcript": native_transcript, "confidence": confidence}
     else:
-        logger.error(f"Sarvam STT error {response.status_code}: {response.text}")
-        raise Exception(f"Sarvam STT {response.status_code}: {response.text[:200]}")
+        logger.error(f"Sarvam STT error trans_status={resp_trans.status_code}, native_status={resp_native.status_code}")
+        raise Exception(f"Sarvam STT failed. TextTranslate={resp_trans.status_code}, STT={resp_native.status_code}")
 
 def translate_text(text: str, source_language: str, target_language: str) -> str:
     """
@@ -204,6 +217,18 @@ def translate_text(text: str, source_language: str, target_language: str) -> str
                               'Regards,', 'Best regards,', 'Kind regards,', 'Thanks,'):
                 # Keep standard salutations/closings as-is (they're universally understood)
                 translated_lines.append(stripped)
+            else:
+                translated_lines.append(_translate_single(stripped, source_language, target_language))
+        return '\n'.join(translated_lines)
+
+    # ── General text with newlines: translate line-by-line to preserve breaks ─
+    if '\n' in text:
+        lines = text.split('\n')
+        translated_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                translated_lines.append('')
             else:
                 translated_lines.append(_translate_single(stripped, source_language, target_language))
         return '\n'.join(translated_lines)

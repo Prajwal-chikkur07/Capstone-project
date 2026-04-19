@@ -46,12 +46,14 @@ function loadDictionary() {
 
 const initialState = {
   authUser: null, // Managed by Clerk, not persisted to localStorage
+    n2eSessionId: null,
   recordingMode: null,
   isRecording: false,
   isPushToTalkPressed: false,
   isSpeechDetected: false,
   currentAmplitude: 0,
   englishText: '',
+  nativeTranscript: '',
   rewrittenText: '',
   nativeTranslation: '',
   confidenceScore: null,       // 0-1 float from Sarvam
@@ -108,6 +110,7 @@ function reducer(state, action) {
       return {
         ...state,
         englishText: '',
+        nativeTranscript: '',
         rewrittenText: '',
         nativeTranslation: '',
         confidenceScore: null,

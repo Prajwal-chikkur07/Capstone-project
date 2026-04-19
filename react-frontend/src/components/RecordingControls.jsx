@@ -83,7 +83,7 @@ export default function RecordingControls() {
         try {
           setLoading('Transcribing...');
           const result = await api.translateAudioFromBlob(blob);
-          setFields({ englishText: result.transcript, confidenceScore: result.confidence ?? null });
+          setFields({ englishText: result.transcript, nativeTranscript: result.native_transcript || '', confidenceScore: result.confidence ?? null });
           setLoading(null);
         } catch (err) {
           showError(err.response?.data?.detail || err.message);
