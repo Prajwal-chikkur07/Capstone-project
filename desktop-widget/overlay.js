@@ -19,6 +19,7 @@ let selectedLang    = '';
 let selectedTone    = 'Plain Text';
 let customTone      = '';
 let configuredLangs = Object.keys(ALL_LANGUAGES);
+let widgetUserId    = null;
 let rawText         = '';
 let displayText     = '';
 let toneText        = '';
@@ -231,7 +232,7 @@ async function translateRaw() {
   try {
     const res = await fetch(`${API_BASE}/translate-text`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ text: rawText, source_language:'en-IN', target_language: selectedLang }),
+      body: JSON.stringify({ text: rawText, source_language:'en-IN', target_language: selectedLang, user_id: widgetUserId }),
     });
     const d = await res.json();
     displayText = d.translated_text || rawText;
@@ -315,6 +316,18 @@ ipcRenderer.on('start-recording', async () => {
         if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail||`HTTP ${res.status}`); }
         const data = await res.json();
         ipcRenderer.send('recording-result', { transcript: data.transcript || '⚠ Could not transcribe.' });
+        // Save N2E session to DB (fire-and-forget)
+        if (widgetUserId && data.transcript) {
+          fetch(`${API_BASE}/native-to-english/session`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: widgetUserId,
+              original_language: selectedLang || 'hi-IN',
+              original_text: data.native_transcript || '',
+              translated_text: data.transcript,
+            }),
+          }).catch(() => {});
+        }
       } catch (e) {
         ipcRenderer.send('recording-result', { transcript: `⚠ ${e.message}` });
       }
@@ -370,6 +383,7 @@ ipcRenderer.on('set-config', (_, cfg) => {
     configuredLangs = cfg.languages.filter(c => ALL_LANGUAGES[c]);
     if (configuredLangs.length > 0 && !configuredLangs.includes(selectedLang)) selectedLang = configuredLangs[0];
   }
+  if (cfg.userId) widgetUserId = cfg.userId;
   if (!isRecording) render();
 });
 

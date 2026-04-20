@@ -73,7 +73,6 @@ function AppRoutes() {
       <Route path="/landing" element={<LandingPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/splash" element={<SplashScreen />} />
-
       {/* Widget setup — auth required, setup not done */}
       <Route
         path="/widget-setup"

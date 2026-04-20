@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, X, Send, Copy, Check, Loader2, Languages } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext';
 import * as api from '../services/api';
 
@@ -10,7 +11,9 @@ const LANG_LABELS = {
 };
 
 export default function MobileWidget() {
+  const { user } = useUser();
   const { state } = useApp();
+  const userId = user?.id || null;
   const [open, setOpen] = useState(false);
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,8 +48,17 @@ export default function MobileWidget() {
           const text = res.transcript?.trim() || '';
           setTranscript(text);
           if (text) {
-            const t = await api.translateText(text, lang);
+            const t = await api.translateText(text, lang, userId);
             setTranslated(t);
+          }
+          // Save N2E session (fire-and-forget)
+          if (userId && text) {
+            api.saveNativeToEnglishSession({
+              userId,
+              originalLanguage: lang,
+              originalText: res.native_transcript || '',
+              translatedText: text,
+            }).catch(() => {});
           }
         } catch { setTranscript('Could not transcribe. Try again.'); }
         setLoading(false);
@@ -70,7 +82,7 @@ export default function MobileWidget() {
     if (!typedText.trim()) return;
     setLoading(true);
     try {
-      const t = await api.translateText(typedText.trim(), lang);
+      const t = await api.translateText(typedText.trim(), lang, userId);
       setTranslated(t);
       setTranscript(typedText.trim());
     } catch {}
@@ -100,13 +112,16 @@ export default function MobileWidget() {
 
   const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-  // Only show on mobile
+  // Only show on mobile when enabled
+  if (!state.mobileWidgetEnabled) return null;
+
   return (
     <>
       {/* FAB */}
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-[60] w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        className="md:hidden fixed right-4 z-[60] w-14 h-14 rounded-full bg-gray-900 text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Open translation widget"
       >
         <Mic className="w-6 h-6" />

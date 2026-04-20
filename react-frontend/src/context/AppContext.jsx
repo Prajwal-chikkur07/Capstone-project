@@ -78,6 +78,7 @@ const initialState = {
   onboardingDone: localStorage.getItem('onboardingDone') === 'true',
   widgetSetupDone: localStorage.getItem('widgetSetupDone') === 'true',
   widgetEnabled: false, // always starts disabled — user must enable each session
+  mobileWidgetEnabled: localStorage.getItem('mobileWidgetEnabled') === 'true',
   widgetLanguages: JSON.parse(localStorage.getItem('widgetLanguages') || '[]'),
   widgetMode: localStorage.getItem('widgetMode') || 'englishToNative',
   starredIds: JSON.parse(localStorage.getItem('starredIds') || '[]'),
@@ -163,6 +164,9 @@ function reducer(state, action) {
     case 'SET_WIDGET_ENABLED':
       localStorage.setItem('widgetEnabled', String(action.value));
       return { ...state, widgetEnabled: action.value };
+    case 'SET_MOBILE_WIDGET_ENABLED':
+      localStorage.setItem('mobileWidgetEnabled', String(action.value));
+      return { ...state, mobileWidgetEnabled: action.value };
     case 'SET_WIDGET_LANGUAGES':
       localStorage.setItem('widgetLanguages', JSON.stringify(action.value));
       return { ...state, widgetLanguages: action.value };
@@ -270,6 +274,7 @@ export function AppProvider({ children }) {
   const setOnboardingDone = useCallback(() => dispatch({ type: 'SET_ONBOARDING_DONE' }), []);
   const setWidgetSetupDone = useCallback(() => dispatch({ type: 'SET_WIDGET_SETUP_DONE' }), []);
   const setWidgetEnabled = useCallback((value) => dispatch({ type: 'SET_WIDGET_ENABLED', value }), []);
+  const setMobileWidgetEnabled = useCallback((value) => dispatch({ type: 'SET_MOBILE_WIDGET_ENABLED', value }), []);
   const setWidgetLanguages = useCallback((value) => dispatch({ type: 'SET_WIDGET_LANGUAGES', value }), []);
   const setWidgetMode = useCallback((value) => dispatch({ type: 'SET_WIDGET_MODE', value }), []);
   const toggleStar = useCallback((id) => dispatch({ type: 'TOGGLE_STAR', id }), []);
@@ -304,6 +309,7 @@ export function AppProvider({ children }) {
         setOnboardingDone,
         setWidgetSetupDone,
         setWidgetEnabled,
+        setMobileWidgetEnabled,
         setWidgetLanguages,
         setWidgetMode,
         toggleStar,

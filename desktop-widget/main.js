@@ -19,7 +19,7 @@ let clickModeLang = 'hi-IN';
 // ── Recording state (managed in main process) ─────────────────────────────────
 let isRecording = false;
 
-let widgetConfig = { mode: 'nativeToEnglish', languages: ['hi-IN'] };
+let widgetConfig = { mode: 'nativeToEnglish', languages: ['hi-IN'], userId: null };
 let lastFrontApp = null; // track which app was active before overlay opened
 
 // ── Persist widget config to disk ─────────────────────────────────────────────
@@ -33,7 +33,7 @@ function loadWidgetConfig() {
     if (fs.existsSync(CONFIG_FILE)) {
       const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
       if (saved && Array.isArray(saved.languages) && saved.languages.length > 0) {
-        widgetConfig = { mode: 'nativeToEnglish', languages: saved.languages };
+        widgetConfig = { mode: 'nativeToEnglish', languages: saved.languages, userId: saved.userId || null };
       }
     }
   } catch {}
@@ -65,6 +65,7 @@ function startControlServer() {
           widgetConfig = {
             mode: 'nativeToEnglish',
             languages: Array.isArray(inc.languages) && inc.languages.length > 0 ? inc.languages : ['hi-IN'],
+            userId: inc.userId || widgetConfig.userId || null,
           };
           saveWidgetConfig();
           if (overlayWin) overlayWin.webContents.send('set-config', widgetConfig);
@@ -845,6 +846,7 @@ function translateText(text, lang) {
     text,
     source_language: 'en-IN',
     target_language: lang,
+    user_id: widgetConfig.userId || null,
   });
   const r = spawnSync('curl', [
     '-s', '-X', 'POST',

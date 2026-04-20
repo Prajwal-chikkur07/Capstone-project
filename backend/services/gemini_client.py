@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_REWRITE_MODEL = os.getenv("OPENROUTER_REWRITE_MODEL", "google/gemini-2.0-flash")
+OPENROUTER_REWRITE_MODEL = os.getenv("OPENROUTER_REWRITE_MODEL", "google/gemini-3.1-flash-lite-preview")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -262,7 +262,7 @@ Output ONLY the summary, no labels, no markdown.
 
 TRANSCRIPT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Summarize failed: {e}")
@@ -285,7 +285,7 @@ def generate_meeting_notes(text: str) -> dict:
 
 TRANSCRIPT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -308,7 +308,7 @@ QUESTION: {question}
 
 ANSWER:"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         return model.generate_content(prompt).text.strip()
     except Exception as e:
         logger.warning(f"Q&A failed: {e}")
@@ -327,7 +327,7 @@ Use "positive", "neutral", or "negative" for sentiment. Score is 0-100.
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -365,7 +365,7 @@ Respond ONLY with JSON (no markdown):
 
 TEXT: {native_text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -422,7 +422,7 @@ Respond ONLY with JSON (no markdown):
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         raw = _strip_md_json(model.generate_content(prompt).text)
         return json.loads(raw)
     except Exception as e:
@@ -487,7 +487,7 @@ Coordinate rules:
 - Output ONLY the JSON array, nothing else"""
 
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         image_part = {"mime_type": image_mime, "data": image_bytes}
         response = model.generate_content([prompt, image_part])
         raw = _strip_md_json(response.text)
@@ -525,7 +525,7 @@ Respond with ONLY the tone name, nothing else.
 
 TEXT: {text}"""
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         result = model.generate_content(prompt).text.strip()
         valid = ["Email Formal", "Email Casual", "Slack", "LinkedIn", "WhatsApp Business"]
         return result if result in valid else "Email Formal"
@@ -553,10 +553,27 @@ def _local_suggest_tone(text: str) -> str:
 
 
 def rewrite_text_tone(text: str, tone_option: str, user_override: str = None, custom_vocabulary: list = None) -> str:
-    """Uses Google Gemini first, then falls back to OpenRouter for retone."""
+    """Uses Google Gemini first, then falls back to OpenRouter for retone. Checks retoning cache."""
+    from services.translation_cache import get_cached_retone, store_retone
+
+    # ── Cache check (skip for custom overrides / custom vocab — too unique) ──
+    if not user_override and not custom_vocabulary:
+        try:
+            cached = get_cached_retone(text, tone_option)
+            if cached:
+                return cached
+        except Exception as e:
+            logger.warning(f"Retone cache lookup failed (non-fatal): {e}")
+
     if not GEMINI_API_KEY and OPENROUTER_API_KEY:
         logger.warning("Gemini key missing for retone. Falling back to OpenRouter.")
-        return _openrouter_tone_rewrite(text, tone_option, user_override, custom_vocabulary)
+        result = _openrouter_tone_rewrite(text, tone_option, user_override, custom_vocabulary)
+        if not user_override and not custom_vocabulary:
+            try:
+                store_retone(text, tone_option, result)
+            except Exception as e:
+                logger.warning(f"Retone cache store failed (non-fatal): {e}")
+        return result
     if not GEMINI_API_KEY:
         raise Exception("Neither GEMINI_API_KEY nor OPENROUTER_API_KEY is set")
 
@@ -590,7 +607,7 @@ ORIGINAL TEXT:
 REWRITTEN OUTPUT:"""
 
     logger.info(f"Gemini rewrite request: tone='{tone_option}', text='{text[:80]}'")
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
 
     try:
         response = model.generate_content(prompt)
@@ -600,6 +617,12 @@ REWRITTEN OUTPUT:"""
             logger.error("Gemini returned empty retone response. Prompt length: %d", len(prompt))
             raise Exception("Gemini returned an empty retone response")
         logger.info(f"Gemini retone result preview: '{result[:100]}'")
+        # Store in retoning cache
+        if not user_override and not custom_vocabulary:
+            try:
+                store_retone(text, tone_option, result)
+            except Exception as cache_err:
+                logger.warning(f"Retone cache store failed (non-fatal): {cache_err}")
         return result
     except Exception as e:
         logger.error(f"Gemini API Error: {e}")
@@ -627,7 +650,7 @@ Return ONLY the translated text.
 TEXT:
 {text}"""
 
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
     response = model.generate_content(prompt)
     return response.text.strip()
 
@@ -687,7 +710,7 @@ def advanced_translate(
     )
 
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
         response = model.generate_content(prompt)
         raw = _strip_md_json(response.text)
         result = json.loads(raw)

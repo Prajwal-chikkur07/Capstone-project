@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RefreshCw, Database, Trash2, Zap, BarChart2, Moon, Sun, Monitor, Globe, X, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Database, Trash2, Zap, BarChart2, Moon, Sun, Monitor, Globe, X, ShieldCheck, Smartphone } from 'lucide-react';
 import * as api from '../services/api';
 import { getLabels } from '../services/uiLabels';
 import { getWidgetStatus, toggleWidgetEnabled } from '../services/widgetService';
@@ -35,7 +35,7 @@ function Toggle({ on, onToggle, disabled }) {
 }
 
 export default function Settings() {
-  const { state, toggleDark, setUiLanguage, setWidgetEnabled } = useApp();
+  const { state, toggleDark, setUiLanguage, setWidgetEnabled, setMobileWidgetEnabled } = useApp();
   const L = getLabels(state.uiLanguage);
 
   const [cacheStats, setCacheStats] = useState(null);
@@ -258,6 +258,27 @@ export default function Settings() {
             className="text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
             Re-run setup →
           </button>
+        </div>
+
+        {/* Mobile Widget */}
+        <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                <Smartphone className="w-4 h-4 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-gray-900">Mobile Widget</p>
+                <p className={`text-[12px] mt-0.5 ${state.mobileWidgetEnabled ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
+                  {state.mobileWidgetEnabled ? '● Quick Translate FAB visible' : '○ Quick Translate FAB hidden'}
+                </p>
+              </div>
+            </div>
+            <Toggle on={state.mobileWidgetEnabled} onToggle={() => setMobileWidgetEnabled(!state.mobileWidgetEnabled)} />
+          </div>
+          <p className="text-[12px] text-gray-400 mt-2">
+            Shows a floating translate button on mobile for quick speech-to-text and text translation.
+          </p>
         </div>
 
         {/* API Usage */}
