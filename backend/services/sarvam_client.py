@@ -176,17 +176,31 @@ def _process_single_audio(audio_file_path: str, content_type: str) -> dict:
     if resp_trans.status_code == 200 and resp_native.status_code == 200:
         tbody = resp_trans.json()
         nbody = resp_native.json()
-        
-        transcript = tbody.get("transcript", "")
+
         native_transcript = nbody.get("transcript", "")
         confidence = tbody.get("confidence", None)
-        
+
         if confidence is None:
             words = tbody.get("words", [])
             if words:
                 scores = [w.get("confidence", 1.0) for w in words if "confidence" in w]
                 confidence = round(sum(scores) / len(scores), 3) if scores else None
-                
+
+        # ── Semantic cache: check if this native text was translated before ──
+        transcript = tbody.get("transcript", "")
+        try:
+            detected_lang = nbody.get("language_code", "hi-IN")
+            if native_transcript.strip():
+                cached_english = get_cached(native_transcript, "en-IN")
+                if cached_english:
+                    logger.info(f"N2E cache HIT for native text: '{native_transcript[:60]}'")
+                    transcript = cached_english
+                elif transcript.strip():
+                    store_translation(native_transcript, "en-IN", transcript, source_language=detected_lang)
+                    logger.info(f"N2E cache STORE: '{native_transcript[:60]}' → '{transcript[:60]}'")
+        except Exception as e:
+            logger.warning(f"N2E cache error (non-fatal): {e}")
+
         return {"transcript": transcript, "native_transcript": native_transcript, "confidence": confidence}
     else:
         logger.error(f"Sarvam STT error trans_status={resp_trans.status_code}, native_status={resp_native.status_code}")
@@ -275,7 +289,7 @@ def _translate_single(text: str, source_language: str, target_language: str) -> 
                     result = data["translation"]
                 else:
                     raise Exception(f"Unexpected Sarvam response: {data}")
-                store_translation(text, target_language, result)
+                store_translation(text, target_language, result, source_language=source_language)
                 return result
             else:
                 logger.warning(f"Sarvam failed ({response.status_code}: {response.text[:200]}), falling back to Gemini")
@@ -287,7 +301,7 @@ def _translate_single(text: str, source_language: str, target_language: str) -> 
         from services.gemini_client import gemini_translate_text
         logger.info(f"Using Gemini fallback for {target_language}")
         result = gemini_translate_text(text, source_language, target_language)
-        store_translation(text, target_language, result)
+        store_translation(text, target_language, result, source_language=source_language)
         return result
     except Exception as e:
         logger.error(f"Gemini fallback also failed: {e}")

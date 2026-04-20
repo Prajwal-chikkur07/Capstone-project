@@ -310,7 +310,7 @@ def _align_transcript_to_segments(
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_KEY)
-            model = genai.GenerativeModel("gemini-2.0-flash")
+            model = genai.GenerativeModel("gemini-3.1-flash-lite-preview")
 
             # Tell Gemini the exact speaker order detected from audio
             seq_str = " → ".join(speaker_sequence[:30])  # first 30 turns

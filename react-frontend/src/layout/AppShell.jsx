@@ -112,10 +112,10 @@ export default function AppShell({ children }) {
       {showSidebar && !sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="md:hidden fixed top-3 left-3 z-[45] w-9 h-9 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all"
-          style={{ top: 12 + offlineOffsetPx }}
+          className="md:hidden fixed left-3 z-[45] w-10 h-10 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all ios-hamburger-offset"
+          style={{ top: `calc(12px + ${offlineOffsetPx}px + env(safe-area-inset-top, 0px))` }}
         >
-          <Menu className="w-4 h-4" />
+          <Menu className="w-5 h-5" />
         </button>
       )}
 

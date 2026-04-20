@@ -82,7 +82,7 @@ def detect_emotion_from_text(text: str) -> str:
         if not key:
             return "neutral"
         genai.configure(api_key=key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-3.1-flash-lite-preview")
         prompt = (
             "Detect the primary emotion in this text. "
             "Reply with exactly one word from: happy, neutral, serious, sad, angry, excited.\n\n"

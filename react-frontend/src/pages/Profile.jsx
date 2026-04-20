@@ -371,7 +371,7 @@ export default function Profile() {
                 const lang = e.target.value;
                 setField('selectedLanguage', lang);
                 // Sync to desktop widget
-                syncWidgetConfig({ languages: [lang] }).catch(() => {});
+                syncWidgetConfig({ languages: [lang], userId: clerkUser?.id || null }).catch(() => {});
                 // Sync to Chrome extension
                 if (typeof chrome !== 'undefined' && chrome.storage) {
                   chrome.storage.local.set({ vtLanguage: lang, vtDefaultLanguage: lang });

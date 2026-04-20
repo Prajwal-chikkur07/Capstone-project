@@ -177,7 +177,7 @@ async def handle_diarize_audio(
                     import google.generativeai as genai
 
                     genai.configure(api_key=GEMINI_KEY)
-                    model = genai.GenerativeModel("gemini-2.0-flash")
+                    model = genai.GenerativeModel("gemini-3.1-flash-lite-preview")
 
                     if speaker_count >= 2:
                         speaker_instruction = (

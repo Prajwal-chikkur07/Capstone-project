@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext';
 import { enableWidgetWithConfig } from '../services/widgetService';
 
@@ -18,6 +19,7 @@ const LANGUAGES = [
 ];
 
 export default function WidgetSetup() {
+  const { user } = useUser();
   const { setWidgetSetupDone, setWidgetEnabled, setWidgetLanguages, setWidgetMode } = useApp();
   const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
@@ -41,7 +43,7 @@ export default function WidgetSetup() {
   const handleEnable = async () => {
     setEnabling(true);
     try {
-      await enableWidgetWithConfig({ mode: localWidgetMode, languages: selected });
+      await enableWidgetWithConfig({ mode: localWidgetMode, languages: selected, userId: user?.id || null });
     } catch { /* widget may not be running yet — that's fine */ }
     setWidgetMode(localWidgetMode);
     setWidgetSetupDone();

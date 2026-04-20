@@ -69,7 +69,7 @@ def detect_emotions_for_segments(segments: list[dict], gemini_key: str = None) -
     try:
         import google.generativeai as genai
         genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-3.1-flash-lite-preview")
 
         # Batch all segments in one call
         texts = "\n".join([f"{i+1}. {s['text'][:200]}" for i, s in enumerate(segments)])

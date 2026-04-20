@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { toast } from '../components/Toast';
 
+const API_BASE = '/api';
+
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   timeout: 120000,
 });
 
